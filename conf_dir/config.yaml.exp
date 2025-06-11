@@ -1,0 +1,23 @@
+# Bot admins
+admin:
+  id: [123456, 789012]
+
+# Database configuration
+database:
+  host: localhost
+  port: 5432
+  user: admin
+  password: secret
+  dbname: my_database
+
+# Aliyun API configuration
+aliyun:
+  appcode: your_app_code
+
+# Short URL service configuration
+shorturl:
+  api: https://api.example.com
+
+# ICP API configuration
+icp:
+  url: https://icp-api.example.com/query/web
