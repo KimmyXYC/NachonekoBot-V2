@@ -21,3 +21,7 @@ shorturl:
 # ICP API configuration
 icp:
   url: https://icp-api.example.com/query/web
+
+xiatou:
+  id: 201595902
+  token: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef

@@ -5,10 +5,6 @@
 # @Software: PyCharm
 
 import asyncpg
-import asyncio
-import json
-
-from loguru import logger
 
 from utils.yaml import BotConfig
 
@@ -19,14 +15,14 @@ class AsyncPostgresDB:
         self.dbname = BotConfig["database"]["dbname"]
         self.user = BotConfig["database"]["user"]
         self.password = BotConfig["database"]["password"]
-        self.pool = None
+        self.conn = None
 
     async def connect(self):
         """
         Connect to the PostgreSQL database using asyncpg.
         This method creates a connection pool for efficient database access.
         """
-        self.pool = await asyncpg.create_pool(
+        self.conn = await asyncpg.create_pool(
             host=self.host,
             port=self.port,
             user=self.user,
@@ -36,7 +32,6 @@ class AsyncPostgresDB:
             max_size=5
         )
 
-
     async def close(self):
         """
         Close the connection pool to the PostgreSQL database.
@@ -44,7 +39,7 @@ class AsyncPostgresDB:
         It ensures that all connections are properly closed and resources are released.
         :return: None
         """
-        await self.pool.close()
+        await self.conn.close()
 
 
 BotDatabase = AsyncPostgresDB()

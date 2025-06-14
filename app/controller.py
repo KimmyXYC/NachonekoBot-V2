@@ -2,7 +2,7 @@
 # @Time    : 2023/11/18 上午12:18
 # @File    : controller.py
 # @Software: PyCharm
-
+import re
 import plugin
 
 from asgiref.sync import sync_to_async
@@ -12,9 +12,11 @@ from telebot import util, formatting
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
 from telebot.asyncio_storage import StateMemoryStorage
+from telebot.asyncio_filters import SimpleCustomFilter
 
 from setting.telegrambot import BotSetting
 from utils.yaml import BotConfig
+from utils.elaradb import BotElara
 from app.utils import command_error_msg
 
 StepCache = StateMemoryStorage()
@@ -37,6 +39,10 @@ class BotRunner(object):
 
             asyncio_helper.proxy = BotSetting.proxy_address
             logger.info("Proxy tunnels are being used!")
+
+        # 注册自定义过滤器
+        bot.add_custom_filter(StartsWithFilter())
+        bot.add_custom_filter(CommandInChatFilter())
 
         @bot.message_handler(commands="help", chat_types=["private", "supergroup", "group"])
         async def listen_help_command(message: types.Message):
@@ -72,7 +78,7 @@ class BotRunner(object):
         async def listen_ip_command(message: types.Message):
             command_args = message.text.split()
             if len(command_args) == 2:
-                await plugin.ping.handle_ip_command(bot, message)
+                await plugin.ip.handle_ip_command(bot, message)
             else:
                 await bot.reply_to(message, command_error_msg("ip", "IP Address or Domain"))
 
@@ -80,7 +86,7 @@ class BotRunner(object):
         async def listen_ipali_command(message: types.Message):
             command_args = message.text.split()
             if len(command_args) == 2:
-                await plugin.ping.handle_ipali_command(bot, message)
+                await plugin.ipali.handle_ipali_command(bot, message)
             else:
                 await bot.reply_to(message, command_error_msg("ipali", "IP Address or Domain"))
 
@@ -88,7 +94,7 @@ class BotRunner(object):
         async def listen_icp_command(message: types.Message):
             command_args = message.text.split()
             if len(command_args) == 2:
-                await plugin.ping.handle_icp_command(bot, message)
+                await plugin.icp.handle_icp_command(bot, message)
             else:
                 await bot.reply_to(message, command_error_msg("icp", "Domain"))
 
@@ -97,12 +103,12 @@ class BotRunner(object):
             command_args = message.text.split()
             available_types = ["domain", "ip", "asn", "entity"]
             if len(command_args) == 2:
-                await plugin.ping.handle_whois_command(bot, message, "domain")
+                await plugin.whois.handle_whois_command(bot, message, "domain")
             elif len(command_args) == 3:
                 if command_args[2] not in available_types:
                     await bot.reply_to(message, command_error_msg(reason="invalid_type"))
                     return
-                await plugin.ping.handle_whois_command(bot, message, command_args[2])
+                await plugin.whois.handle_whois_command(bot, message, command_args[2])
             else:
                 await bot.reply_to(message, command_error_msg("whois", "DATA", "TYPE"))
 
@@ -111,12 +117,12 @@ class BotRunner(object):
             command_args = message.text.split()
             record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
             if len(command_args) == 2:
-                await plugin.ping.handle_dns_command(bot, message, "A")
+                await plugin.dns.handle_dns_command(bot, message, "A")
             elif len(command_args) == 3:
                 if command_args[2].upper() not in record_types:
                     await bot.reply_to(message, command_error_msg(reason="invalid_type"))
                     return
-                await plugin.ping.handle_dns_command(bot, message, command_args[2])
+                await plugin.dns.handle_dns_command(bot, message, command_args[2])
             else:
                 await bot.reply_to(message, command_error_msg("dns", "Domain", "Record_Type"))
 
@@ -124,7 +130,7 @@ class BotRunner(object):
         async def listen_lock_command(message: types.Message):
             command_args = message.text.split()
             if len(command_args) == 1:
-                await bot.reply_to(message, command_error_msg("lock_cmd", "Command"))
+                await bot.reply_to(message, command_error_msg("lock", "Command"))
             else:
                 lock_list = command_args[1:]
                 await plugin.lock.handle_lock_command(bot, message, lock_list)
@@ -133,7 +139,7 @@ class BotRunner(object):
         async def listen_unlock_command(message: types.Message):
             command_args = message.text.split()
             if len(command_args) == 1:
-                await bot.reply_to(message, command_error_msg("unlock_cmd", "Command"))
+                await bot.reply_to(message, command_error_msg("unlock", "Command"))
             else:
                 unlock_list = command_args[1:]
                 await plugin.lock.handle_unlock_command(bot, message, unlock_list)
@@ -141,6 +147,34 @@ class BotRunner(object):
         @bot.message_handler(commands=['list'], chat_types=["group", "supergroup"])
         async def listen_list_command(message: types.Message):
             await plugin.lock.handle_list_command(bot, message)
+
+        @bot.message_handler(commands=['remake'])
+        async def listen_remake_command(message: types.Message):
+            await plugin.remake.handle_remake_command(bot, message)
+
+        @bot.message_handler(commands=['remake_data'])
+        async def listen_remake_data_command(message: types.Message):
+            await plugin.remake.handle_remake_data_command(bot, message)
+
+        @bot.message_handler(starts_with_alarm=True)
+        async def handle_specific_start(message):
+            type_dict = {"喜报": 0, "悲报": 1, "通报": 2, "警报": 3}
+            await plugin.xibao.good_news(bot, message, type_dict[message.text[:2]])
+
+        @bot.message_handler(func=lambda message: message.from_user.id in BotConfig["xiatou"]["id"],
+                             content_types=['text', 'photo', 'video', 'document'], starts_with_alarm=False)
+        async def handle_xiatou(message):
+            logger.debug(f"[XiaTou][{message.from_user.id}]: {message.text}")
+            await plugin.xiatou.handle_xiatou(bot, message)
+
+        @bot.message_handler(command_in_group=True, content_types=['text'])
+        async def handle_commands(message):
+            if BotElara.exists(str(message.chat.id)):
+                command = re.split(r'[@\s]+', message.text.lower())[0]
+                command = command[1:]
+                lock_cmd_list = BotElara.get(str(message.chat.id), [])
+                if command in lock_cmd_list:
+                    await bot.delete_message(message.chat.id, message.message_id)
 
         try:
             await bot.polling(
@@ -150,3 +184,17 @@ class BotRunner(object):
             logger.opt(exception=e).exception("ApiTelegramException")
         except Exception as e:
             logger.exception(e)
+
+class StartsWithFilter(SimpleCustomFilter):
+    key = 'starts_with_alarm'
+
+    async def check(self, message):
+        return message.text.startswith(('喜报', '悲报', '通报', '警报'))
+
+
+class CommandInChatFilter(SimpleCustomFilter):
+    key = 'command_in_group'
+
+    async def check(self, message):
+        return message.chat.type in ['group', 'supergroup'] and message.text.startswith('/')
+

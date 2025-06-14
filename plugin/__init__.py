@@ -8,7 +8,7 @@ import importlib
 import os
 from typing import TYPE_CHECKING
 
-__all__ = ["status", "callanyone", "shorturl", "ping", "lock"]
+__all__ = ["status", "callanyone", "shorturl", "lock", "dns", "icp", "ip", "ipali", "whois", "xiatou", "remake", "xibao"]
 
 module_dir = os.path.dirname(__file__)
 
@@ -20,4 +20,4 @@ for file in os.listdir(module_dir):
         __all__.append(module_name)
 
 if TYPE_CHECKING:
-    from . import status, callanyone, shorturl, ping, lock
+    from . import status, callanyone, shorturl, lock, dns, icp, ip, ipali, whois, xiatou, remake, xibao
