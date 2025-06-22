@@ -6,7 +6,6 @@
 from PIL import Image, ImageDraw, ImageFont
 from telebot import types
 from io import BytesIO
-from loguru import logger
 
 
 async def good_news(bot, message: types.Message, news_type):
@@ -83,7 +82,7 @@ def draw_text_centered(
     # 计算可绘制区域
     box_w = int(img.width * box_ratio)
     box_h = int(img.height * box_ratio)
-    x0 = (img.width - box_w) // 2
+    # x0 = (img.width - box_w) // 2
     y0 = (img.height - box_h) // 2
 
     # 处理文本换行

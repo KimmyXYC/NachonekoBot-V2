@@ -4,7 +4,6 @@
 # @File    : lock.py
 # @Software: PyCharm
 from telebot import types
-from loguru import logger
 
 from utils.elaradb import BotElara
 from setting.telegrambot import BotSetting

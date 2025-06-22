@@ -8,7 +8,6 @@ import aiohttp
 import datetime
 import pytz
 import asyncpg
-import asyncio
 from loguru import logger
 from utils.yaml import BotConfig
 from utils.postgres import BotDatabase
@@ -31,9 +30,9 @@ async def handle_xiatou(bot, message):
     else:
         pattern = r".*(?:脚|足|舔|嘴里|性|冲|导|萝莉|美少女|自慰).*"
         if re.search(pattern, text_content, re.IGNORECASE):
-            url = f"https://api.cloudflare.com/client/v4/accounts/{BotConfig["xiatou"]['cloudflare_account_id']}/ai/run/@cf/qwen/qwen1.5-14b-chat-awq"
+            url = f"https://api.cloudflare.com/client/v4/accounts/{BotConfig['xiatou']['cloudflare_account_id']}/ai/run/@cf/qwen/qwen1.5-14b-chat-awq"
             headers = {
-                "Authorization": f"Bearer {BotConfig["xiatou"]['cloudflare_auth_token']}"
+                "Authorization": f"Bearer {BotConfig['xiatou']['cloudflare_auth_token']}"
             }
             data = {
                 "messages": [

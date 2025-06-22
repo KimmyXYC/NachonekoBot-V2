@@ -34,7 +34,7 @@ async def handle_ip_command(bot, message: types.Message):
         ip_info = f"""查询目标:  `{url}`\n"""
         if _is_url:
             ip_info += f"""解析地址:  `{data["query"]}`\n"""
-        ip_info += f"""地区:  `未知`\n"""
+        ip_info += """地区:  `未知`\n"""
     else:
         ip_info = f"""查询目标:  `{url}`\n"""
         if _is_url:
@@ -53,11 +53,11 @@ async def handle_ip_command(bot, message: types.Message):
         else:
             ip_info += f"""`{data["as"]}`"""
     if data["mobile"]:
-        ip_info += f"""\n此 IP 可能为 *蜂窝移动数据 IP*"""
+        ip_info += """\n此 IP 可能为 *蜂窝移动数据 IP*"""
     if data["proxy"]:
-        ip_info += f"""\n此 IP 可能为 *代理 IP*"""
+        ip_info += """\n此 IP 可能为 *代理 IP*"""
     if data["hosting"]:
-        ip_info += f"""\n此 IP 可能为 *数据中心 IP*"""
+        ip_info += """\n此 IP 可能为 *数据中心 IP*"""
     await bot.edit_message_text(ip_info, message.chat.id, msg.message_id, parse_mode="MarkdownV2", disable_web_page_preview=True)
 
 

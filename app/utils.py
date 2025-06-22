@@ -41,7 +41,7 @@ def command_error_msg(command="", args="", optional_args="", reason=""):
         return "命令格式错误"
 
     if reason == "invalid_type":
-        return f"查询类型无效，请检查输入参数"
+        return "查询类型无效，请检查输入参数"
 
     if args:
         if optional_args:

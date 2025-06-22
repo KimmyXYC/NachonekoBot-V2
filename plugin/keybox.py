@@ -343,7 +343,7 @@ async def keybox_check(bot, message, document):
             status = status_json['entries'][serial_number_string]
             break
         if banned_sn and serial_number_string in banned_sn:
-            reply += f"\n❌ Serial number found in banned keybox list"
+            reply += "\n❌ Serial number found in banned keybox list"
             break
     if not status:
         reply += "\n✅ Serial number not found in Google's revoked keybox list"

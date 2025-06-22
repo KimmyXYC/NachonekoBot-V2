@@ -8,7 +8,7 @@ import plugin
 from asgiref.sync import sync_to_async
 from loguru import logger
 from telebot import types
-from telebot import util, formatting
+from telebot import util
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
 from telebot.asyncio_storage import StateMemoryStorage

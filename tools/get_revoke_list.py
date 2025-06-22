@@ -7,7 +7,6 @@
 import requests
 import time
 import json
-import os
 
 def load_from_url():
     url = "https://android.googleapis.com/attestation/status"

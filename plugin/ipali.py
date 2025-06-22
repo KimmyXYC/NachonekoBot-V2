@@ -43,7 +43,7 @@ async def handle_ipali_command(bot, message: types.Message):
         if _is_url:
             ip_info += f"""解析地址:  `{ip_addr}`\n"""
         if not data["country"]:
-            ip_info += f"""地区:  `未知`\n"""
+            ip_info += """地区:  `未知`\n"""
         else:
             if ip_type == "v4":
                 if data["prov"]:
