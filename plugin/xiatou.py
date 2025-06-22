@@ -29,7 +29,7 @@ async def handle_xiatou(bot, message):
         await bot.reply_to(message, f"#下头\ninb 老师，这是你今天第 {count} 次下头\n\n本次结果由正则判断")
         return
     else:
-        pattern = r".*(?:脚|足|舔|嘴里|性|冲|导|萝莉|美少女).*"
+        pattern = r".*(?:脚|足|舔|嘴里|性|冲|导|萝莉|美少女|自慰).*"
         if re.search(pattern, text_content, re.IGNORECASE):
             url = f"https://api.cloudflare.com/client/v4/accounts/{BotConfig["xiatou"]['cloudflare_account_id']}/ai/run/@cf/qwen/qwen1.5-14b-chat-awq"
             headers = {

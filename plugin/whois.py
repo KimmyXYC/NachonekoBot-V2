@@ -7,7 +7,7 @@ import aiohttp
 from telebot import types
 
 
-async def handle_whois_command(bot, message: types.Message, req_type):
+async def handle_whois_command(bot, message: types.Message):
     """
     处理 Whois 命令
     :param bot: Bot 对象
@@ -17,7 +17,7 @@ async def handle_whois_command(bot, message: types.Message, req_type):
     """
     data = message.text.split()[1]
     msg = await bot.reply_to(message, f"正在查询 {message.text.split()[1]} Whois 信息...", disable_web_page_preview=True)
-    status, result = await whois_check(data, req_type)
+    status, result = await whois_check(data)
     if not status:
         await bot.edit_message_text(f"请求失败: `{result}`", message.chat.id, msg.message_id, parse_mode="MarkdownV2")
         return

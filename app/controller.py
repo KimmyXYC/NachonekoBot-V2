@@ -17,6 +17,7 @@ from telebot.asyncio_filters import SimpleCustomFilter
 from setting.telegrambot import BotSetting
 from utils.yaml import BotConfig
 from utils.elaradb import BotElara
+from app import event
 from app.utils import command_error_msg
 
 StepCache = StateMemoryStorage()
@@ -40,22 +41,15 @@ class BotRunner(object):
             asyncio_helper.proxy = BotSetting.proxy_address
             logger.info("Proxy tunnels are being used!")
 
+        await event.set_bot_commands(bot)
+
         # 注册自定义过滤器
         bot.add_custom_filter(StartsWithFilter())
         bot.add_custom_filter(CommandInChatFilter())
 
-        @bot.message_handler(commands="help", chat_types=["private", "supergroup", "group"])
+        @bot.message_handler(commands=['start', 'help'], chat_types=["private", "supergroup", "group"])
         async def listen_help_command(message: types.Message):
-            _message = await bot.reply_to(
-                message=message,
-                text=formatting.format_text(
-                    formatting.mbold("🥕 Help"),
-                    formatting.mlink(
-                        "🍀 Github", "https://github.com/KimmyXYC/NachonekoBot-V2"
-                    ),
-                ),
-                parse_mode="MarkdownV2",
-            )
+            await event.listen_help_command(bot, message)
 
         @bot.message_handler(func=lambda message: message.from_user.id in BotConfig["admin"]["id"], commands=['status'])
         async def listen_status_command(message: types.Message):
@@ -103,14 +97,14 @@ class BotRunner(object):
             command_args = message.text.split()
             available_types = ["domain", "ip", "asn", "entity"]
             if len(command_args) == 2:
-                await plugin.whois.handle_whois_command(bot, message, "domain")
+                await plugin.whois.handle_whois_command(bot, message)
             elif len(command_args) == 3:
                 if command_args[2] not in available_types:
                     await bot.reply_to(message, command_error_msg(reason="invalid_type"))
                     return
-                await plugin.whois.handle_whois_command(bot, message, command_args[2])
+                await plugin.whois.handle_whois_command(bot, message)
             else:
-                await bot.reply_to(message, command_error_msg("whois", "DATA", "TYPE"))
+                await bot.reply_to(message, command_error_msg("whois", "Domain"))
 
         @bot.message_handler(commands=['dns'])
         async def listen_dns_command(message: types.Message):
@@ -156,19 +150,33 @@ class BotRunner(object):
         async def listen_remake_data_command(message: types.Message):
             await plugin.remake.handle_remake_data_command(bot, message)
 
+        @bot.message_handler(commands=['check'])
+        async def handle_keybox_check(message: types.Message):
+            if not (message.reply_to_message and message.reply_to_message.document):
+                await bot.reply_to(message, "Please reply to a keybox.xml file.")
+                return
+            document = message.reply_to_message.document
+            await plugin.keybox.handle_keybox_check(bot, message, document)
+
         @bot.message_handler(starts_with_alarm=True)
-        async def handle_specific_start(message):
+        async def handle_specific_start(message: types.Message):
             type_dict = {"喜报": 0, "悲报": 1, "通报": 2, "警报": 3}
             await plugin.xibao.good_news(bot, message, type_dict[message.text[:2]])
 
+        @bot.message_handler(content_types=['document'], chat_types=['private'])
+        async def handle_keybox_file(message: types.Message):
+            document = message.document
+            await plugin.keybox.handle_keybox_check(bot, message, document)
+
+
         @bot.message_handler(func=lambda message: message.from_user.id in BotConfig["xiatou"]["id"],
                              content_types=['text', 'photo', 'video', 'document'], starts_with_alarm=False)
-        async def handle_xiatou(message):
+        async def handle_xiatou(message: types.Message):
             logger.debug(f"[XiaTou][{message.from_user.id}]: {message.text}")
             await plugin.xiatou.handle_xiatou(bot, message)
 
         @bot.message_handler(command_in_group=True, content_types=['text'])
-        async def handle_commands(message):
+        async def handle_commands(message: types.Message):
             if BotElara.exists(str(message.chat.id)):
                 command = re.split(r'[@\s]+', message.text.lower())[0]
                 command = command[1:]
