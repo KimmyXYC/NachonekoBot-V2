@@ -9,7 +9,6 @@ import asyncio
 import socket
 import time
 import ipaddress
-import struct
 from telebot import types
 from loguru import logger
 
@@ -190,7 +189,7 @@ async def execute_tcping(target, port, count=4, timeout=2):
             if response_time > 0:
                 results.append(f"请求超时 (>{timeout}秒)")
             else:
-                results.append(f"连接失败: 目标主机拒绝连接")
+                results.append("连接失败: 目标主机拒绝连接")
 
     # 添加结果到原始结果文本
     orig_result += "\n".join(results)
@@ -214,7 +213,7 @@ async def execute_tcping(target, port, count=4, timeout=2):
         summary += f"📊 丢包率: {loss_rate:.0f}%\n"
     else:
         summary += f"❌ 连接失败: 目标 {target}:{port} 不可达\n"
-        summary += f"📊 丢包率: 100%\n"
+        summary += "📊 丢包率: 100%\n"
 
     # 组合摘要和原始结果，使用HTML格式
     final_result = f"{summary}\n原始结果:\n\n```{orig_result}```"
@@ -222,7 +221,7 @@ async def execute_tcping(target, port, count=4, timeout=2):
     return final_result
 
 
-async def handle_tcping_command(bot, message):
+async def handle_tcping_command(bot, message: types.Message):
     """
     处理tcping命令
     :param bot: 机器人实例

@@ -178,7 +178,7 @@ async def parse_ping_result(result):
         return f"解析 ping 结果异常: {str(e)}\n\n原始结果:\n```\n{result[:300]}...\n```"
 
 
-async def handle_ping_command(bot, message, target=None):
+async def handle_ping_command(bot, message: types.Message, target=None):
     """
     处理 ping 命令
     :param bot: Telegram 机器人实例

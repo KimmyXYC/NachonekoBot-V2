@@ -121,7 +121,7 @@ class BotRunner(object):
                 await bot.reply_to(message, command_error_msg("dns", "Domain", "Record_Type"))
 
         @bot.message_handler(commands=['dnsapi'])
-        async def listen_dns_command(message: types.Message):
+        async def listen_dnsapi_command(message: types.Message):
             command_args = message.text.split()
             record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
             if len(command_args) == 2:
@@ -185,7 +185,6 @@ class BotRunner(object):
         async def listen_ping_command(message: types.Message):
             command_args = message.text.split()
             if len(command_args) == 2:
-                target = command_args[1]
                 await plugin.ping.handle_ping_command(bot, message)
             else:
                 await bot.reply_to(message, command_error_msg("ping", "Domain_or_IP"))

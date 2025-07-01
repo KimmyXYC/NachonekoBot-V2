@@ -115,7 +115,6 @@ async def handle_weather_command(bot, message: types.Message, city: str):
     try:
         # 检查城市名是否为中文，如果是则翻译
         if is_chinese(city):
-            original_city = city
             city = await translate_chinese_to_english(city)
 
         url = "http://api.openweathermap.org/data/2.5/weather"
@@ -202,7 +201,7 @@ async def handle_weather_command(bot, message: types.Message, city: str):
                             chat_id=message.chat.id,
                             photo=img_data
                         )
-                    except:
+                    except Exception:
                         # 如果所有尝试都失败，打印错误但不中断程序
                         logger.error(f"发送天气信息完全失败: {str(send_error)}")
     except Exception as e:

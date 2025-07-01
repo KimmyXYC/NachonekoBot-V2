@@ -7,8 +7,6 @@
 import asyncio
 import time
 import socket
-import threading
-import concurrent.futures
 import requests
 from io import StringIO
 from concurrent.futures import ThreadPoolExecutor
@@ -58,7 +56,7 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
     status_message = await bot.reply_to(message, f"⏳ 正在启动 {PROTOCOLS[protocol]} 跟踪路由到 {target}...")
 
     # 为了确保网络操作不会阻塞整个机器人，我们需要创建一个线程池执行器
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor():
         try:
             # 设置一个超时，防止跟踪永远不返回
             result = await asyncio.wait_for(
@@ -122,10 +120,10 @@ def perform_traceroute(target, protocol="icmp", port=80):
     # 根据协议类型选择不同的跟踪路由方法
     try:
         if is_ipv6:
-            logger.debug(f"使用 ICMPv6 协议执行跟踪路由")
+            logger.debug("使用 ICMPv6 协议执行跟踪路由")
             results = icmpv6_traceroute(target_ip)
         elif protocol == "icmp":
-            logger.debug(f"使用 ICMP 协议执行跟踪路由")
+            logger.debug("使用 ICMP 协议执行跟踪路由")
             results = icmp_traceroute(target_ip)
         elif protocol == "tcp":
             logger.debug(f"使用 TCP 协议执行跟踪路由，端口: {port}")
@@ -137,7 +135,7 @@ def perform_traceroute(target, protocol="icmp", port=80):
         logger.error(f"跟踪路由协议错误: {str(e)}")
         # 如果当前协议失败，尝试使用 ICMP 协议（最可靠）
         if protocol != "icmp" and not is_ipv6:
-            logger.info(f"尝试使用 ICMP 协议进行跟踪路由")
+            logger.info("尝试使用 ICMP 协议进行跟踪路由")
             results = icmp_traceroute(target_ip)
 
     total_time = time.time() - start_time
