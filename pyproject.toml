@@ -1,9 +1,9 @@
 [project]
-name = ""
-version = ""
-description = ""
+name = "NachonekoBot"
+version = "2.0.0"
+description = "A telegram bot framework for building bots with ease, featuring a modular architecture and support for various plugins."
 authors = [
-    { name = "github", email = "none@none.none" },
+    { name = "github", email = "kimmyxyc@nepnep.moe" },
 ]
 dependencies = [
     "pydantic<3.0.0,>=2.0.0",
@@ -18,6 +18,27 @@ dependencies = [
     "aiohttp>=3.9.0",
     "dynaconf>=3.2.4",
     "pre-commit>=3.5.0",
+    "pyTelegramBotAPI>=4.27.0",
+    "asgiref>=3.8.1",
+    "loguru>=0.7.3",
+    "requests>=2.32.4",
+    "PyYAML>=6.0.2",
+    "elara>=0.5.5",
+    "asyncpg>=0.30.0",
+    "idna>=3.10",
+    "aiohttp>=3.12.12",
+    "pillow>=11.2.1",
+    "cryptography>=45.0.4",
+    "numpy>=2.3.0",
+    "pandas>=2.3.0",
+    "psutil>=7.0.0",
+    "pytz>=2025.2",
+    "python-dotenv>=1.1.0",
+    "pydantic>=2.11.6",
+    "pydantic-settings>=2.9.1",
+    "dynaconf>=3.2.11",
+    "dnspython>=2.7.0",
+    "scapy>=2.6.1",
 ]
 
 
@@ -85,3 +106,7 @@ skip-magic-trailing-comma = false
 
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

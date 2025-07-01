@@ -90,6 +90,4 @@ venv       # Virtualenv management
 
 ## License
 
-Provide information about the license your project is under. For example, if your project is under the MIT license, you
-could include the following text:
 This project is licensed under the MIT License - see the LICENSE.md file for details

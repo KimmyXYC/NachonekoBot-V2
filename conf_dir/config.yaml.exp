@@ -23,5 +23,10 @@ icp:
   url: https://icp-api.example.com/query/web
 
 xiatou:
-  id: 201595902
+  id: [2015959023]
+  cloudflare_account_id: 123456
+  cloudflare_auth_token: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+
+translate:
   token: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+  location: global

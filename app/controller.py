@@ -109,7 +109,7 @@ class BotRunner(object):
         @bot.message_handler(commands=['dns'])
         async def listen_dns_command(message: types.Message):
             command_args = message.text.split()
-            record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
+            record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "PTR"]
             if len(command_args) == 2:
                 await plugin.dns.handle_dns_command(bot, message, "A")
             elif len(command_args) == 3:
@@ -117,6 +117,20 @@ class BotRunner(object):
                     await bot.reply_to(message, command_error_msg(reason="invalid_type"))
                     return
                 await plugin.dns.handle_dns_command(bot, message, command_args[2])
+            else:
+                await bot.reply_to(message, command_error_msg("dns", "Domain", "Record_Type"))
+
+        @bot.message_handler(commands=['dnsapi'])
+        async def listen_dns_command(message: types.Message):
+            command_args = message.text.split()
+            record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
+            if len(command_args) == 2:
+                await plugin.dnsapi.handle_dns_command(bot, message, "A")
+            elif len(command_args) == 3:
+                if command_args[2].upper() not in record_types:
+                    await bot.reply_to(message, command_error_msg(reason="invalid_type"))
+                    return
+                await plugin.dnsapi.handle_dns_command(bot, message, command_args[2])
             else:
                 await bot.reply_to(message, command_error_msg("dns", "Domain", "Record_Type"))
 
@@ -157,6 +171,32 @@ class BotRunner(object):
                 return
             document = message.reply_to_message.document
             await plugin.keybox.handle_keybox_check(bot, message, document)
+
+        @bot.message_handler(commands=['weather'])
+        async def listen_weather_command(message: types.Message):
+            command_args = message.text.split()
+            if len(command_args) == 1:
+                await bot.reply_to(message, command_error_msg("weather", "City_Name"))
+            else:
+                city = " ".join(command_args[1:])
+                await plugin.weather.handle_weather_command(bot, message, city)
+
+        @bot.message_handler(commands=['ping'])
+        async def listen_ping_command(message: types.Message):
+            command_args = message.text.split()
+            if len(command_args) == 2:
+                target = command_args[1]
+                await plugin.ping.handle_ping_command(bot, message)
+            else:
+                await bot.reply_to(message, command_error_msg("ping", "Domain_or_IP"))
+
+        @bot.message_handler(commands=['tcping'])
+        async def listen_tcping_command(message: types.Message):
+            await plugin.tcping.handle_tcping_command(bot, message)
+
+        @bot.message_handler(commands=['trace'])
+        async def listen_trace_command(message: types.Message):
+            await plugin.trace.handle_trace_command(bot, message)
 
         @bot.message_handler(starts_with_alarm=True)
         async def handle_specific_start(message: types.Message):
