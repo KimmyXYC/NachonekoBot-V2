@@ -181,6 +181,14 @@ class BotRunner(object):
                 city = " ".join(command_args[1:])
                 await plugin.weather.handle_weather_command(bot, message, city)
 
+        @bot.message_handler(commands=['bin'])
+        async def listen_bin_command(message: types.Message):
+            await plugin.bin.handle_bin_command(bot, message)
+
+        @bot.message_handler(commands=['bc'])
+        async def listen_bc_command(message: types.Message):
+            await plugin.bc.handle_bc_command(bot, message)
+
         @bot.message_handler(commands=['ping'])
         async def listen_ping_command(message: types.Message):
             command_args = message.text.split()
@@ -197,6 +205,10 @@ class BotRunner(object):
         async def listen_trace_command(message: types.Message):
             await plugin.trace.handle_trace_command(bot, message)
 
+        @bot.message_handler(commands=['ocr'])
+        async def listen_ocr_command(message: types.Message):
+            await plugin.ocr.handle_ocr_command(bot, message)
+
         @bot.message_handler(starts_with_alarm=True)
         async def handle_specific_start(message: types.Message):
             type_dict = {"喜报": 0, "悲报": 1, "通报": 2, "警报": 3}
@@ -207,6 +219,9 @@ class BotRunner(object):
             document = message.document
             await plugin.keybox.handle_keybox_check(bot, message, document)
 
+        @bot.message_handler(content_types=['photo'], chat_types=['private'])
+        async def handle_photo_ocr(message: types.Message):
+            await plugin.ocr.process_photo(bot, message)
 
         @bot.message_handler(func=lambda message: message.from_user.id in BotConfig["xiatou"]["id"],
                              content_types=['text', 'photo', 'video', 'document'], starts_with_alarm=False)
@@ -244,4 +259,3 @@ class CommandInChatFilter(SimpleCustomFilter):
 
     async def check(self, message):
         return message.chat.type in ['group', 'supergroup'] and message.text.startswith('/')
-

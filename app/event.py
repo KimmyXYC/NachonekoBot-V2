@@ -7,7 +7,7 @@ from telebot import types, formatting
 
 
 async def set_bot_commands(bot):
-    await bot.set_my_commands([
+    commands = [
         types.BotCommand("help", "获取帮助信息"),
         types.BotCommand("status", "获取机器人状态信息"),
         types.BotCommand("calldoctor", "呼叫医生"),
@@ -21,6 +21,7 @@ async def set_bot_commands(bot):
         types.BotCommand("whois", "查询 Whois 信息"),
         types.BotCommand("dns", "查询 DNS 记录"),
         types.BotCommand("dnsapi", "使用 API 查询 DNS 记录"),
+        types.BotCommand("trace", "追踪路由"),
         types.BotCommand("lock", "锁定群组中的命令"),
         types.BotCommand("unlock", "解锁群组中的命令"),
         types.BotCommand("list", "列出群组中被锁定的命令"),
@@ -28,7 +29,13 @@ async def set_bot_commands(bot):
         types.BotCommand("remake_data", "查看转生数据"),
         types.BotCommand("check", "检查 keybox.xml 文件"),
         types.BotCommand("weather", "查询天气信息"),
-    ])
+        types.BotCommand("bin", "银行卡 bin 查询"),
+        types.BotCommand("ocr", "OCR 识别图片中的文字"),
+        types.BotCommand("bin", "查询银行卡 BIN 信息"),
+    ]
+    await bot.set_my_commands(commands, scope=types.BotCommandScopeDefault())
+    await bot.set_my_commands(commands, scope=types.BotCommandScopeAllPrivateChats())
+    await bot.set_my_commands(commands, scope=types.BotCommandScopeAllGroupChats())
 
 
 async def listen_help_command(bot, message: types.Message):
@@ -49,6 +56,7 @@ async def listen_help_command(bot, message: types.Message):
             formatting.mcode("/whois [Domain] - 查询 Whois 信息"),
             formatting.mcode("/dns [Domain] [Record_Type] - 查询 DNS 记录"),
             formatting.mcode("/dnsapi [Domain] [Record_Type] - 使用 API 查询 DNS 记录"),
+            formatting.mcode("/trace [IP/Domain] - 追踪路由"),
             formatting.mcode("/lock [Command] - 锁定群组中的命令"),
             formatting.mcode("/unlock [Command] - 解锁群组中的命令"),
             formatting.mcode("/list - 列出群组中被锁定的命令"),
@@ -56,6 +64,9 @@ async def listen_help_command(bot, message: types.Message):
             formatting.mcode("/remake_data - 查看转生数据"),
             formatting.mcode("/check - 检查 keybox.xml 文件"),
             formatting.mcode("/weather [City_Name] - 查询天气信息"),
+            formatting.mcode("/bin - 银行卡 bin 查询"),
+            formatting.mcode("/ocr - OCR 识别图片中的文字"),
+            formatting.mcode("/bin [Card_BIN] - 查询银行卡 BIN 信息"),
             "",
             formatting.mitalic("特殊功能："),
             formatting.mcode("喜报/悲报/通报/警报 [内容] - 生成对应类型的报告图片"),

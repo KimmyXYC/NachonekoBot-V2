@@ -39,6 +39,9 @@ dependencies = [
     "dynaconf>=3.2.11",
     "dnspython>=2.7.0",
     "scapy>=2.6.1",
+    "easyocr>=1.7.20",
+    "binance-connector>=3.12.0",
+    "xmltodict>=0.14.2",
 ]
 
 
