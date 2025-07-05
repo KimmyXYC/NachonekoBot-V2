@@ -32,6 +32,7 @@ async def set_bot_commands(bot):
         types.BotCommand("bin", "银行卡 bin 查询"),
         types.BotCommand("ocr", "OCR 识别图片中的文字"),
         types.BotCommand("bin", "查询银行卡 BIN 信息"),
+        types.BotCommand("bc", "货币转换")
     ]
     await bot.set_my_commands(commands, scope=types.BotCommandScopeDefault())
     await bot.set_my_commands(commands, scope=types.BotCommandScopeAllPrivateChats())
@@ -67,6 +68,7 @@ async def listen_help_command(bot, message: types.Message):
             formatting.mcode("/bin - 银行卡 bin 查询"),
             formatting.mcode("/ocr - OCR 识别图片中的文字"),
             formatting.mcode("/bin [Card_BIN] - 查询银行卡 BIN 信息"),
+            formatting.mcode("/bc [Amount] [Currency_From] [Currency_To] - 货币转换"),
             "",
             formatting.mitalic("特殊功能："),
             formatting.mcode("喜报/悲报/通报/警报 [内容] - 生成对应类型的报告图片"),
