@@ -47,7 +47,7 @@ class AsyncPostgresDB:
         """
         try:
             await self.conn.close()
-            logger.info(f"PostgreSQL database connection closed successfully")
+            logger.info("PostgreSQL database connection closed successfully")
         except Exception as e:
             logger.error(f"Error closing PostgreSQL database connection: {str(e)}")
             raise
