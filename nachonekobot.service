@@ -1,0 +1,18 @@
+[Unit]
+Description=NachonekoBot Telegram Bot Service
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=nachonekobot
+WorkingDirectory=/opt/NachonekoBot-V2
+ExecStart=/usr/local/bin/pdm run python main.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nachonekobot
+
+[Install]
+WantedBy=multi-user.target

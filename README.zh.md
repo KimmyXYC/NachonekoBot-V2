@@ -74,6 +74,81 @@ NachonekoBot 是一个多功能的 Telegram 机器人，具有各种实用和有
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
+### Systemd 服务安装（Linux）
+
+#### 前提条件
+
+- 带有 systemd 的 Linux 系统
+- Python 3.11 或更高版本
+- PostgreSQL 数据库
+- PDM 包管理器
+
+#### 安装步骤
+
+1. 将仓库克隆到 `/opt/NachonekoBot-V2`（或您喜欢的位置）：
+   ```bash
+   sudo mkdir -p /opt/NachonekoBot-V2
+   sudo git clone https://github.com/KimmyXYC/NachonekoBot-V2.git /opt/NachonekoBot-V2
+   ```
+
+2. 为机器人创建专用用户（推荐用于安全性）：
+   ```bash
+   sudo useradd -r -s /bin/false nachonekobot
+   sudo chown -R nachonekobot:nachonekobot /opt/NachonekoBot-V2
+   ```
+
+3. 使用 PDM 安装依赖：
+   ```bash
+   cd /opt/NachonekoBot-V2
+   sudo pip install pdm
+   sudo -u nachonekobot pdm install
+   ```
+
+4. 设置 PostgreSQL：
+   - 如果尚未安装，请安装 PostgreSQL
+   - 为机器人创建数据库和用户
+   - 在 config.yaml 中配置数据库连接
+
+5. 配置机器人：
+   ```bash
+   sudo -u nachonekobot cp .env.exp .env
+   sudo -u nachonekobot cp conf_dir/config.yaml.exp conf_dir/config.yaml
+   sudo -u nachonekobot nano .env  # 编辑以设置您的 Telegram 机器人令牌
+   sudo -u nachonekobot nano conf_dir/config.yaml  # 配置数据库和其他设置
+   ```
+
+6. 复制 systemd 服务文件：
+   ```bash
+   sudo cp /opt/NachonekoBot-V2/nachonekobot.service /etc/systemd/system/
+   ```
+
+7. 启用并启动服务：
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable nachonekobot.service
+   sudo systemctl start nachonekobot.service
+   ```
+
+8. 检查服务状态：
+   ```bash
+   sudo systemctl status nachonekobot.service
+   ```
+
+9. 查看日志：
+   ```bash
+   sudo journalctl -u nachonekobot.service -f
+   ```
+
+#### 服务管理
+
+- 启动服务：`sudo systemctl start nachonekobot.service`
+- 停止服务：`sudo systemctl stop nachonekobot.service`
+- 重启服务：`sudo systemctl restart nachonekobot.service`
+- 检查状态：`sudo systemctl status nachonekobot.service`
+- 查看日志：`sudo journalctl -u nachonekobot.service -f`
+- 开机启用：`sudo systemctl enable nachonekobot.service`
+- 开机禁用：`sudo systemctl disable nachonekobot.service`
+
 #### 配置
 
 在运行应用程序之前，需要在 `conf_dir` 目录中设置配置文件：
