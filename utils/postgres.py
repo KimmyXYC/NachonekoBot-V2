@@ -34,6 +34,8 @@ class AsyncPostgresDB:
                 max_size=5
             )
             logger.success(f"Successfully connected to PostgreSQL database at {self.host}:{self.port}/{self.dbname}")
+            # Create tables if they don't exist
+            await self.ensure_tables_exist()
         except Exception as e:
             logger.error(f"Failed to connect to PostgreSQL database: {str(e)}")
             raise
@@ -50,6 +52,36 @@ class AsyncPostgresDB:
             logger.info("PostgreSQL database connection closed successfully")
         except Exception as e:
             logger.error(f"Error closing PostgreSQL database connection: {str(e)}")
+            raise
+
+    async def ensure_tables_exist(self):
+        """
+        Check if required tables exist and create them if they don't.
+        This method is called after the database connection is established.
+        """
+        try:
+            async with self.conn.acquire() as connection:
+                # Create remake table if it doesn't exist
+                await connection.execute('''
+                    CREATE TABLE IF NOT EXISTS remake (
+                        user_id BIGINT PRIMARY KEY,
+                        count INTEGER NOT NULL DEFAULT 0,
+                        country TEXT NOT NULL,
+                        gender TEXT NOT NULL
+                    )
+                ''')
+
+                # Create xiatou table if it doesn't exist
+                await connection.execute('''
+                    CREATE TABLE IF NOT EXISTS xiatou (
+                        time BIGINT PRIMARY KEY,
+                        count INTEGER NOT NULL DEFAULT 0
+                    )
+                ''')
+
+            logger.success("Database tables checked and created if needed")
+        except Exception as e:
+            logger.error(f"Error ensuring tables exist: {str(e)}")
             raise
 
 

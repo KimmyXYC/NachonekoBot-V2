@@ -4,7 +4,7 @@ from loguru import logger
 
 settings = Dynaconf(
     envvar_prefix="DYNACONF",
-    settings_files=["conf_dir/settings.toml", "conf_dir/.secrets.toml"],
+    settings_files=["conf_dir/settings.toml"],
     validators=[
         # Ensure some parameter meets a condition
         # Validator('AGE', lte=30, gte=10),
