@@ -69,47 +69,19 @@ async def handle_ocr_command(bot, message: types.Message):
     :param message: Message object
     :return:
     """
-    command_args = message.text.split()
-
-    # If no arguments, show help
-    if len(command_args) == 1:
+    if message.reply_to_message and message.reply_to_message.photo:
+        await process_photo(bot, message.reply_to_message)
+        return
+    else:
         help_text = formatting.format_text(
             formatting.mbold("🔍 OCR 命令使用帮助"),
             formatting.mcode("/ocr - 显示此帮助信息"),
-            formatting.mcode("/ocr lang [languages] - 设置OCR识别语言，例如: /ocr lang ch_sim en"),
-            "",
-            "支持的语言代码:",
-            formatting.mcode("ch_sim (简体中文), ch_tra (繁体中文), en (英文), ja (日文), ko (韩文)"),
             "",
             "使用方法:",
             formatting.mcode("直接回复图片使用 /ocr 命令可以识别图片中的文字")
         )
         await bot.reply_to(message, help_text, parse_mode="MarkdownV2")
         return
-
-    # Handle language setting
-    if command_args[1].lower() == "lang" and len(command_args) > 2:
-        languages = command_args[2:]
-        ocr_processor.set_languages(languages)
-        lang_text = formatting.format_text(
-            formatting.mitalic("OCR语言已设置为:"),
-            formatting.mcode(f"{', '.join(languages)}")
-        )
-        await bot.reply_to(message, lang_text, parse_mode="MarkdownV2")
-        return
-
-    # If command is replying to an image
-    if message.reply_to_message and message.reply_to_message.photo:
-        await process_photo(bot, message.reply_to_message)
-        return
-
-    # If none of the above, show help
-    help_text = formatting.format_text(
-        formatting.mitalic("请回复一张图片使用OCR功能，或使用"),
-        formatting.mcode("/ocr"),
-        formatting.mitalic("查看帮助。")
-    )
-    await bot.reply_to(message, help_text, parse_mode="MarkdownV2")
 
 
 async def process_photo(bot, message: types.Message):
