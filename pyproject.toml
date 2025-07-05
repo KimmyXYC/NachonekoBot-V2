@@ -6,18 +6,6 @@ authors = [
     { name = "github", email = "kimmyxyc@nepnep.moe" },
 ]
 dependencies = [
-    "pydantic<3.0.0,>=2.0.0",
-    "pydantic-settings<3.0.0,>=2.1.0",
-    "python-dotenv<2.0.0,>=1.0.0",
-    "pytelegrambotapi<5.0.0,>=4.14.0",
-    "loguru<1.0.0,>=0.7.0",
-    "elara<1.0.0,>=0.5.5",
-    "httpx<1.0.0,>=0.25.1",
-    "shortuuid<2.0.0,>=1.0.11",
-    "asgiref<4.0.0,>=3.7.2",
-    "aiohttp>=3.9.0",
-    "dynaconf>=3.2.4",
-    "pre-commit>=3.5.0",
     "pyTelegramBotAPI>=4.27.0",
     "asgiref>=3.8.1",
     "loguru>=0.7.3",
@@ -39,7 +27,7 @@ dependencies = [
     "dynaconf>=3.2.11",
     "dnspython>=2.7.0",
     "scapy>=2.6.1",
-    "easyocr>=1.7.20",
+    "easyocr>=1.7.2",
     "binance-connector>=3.12.0",
     "xmltodict>=0.14.2",
 ]
