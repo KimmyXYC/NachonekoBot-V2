@@ -95,13 +95,7 @@ class BotRunner(object):
         @bot.message_handler(commands=['whois'])
         async def listen_whois_command(message: types.Message):
             command_args = message.text.split()
-            available_types = ["domain", "ip", "asn", "entity"]
             if len(command_args) == 2:
-                await plugin.whois.handle_whois_command(bot, message)
-            elif len(command_args) == 3:
-                if command_args[2] not in available_types:
-                    await bot.reply_to(message, command_error_msg(reason="invalid_type"))
-                    return
                 await plugin.whois.handle_whois_command(bot, message)
             else:
                 await bot.reply_to(message, command_error_msg("whois", "Domain"))

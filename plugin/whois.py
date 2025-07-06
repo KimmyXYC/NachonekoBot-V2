@@ -12,7 +12,6 @@ async def handle_whois_command(bot, message: types.Message):
     处理 Whois 命令
     :param bot: Bot 对象
     :param message: 消息对象
-    :param req_type: 请求类型
     :return:
     """
     data = message.text.split()[1]
