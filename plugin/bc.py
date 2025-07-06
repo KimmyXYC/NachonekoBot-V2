@@ -3,7 +3,7 @@
 # @Author  : KimmyXYC
 # @File    : bc.py
 # @Software: PyCharm
-from datetime import datetime
+from datetime import datetime, UTC
 import aiohttp
 from telebot import types
 from binance.spot import Spot
@@ -43,7 +43,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         currencies, data = await init()
         binanceclient = Spot()
         nowtimestamp = binanceclient.time()
-        nowtime = datetime.fromtimestamp(float(nowtimestamp['serverTime']) / 1000)
+        nowtime = datetime.fromtimestamp(float(nowtimestamp['serverTime']) / 1000, UTC)
     except Exception as e:
         await bot.reply_to(message, f"初始化失败: {str(e)}")
         return
