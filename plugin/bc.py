@@ -51,13 +51,13 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     # 无参数时显示BTC和ETH的价格
     if len(command_args) == 1:
         try:
-            btc_usdt_data = binanceclient.klines("BTCUSDT", "1m")[:1][0]
-            eth_usdt_data = binanceclient.klines("ETHUSDT", "1m")[:1][0]
+            btc_price_data = binanceclient.ticker_price("BTCUSDT")
+            eth_price_data = binanceclient.ticker_price("ETHUSDT")
 
             response_text = (
                 f'{nowtime.strftime("%Y-%m-%d %H:%M:%S")} UTC\n'
-                f'1 BTC = {btc_usdt_data[1]} USDT\n'
-                f'1 ETH = {eth_usdt_data[1]} USDT'
+                f'1 BTC = {float(btc_price_data["price"]):.2f} USDT\n'
+                f'1 ETH = {float(eth_price_data["price"]):.2f} USDT'
             )
 
             await bot.reply_to(message, response_text)
@@ -103,8 +103,8 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         try:
             usd_number = number * data["USD"] / data[_from]
             try:
-                x_usdt_data = binanceclient.klines(f"{_to}USDT", "1m")[:1][0]
-                crypto_amount = 1 / float(x_usdt_data[1]) * usd_number
+                price_data = binanceclient.ticker_price(f"{_to}USDT")
+                crypto_amount = 1 / float(price_data['price']) * usd_number
 
                 await bot.edit_message_text(
                     f"{number} {_from} = {crypto_amount:.8f} {_to}\n"
@@ -126,21 +126,20 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     # 从加密货币到法定货币
     if currencies.count(_to) != 0:
         try:
-            usd_number = number * data[_to] / data["USD"]
-            try:
-                x_usdt_data = binanceclient.klines(f"{_from}USDT", "1m")[:1][0]
-                fiat_amount = float(x_usdt_data[1]) * usd_number
+            price_data = binanceclient.ticker_price(f"{_from}USDT")
+            usd_price = float(price_data['price'])
+            fiat_amount = usd_price * number * data[_to] / data["USD"]
 
-                await bot.edit_message_text(
-                    f"{number} {_from} = {fiat_amount:.2f} {_to}\n"
-                    f"1 {_from} = {float(x_usdt_data[1]):.2f} USD",
-                    message.chat.id, msg.message_id
-                )
-            except ClientError:
-                await bot.edit_message_text(
-                    f"找不到交易对 {_from}USDT",
-                    message.chat.id, msg.message_id
-                )
+            await bot.edit_message_text(
+                f"{number} {_from} = {fiat_amount:.2f} {_to}\n"
+                f"1 {_from} = {usd_price:.2f} USD",
+                message.chat.id, msg.message_id
+            )
+        except ClientError:
+            await bot.edit_message_text(
+                f"找不到交易对 {_from}USDT",
+                message.chat.id, msg.message_id
+            )
         except Exception as e:
             await bot.edit_message_text(
                 f"转换失败: {str(e)}",
@@ -151,8 +150,8 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     # 两种都是加密货币
     try:
         try:
-            from_to_data = binanceclient.klines(f"{_from}{_to}", "1m")[:1][0]
-            result = float(from_to_data[1]) * number
+            price_data = binanceclient.ticker_price(f"{_from}{_to}")
+            result = float(price_data['price']) * number
 
             await bot.edit_message_text(
                 f"{number} {_from} = {result} {_to}",
@@ -161,8 +160,8 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         except ClientError:
             # 尝试反向交易对
             try:
-                to_from_data = binanceclient.klines(f"{_to}{_from}", "1m")[:1][0]
-                result = number / float(to_from_data[1])
+                price_data = binanceclient.ticker_price(f"{_to}{_from}")
+                result = number / float(price_data['price'])
 
                 await bot.edit_message_text(
                     f"{number} {_from} = {result} {_to}",
