@@ -195,7 +195,7 @@ async def keybox_check(bot, message, document):
             keybox_info = get_device_ids_and_algorithms(temp_file.name)
             os.remove(temp_file.name)
         except Exception as e:
-            logger.error(f"[Keybox Check][message.chat.id]: {e}")
+            logger.error(f"[Keybox Check][{message.chat.id}]: {e}")
             await bot.reply_to(message, e)
             os.remove(temp_file.name)
             return
@@ -215,7 +215,7 @@ async def keybox_check(bot, message, document):
         except Exception:
             check_private_key = False
     except Exception as e:
-        logger.error(f"[Keybox Check][message.chat.id]: {e}")
+        logger.error(f"[Keybox Check][{message.chat.id}]: {e}")
         await bot.reply_to(message, e)
         return
 
