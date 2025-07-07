@@ -74,81 +74,6 @@ NachonekoBot is a multifunctional Telegram Bot with various useful and interesti
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
-### Systemd Service Installation (Linux)
-
-#### Prerequisites
-
-- Linux system with systemd
-- Python 3.11 or higher
-- PostgreSQL database
-- PDM package manager
-
-#### Installation Steps
-
-1. Clone the repository to `/opt/NachonekoBot-V2` (or your preferred location):
-   ```bash
-   sudo mkdir -p /opt/NachonekoBot-V2
-   sudo git clone https://github.com/KimmyXYC/NachonekoBot-V2.git /opt/NachonekoBot-V2
-   ```
-
-2. Create a dedicated user for the bot (recommended for security):
-   ```bash
-   sudo useradd -r -s /bin/false nachonekobot
-   sudo chown -R nachonekobot:nachonekobot /opt/NachonekoBot-V2
-   ```
-
-3. Install dependencies using PDM:
-   ```bash
-   cd /opt/NachonekoBot-V2
-   sudo pip install pdm
-   sudo -u nachonekobot pdm install
-   ```
-
-4. Set up PostgreSQL:
-   - Install PostgreSQL if not already installed
-   - Create a database and user for the bot
-   - Configure database connection in config.yaml
-
-5. Configure the bot:
-   ```bash
-   sudo -u nachonekobot cp .env.exp .env
-   sudo -u nachonekobot cp conf_dir/config.yaml.exp conf_dir/config.yaml
-   sudo -u nachonekobot nano .env  # Edit to set your Telegram bot token
-   sudo -u nachonekobot nano conf_dir/config.yaml  # Configure database and other settings
-   ```
-
-6. Copy the systemd service file:
-   ```bash
-   sudo cp /opt/NachonekoBot-V2/nachonekobot.service /etc/systemd/system/
-   ```
-
-7. Enable and start the service:
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable nachonekobot.service
-   sudo systemctl start nachonekobot.service
-   ```
-
-8. Check the service status:
-   ```bash
-   sudo systemctl status nachonekobot.service
-   ```
-
-9. View logs:
-   ```bash
-   sudo journalctl -u nachonekobot.service -f
-   ```
-
-#### Service Management
-
-- Start the service: `sudo systemctl start nachonekobot.service`
-- Stop the service: `sudo systemctl stop nachonekobot.service`
-- Restart the service: `sudo systemctl restart nachonekobot.service`
-- Check status: `sudo systemctl status nachonekobot.service`
-- View logs: `sudo journalctl -u nachonekobot.service -f`
-- Enable at boot: `sudo systemctl enable nachonekobot.service`
-- Disable at boot: `sudo systemctl disable nachonekobot.service`
-
 #### Configuration
 
 Before running the application, set up the configuration files in the `conf_dir` directory:
@@ -241,6 +166,81 @@ The following data is persisted:
 - In production, never use default passwords
 - Consider using Docker secrets or a secure environment variable management system
 - Restrict access to the PostgreSQL port (5432) if exposed
+
+### Systemd Service Installation (Linux)
+
+#### Prerequisites
+
+- Linux system with systemd
+- Python 3.11 or higher
+- PostgreSQL database
+- PDM package manager
+
+#### Installation Steps
+
+1. Clone the repository to `/opt/NachonekoBot-V2` (or your preferred location):
+   ```bash
+   sudo mkdir -p /opt/NachonekoBot-V2
+   sudo git clone https://github.com/KimmyXYC/NachonekoBot-V2.git /opt/NachonekoBot-V2
+   ```
+
+2. Create a dedicated user for the bot (recommended for security):
+   ```bash
+   sudo useradd -r -s /bin/false nachonekobot
+   sudo chown -R nachonekobot:nachonekobot /opt/NachonekoBot-V2
+   ```
+
+3. Install dependencies using PDM:
+   ```bash
+   cd /opt/NachonekoBot-V2
+   sudo pip install pdm
+   sudo -u nachonekobot pdm install
+   ```
+
+4. Set up PostgreSQL:
+   - Install PostgreSQL if not already installed
+   - Create a database and user for the bot
+   - Configure database connection in config.yaml
+
+5. Configure the bot:
+   ```bash
+   sudo -u nachonekobot cp .env.exp .env
+   sudo -u nachonekobot cp conf_dir/config.yaml.exp conf_dir/config.yaml
+   sudo -u nachonekobot nano .env  # Edit to set your Telegram bot token
+   sudo -u nachonekobot nano conf_dir/config.yaml  # Configure database and other settings
+   ```
+
+6. Copy the systemd service file:
+   ```bash
+   sudo cp /opt/NachonekoBot-V2/nachonekobot.service /etc/systemd/system/
+   ```
+
+7. Enable and start the service:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable nachonekobot.service
+   sudo systemctl start nachonekobot.service
+   ```
+
+8. Check the service status:
+   ```bash
+   sudo systemctl status nachonekobot.service
+   ```
+
+9. View logs:
+   ```bash
+   sudo journalctl -u nachonekobot.service -f
+   ```
+
+#### Service Management
+
+- Start the service: `sudo systemctl start nachonekobot.service`
+- Stop the service: `sudo systemctl stop nachonekobot.service`
+- Restart the service: `sudo systemctl restart nachonekobot.service`
+- Check status: `sudo systemctl status nachonekobot.service`
+- View logs: `sudo journalctl -u nachonekobot.service -f`
+- Enable at boot: `sudo systemctl enable nachonekobot.service`
+- Disable at boot: `sudo systemctl disable nachonekobot.service`
 
 ## Contributing
 
