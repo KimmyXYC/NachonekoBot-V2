@@ -28,7 +28,7 @@ async def handle_xiatou(bot, message):
         await bot.reply_to(message, f"#下头\ninb 老师，这是你今天第 {count} 次下头\n\n本次结果由正则判断")
         return
     else:
-        pattern = r".*(?:脚|足|舔|嘴里|性|冲|导|萝莉|美少女|自慰).*"
+        pattern = r".*(?:脚|足|舔|嘴里|性|冲|导|萝莉|美少女|自慰|打胶).*"
         if re.search(pattern, text_content, re.IGNORECASE):
             url = f"https://api.cloudflare.com/client/v4/accounts/{BotConfig['xiatou']['cloudflare_account_id']}/ai/run/@cf/qwen/qwen1.5-14b-chat-awq"
             headers = {
@@ -58,6 +58,7 @@ async def handle_xiatou(bot, message):
 ✅ 明确触发 **true**：  
 - `今天导了10发` → 直白自慰描述
 - `我每天都冲` → 直白自慰描述
+- `打胶打了很多回` → 直白自慰描述
 - `现在 还有云漓的玉足可以舔` → 物化+性暗示  
 - `算了 我还是去舔萝莉玉足吧` → 恋童+性暗示  
 - `她的脚真好看，想摸` → 身体部位性化评价
