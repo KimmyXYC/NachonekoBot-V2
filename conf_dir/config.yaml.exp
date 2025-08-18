@@ -24,8 +24,9 @@ icp:
 
 xiatou:
   id: [2015959023]
-  cloudflare_account_id: 123456
-  cloudflare_auth_token: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+  openai_api: https://api.openai.com
+  openai_api_key: sk-abcdefghijklmnopqrstuvwxyz1234567890
+  openai_api_model: gpt-3.5-turbo
 
 translate:
   token: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef

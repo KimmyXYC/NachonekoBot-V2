@@ -30,28 +30,30 @@ async def handle_xiatou(bot, message):
     else:
         pattern = r".*(?:脚|足|舔|嘴里|性|冲|导|萝莉|美少女|自慰|打胶).*"
         if re.search(pattern, text_content, re.IGNORECASE):
-            url = f"https://api.cloudflare.com/client/v4/accounts/{BotConfig['xiatou']['cloudflare_account_id']}/ai/run/@cf/qwen/qwen1.5-14b-chat-awq"
+            url = f"{BotConfig['xiatou']['openai_api']}/v1/chat/completions"
             headers = {
-                "Authorization": f"Bearer {BotConfig['xiatou']['cloudflare_auth_token']}"
+                "Authorization": f"Bearer {BotConfig['xiatou']['openai_api_key']}",
+                "Content-Type": "application/json"
             }
             data = {
+                "model": BotConfig["xiatou"]["openai_api_model"],
                 "messages": [
                     {
                         "role": "system",
                         "content":
                         '''
-下面我将给你一些句子，请判断是否让人感到“下头”（即引发恶心、不适或厌恶）。仅当句子涉及以下四类内容时回答 **true**，否则回答 **false**：
+下面我将给你一些句子，请判断是否让人感到"下头"（即引发恶心、不适或厌恶）。仅当句子涉及以下四类内容时回答 **true**，否则回答 **false**：
 
 **触发true的核心类型：**
 1. **性暗示**（含身体部位/性行为的描述）  
 2. **恋童**（明示或暗示未成年人）  
 3. **物化他人**（将人视为物品/工具）  
-4. **对身体部位的性化评价**（如“脚好看”“胸大”等，即使无直接性行为描述）
-5. **直白的自慰描述**（如“导”“冲”“手冲”等）
+4. **对身体部位的性化评价**（如"脚好看""胸大"等，即使无直接性行为描述）
+5. **直白的自慰描述**（如"导""冲""手冲"等）
 
 **判断原则：**
 - 忽略语法错误或表达风格，专注内容本质  
-- 医学/职业等客观描述除外（如“模特需要脚型匀称”）  
+- 医学/职业等客观描述除外（如"模特需要脚型匀称"）  
 - 针对未成年人的身体评价 **一律判 true**
 
 **示例：**  
@@ -82,13 +84,14 @@ async def handle_xiatou(bot, message):
                         "role": "user",
                         "content": message.text
                     }
-
-                ]
+                ],
+                "temperature": 0.7,
+                "max_tokens": 10
             }
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
                 async with session.post(url, headers=headers, json=data) as response:
                     response_json = await response.json()
-            if response_json["result"]["response"] == "true":
+            if "choices" in response_json and response_json["choices"][0]["message"]["content"].strip().lower() == "true":
                 count = await increment_today_count_pg()
                 logger.info(f"[XiaTou][{message.chat.id}]: {text_content}")
                 logger.success(f"[XiaTou][{message.chat.id}]: AI Match Success")
