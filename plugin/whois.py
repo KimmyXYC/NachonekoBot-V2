@@ -40,6 +40,9 @@ async def whois_check(data):
                 filtered_result = [line for line in lines if
                                    'REDACTED FOR PRIVACY' not in line and 'Please query the' not in line
                                    and not line.strip().endswith(':')]
-                return True, "\n".join(filtered_result).split("For more information")[0]
+                cleaned = "\n".join(filtered_result)
+                cleaned = cleaned.split("For more information")[0]
+                cleaned = cleaned.split("RDAP TERMS OF SERVICE:")[0]
+                return True, cleaned
             else:
                 return False, f"Request failed with status {response.status}"
