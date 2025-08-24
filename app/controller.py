@@ -48,7 +48,7 @@ class BotRunner(object):
         bot.add_custom_filter(CommandInChatFilter())
         bot.add_custom_filter(LotteryJoinFilter())
 
-        @bot.message_handler(commands=['start', 'help'], chat_types=["private", "supergroup", "group"])
+        @bot.message_handler(commands=['start', 'help'], chat_types=["private"])
         async def listen_help_command(message: types.Message):
             await event.listen_help_command(bot, message)
 
