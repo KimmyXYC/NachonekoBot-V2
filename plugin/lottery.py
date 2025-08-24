@@ -114,7 +114,12 @@ async def _create_lottery(bot, chat_id: int, num: int, win: int, title: str, key
     }
 
     try:
-        await bot.send_message(chat_id, create_text.format(title, win, num, keyword), parse_mode="HTML")
+        msg = await bot.send_message(chat_id, create_text.format(title, win, num, keyword), parse_mode="HTML")
+        # 自动置顶抽奖创建消息（无提醒置顶）
+        try:
+            await bot.pin_chat_message(chat_id, msg.message_id, disable_notification=True)
+        except Exception as e:
+            logger.debug(f"Pin lottery create message failed: {e}")
     except Exception as e:
         logger.debug(f"Send lottery create message failed: {e}")
 
