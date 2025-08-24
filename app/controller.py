@@ -46,6 +46,7 @@ class BotRunner(object):
         # 注册自定义过滤器
         bot.add_custom_filter(StartsWithFilter())
         bot.add_custom_filter(CommandInChatFilter())
+        bot.add_custom_filter(LotteryJoinFilter())
 
         @bot.message_handler(commands=['start', 'help'], chat_types=["private", "supergroup", "group"])
         async def listen_help_command(message: types.Message):
@@ -217,6 +218,14 @@ class BotRunner(object):
         async def handle_photo_ocr(message: types.Message):
             await plugin.ocr.process_photo(bot, message)
 
+        @bot.message_handler(commands=['lottery'], chat_types=["group", "supergroup"])
+        async def listen_lottery_command(message: types.Message):
+            await plugin.lottery.handle_lottery_command(bot, message)
+
+        @bot.message_handler(lottery_join=True, content_types=['text'], chat_types=['group', 'supergroup'])
+        async def handle_lottery_join(message: types.Message):
+            await plugin.lottery.process_lottery_message(bot, message)
+
         @bot.message_handler(func=lambda message: message.from_user.id in BotConfig["xiatou"]["id"],
                              content_types=['text', 'photo', 'video', 'document'], starts_with_alarm=False)
         async def handle_xiatou(message: types.Message):
@@ -253,3 +262,14 @@ class CommandInChatFilter(SimpleCustomFilter):
 
     async def check(self, message):
         return message.chat.type in ['group', 'supergroup'] and message.text.startswith('/')
+
+
+
+class LotteryJoinFilter(SimpleCustomFilter):
+    key = 'lottery_join'
+
+    async def check(self, message):
+        try:
+            return plugin.lottery.should_pass_lottery_filter(message)
+        except Exception:
+            return False
