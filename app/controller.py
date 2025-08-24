@@ -200,10 +200,6 @@ class BotRunner(object):
         async def listen_trace_command(message: types.Message):
             await plugin.trace.handle_trace_command(bot, message)
 
-        @bot.message_handler(commands=['ocr'])
-        async def listen_ocr_command(message: types.Message):
-            await plugin.ocr.handle_ocr_command(bot, message)
-
         @bot.message_handler(starts_with_alarm=True)
         async def handle_specific_start(message: types.Message):
             type_dict = {"喜报": 0, "悲报": 1, "通报": 2, "警报": 3}
