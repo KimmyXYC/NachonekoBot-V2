@@ -219,7 +219,7 @@ async def handle_lottery_command(bot, message: types.Message):
 
     parts = message.text.split()
     if len(parts) == 1:
-        await bot.reply_to(message, f"请输入 奖品数、人数等参数 或者 强制开奖\n\n例如 `/lottery 1/10 参加 测试`", parse_mode="Markdown")
+        await bot.reply_to(message, "请输入 奖品数、人数等参数 或者 强制开奖\n\n例如 `/lottery 1/10 参加 测试`", parse_mode="Markdown")
         return
 
     # 强制开奖
