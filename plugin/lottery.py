@@ -90,8 +90,24 @@ async def _lottery_end(bot, chat_id: int):
     else:
         win_text = end_empty_text.format(state["title"])
 
+    # 在发送开奖结果之前，先尝试取消之前的置顶
     try:
-        await bot.send_message(chat_id, win_text, parse_mode="HTML")
+        pin_mid = state.get("pin_message_id")
+        if pin_mid:
+            try:
+                await bot.unpin_chat_message(chat_id, pin_mid)
+            except Exception as e:
+                logger.debug(f"Unpin lottery create message failed: {e}")
+    except Exception:
+        pass
+
+    # 发送开奖结果并尝试置顶（无提醒）
+    try:
+        result_msg = await bot.send_message(chat_id, win_text, parse_mode="HTML")
+        try:
+            await bot.pin_chat_message(chat_id, result_msg.message_id, disable_notification=True)
+        except Exception as e:
+            logger.debug(f"Pin lottery result message failed: {e}")
     except Exception as e:
         logger.debug(f"Send lottery end message failed: {e}")
 
@@ -115,6 +131,8 @@ async def _create_lottery(bot, chat_id: int, num: int, win: int, title: str, key
 
     try:
         msg = await bot.send_message(chat_id, create_text.format(title, win, num, keyword), parse_mode="HTML")
+        # 记录创建消息的 message_id，便于开奖后取消置顶
+        _lotteries[chat_id]["pin_message_id"] = msg.message_id
         # 自动置顶抽奖创建消息（无提醒置顶）
         try:
             await bot.pin_chat_message(chat_id, msg.message_id, disable_notification=True)
