@@ -31,7 +31,7 @@ async def handle_icp_command(bot, message: types.Message):
     await bot.edit_message_text(markdown_to_telegram_html(icp_info), message.chat.id, msg.message_id, parse_mode="HTML")
 
 
-async def icp_record_check(domain, retries=3):
+async def icp_record_check(domain, retries=5):
     """
     Check if a domain has an ICP record.
     :param domain: The domain name to check.
@@ -49,6 +49,8 @@ async def icp_record_check(domain, retries=3):
                         data = await response.json()
                         if data["code"] == 200:
                             return True, data["params"]["list"]
+                        elif data["code"] == 122:
+                            pass
                         else:
                             return False, data["msg"]
                     else:
