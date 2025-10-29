@@ -6,10 +6,21 @@
 from datetime import datetime, UTC
 import aiohttp
 from telebot import types
+from loguru import logger
 from binance.spot import Spot
 from binance.error import ClientError
 import xmltodict
 
+
+# ==================== 插件元数据 ====================
+__plugin_name__ = "bc"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "币种转换工具"
+__commands__ = ["bc"]
+
+
+# ==================== 核心功能 ====================
 API = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
 
 
@@ -177,3 +188,27 @@ async def handle_bc_command(bot, message: types.Message) -> None:
             f"转换失败: {str(e)}",
             message.chat.id, msg.message_id
         )
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['bc'])
+    async def bc_command(message: types.Message):
+        await handle_bc_command(bot, message)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

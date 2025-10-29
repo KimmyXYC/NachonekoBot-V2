@@ -7,8 +7,17 @@ import json
 import aiohttp
 from json.decoder import JSONDecodeError
 from telebot import types
+from loguru import logger
+
+# ==================== 插件元数据 ====================
+__plugin_name__ = "bin"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "BIN 号码查询"
+__commands__ = ["bin"]
 
 
+# ==================== 核心功能 ====================
 async def handle_bin_command(bot, message: types.Message):
     """
     处理 BIN 查询命令
@@ -84,3 +93,27 @@ async def handle_bin_command(bot, message: types.Message):
         pass
 
     await bot.edit_message_text("\n".join(msg_out), message.chat.id, msg.message_id)
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['bin'])
+    async def bin_command(message: types.Message):
+        await handle_bin_command(bot, message)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

@@ -10,6 +10,12 @@ import dns.exception
 from telebot import types
 from loguru import logger
 
+__plugin_name__ = "dns"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "DNS 记录查询"
+__commands__ = ["dns"]
+
 async def handle_dns_command(bot, message: types.Message, record_type):
     """
     处理 DNS 查询命令

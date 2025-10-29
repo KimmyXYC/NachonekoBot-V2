@@ -11,7 +11,15 @@ import ipaddress
 from telebot import types
 from loguru import logger
 
+# ==================== 插件元数据 ====================
+__plugin_name__ = "ping"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "Ping 网络连通性测试"
+__commands__ = ["ping"]
 
+
+# ==================== 核心功能 ====================
 def is_valid_hostname(hostname):
     """
     验证主机名是否合法
@@ -219,3 +227,27 @@ async def handle_ping_command(bot, message: types.Message, target=None):
         text=summary,
         parse_mode="Markdown"
     )
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['ping'])
+    async def ping_command(message: types.Message):
+        await handle_ping_command(bot, message)
+
+    logger.info(f"✅ Ping测试插件已注册")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

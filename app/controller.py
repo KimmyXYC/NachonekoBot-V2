@@ -3,12 +3,8 @@
 # @File    : controller.py
 # @Software: PyCharm
 import re
-import plugin
-
-from asgiref.sync import sync_to_async
 from loguru import logger
-from telebot import types
-from telebot import util
+from telebot import types, util
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
 from telebot.asyncio_storage import StateMemoryStorage
@@ -18,28 +14,23 @@ from setting.telegrambot import BotSetting
 from utils.yaml import BotConfig
 from utils.elaradb import BotElara
 from app import event
-from app.utils import command_error_msg
+from app.plugin_system.manager import plugin_manager
 
 StepCache = StateMemoryStorage()
 
 
-@sync_to_async
-def sync_to_async_func():
-    pass
-
-
-class BotRunner(object):
+class BotRunner:
     def __init__(self):
         self.bot = AsyncTeleBot(BotSetting.token, state_storage=StepCache)
 
     async def run(self):
-        logger.info("Bot Start")
+        logger.info("🤖 Bot Start")
         bot = self.bot
+
         if BotSetting.proxy_address:
             from telebot import asyncio_helper
-
             asyncio_helper.proxy = BotSetting.proxy_address
-            logger.info("Proxy tunnels are being used!")
+            logger.info("🌐 Proxy tunnels are being used!")
 
         await event.set_bot_commands(bot)
 
@@ -48,204 +39,91 @@ class BotRunner(object):
         bot.add_custom_filter(CommandInChatFilter())
         bot.add_custom_filter(LotteryJoinFilter())
 
+        # ==================== 核心命令(保留在这里) ====================
         @bot.message_handler(commands=['start', 'help'], chat_types=["private"])
         async def listen_help_command(message: types.Message):
             await event.listen_help_command(bot, message)
 
-        @bot.message_handler(func=lambda message: message.from_user.id in BotConfig["admin"]["id"], commands=['status'])
-        async def listen_status_command(message: types.Message):
-            await plugin.status.handle_status_command(bot, message)
+        # ==================== 插件管理命令 ====================
+        @bot.message_handler(
+            func=lambda m: m.from_user.id in BotConfig["admin"]["id"],
+            commands=['plugin']
+        )
+        async def handle_plugin_command(message: types.Message):
+            """插件管理命令"""
+            args = message.text.split()
 
-        @bot.message_handler(commands=['calldoctor', 'callmtf', 'callpolice'])
-        async def listen_call_command(message: types.Message):
-            await plugin.callanyone.handle_call_command(bot, message)
-
-        @bot.message_handler(commands=["short"])
-        async def listen_short_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 2:
-                url = command_args[1]
-                await plugin.shorturl.handle_short_command(bot, message, url)
-            else:
-                await bot.reply_to(message, command_error_msg("short", "URL"))
-
-        @bot.message_handler(commands=['ip'])
-        async def listen_ip_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 2:
-                await plugin.ip.handle_ip_command(bot, message)
-            else:
-                await bot.reply_to(message, command_error_msg("ip", "IP Address or Domain"))
-
-        @bot.message_handler(commands=['ipali'])
-        async def listen_ipali_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 2:
-                await plugin.ipali.handle_ipali_command(bot, message)
-            else:
-                await bot.reply_to(message, command_error_msg("ipali", "IP Address or Domain"))
-
-        @bot.message_handler(commands=['icp'])
-        async def listen_icp_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 2:
-                await plugin.icp.handle_icp_command(bot, message)
-            else:
-                await bot.reply_to(message, command_error_msg("icp", "Domain"))
-
-        @bot.message_handler(commands=['whois'])
-        async def listen_whois_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 2:
-                await plugin.whois.handle_whois_command(bot, message)
-            else:
-                await bot.reply_to(message, command_error_msg("whois", "Domain"))
-
-        @bot.message_handler(commands=['dns'])
-        async def listen_dns_command(message: types.Message):
-            command_args = message.text.split()
-            record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "PTR"]
-            if len(command_args) == 2:
-                await plugin.dns.handle_dns_command(bot, message, "A")
-            elif len(command_args) == 3:
-                if command_args[2].upper() not in record_types:
-                    await bot.reply_to(message, command_error_msg(reason="invalid_type"))
-                    return
-                await plugin.dns.handle_dns_command(bot, message, command_args[2])
-            else:
-                await bot.reply_to(message, command_error_msg("dns", "Domain", "Record_Type"))
-
-        @bot.message_handler(commands=['dnsapi'])
-        async def listen_dnsapi_command(message: types.Message):
-            command_args = message.text.split()
-            record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
-            if len(command_args) == 2:
-                await plugin.dnsapi.handle_dns_command(bot, message, "A")
-            elif len(command_args) == 3:
-                if command_args[2].upper() not in record_types:
-                    await bot.reply_to(message, command_error_msg(reason="invalid_type"))
-                    return
-                await plugin.dnsapi.handle_dns_command(bot, message, command_args[2])
-            else:
-                await bot.reply_to(message, command_error_msg("dns", "Domain", "Record_Type"))
-
-        @bot.message_handler(commands=['lock'], chat_types=["group", "supergroup"])
-        async def listen_lock_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 1:
-                await bot.reply_to(message, command_error_msg("lock", "Command"))
-            else:
-                lock_list = command_args[1:]
-                await plugin.lock.handle_lock_command(bot, message, lock_list)
-
-        @bot.message_handler(commands=['unlock'], chat_types=["group", "supergroup"])
-        async def listen_unlock_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 1:
-                await bot.reply_to(message, command_error_msg("unlock", "Command"))
-            else:
-                unlock_list = command_args[1:]
-                await plugin.lock.handle_unlock_command(bot, message, unlock_list)
-
-        @bot.message_handler(commands=['list'], chat_types=["group", "supergroup"])
-        async def listen_list_command(message: types.Message):
-            await plugin.lock.handle_list_command(bot, message)
-
-        @bot.message_handler(commands=['remake'])
-        async def listen_remake_command(message: types.Message):
-            await plugin.remake.handle_remake_command(bot, message)
-
-        @bot.message_handler(commands=['remake_data'])
-        async def listen_remake_data_command(message: types.Message):
-            await plugin.remake.handle_remake_data_command(bot, message)
-
-        @bot.message_handler(commands=['check'])
-        async def handle_keybox_check(message: types.Message):
-            if not (message.reply_to_message and message.reply_to_message.document):
-                await bot.reply_to(message, "Please reply to a keybox.xml file.")
+            if len(args) < 2:
+                help_text = (
+                    "📦 *插件管理命令*\n\n"
+                    "`/plugin list` - 列出所有插件\n"
+                    "`/plugin enable <name>` - 启用插件\n"
+                    "`/plugin disable <name>` - 禁用插件\n"
+                    "`/plugin reload` - 重载所有插件\n"
+                    "`/plugin remove <name>` - 删除插件\n"
+                )
+                await bot.reply_to(message, help_text, parse_mode="Markdown")
                 return
-            document = message.reply_to_message.document
-            await plugin.keybox.handle_keybox_check(bot, message, document)
 
-        @bot.message_handler(commands=['weather'])
-        async def listen_weather_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 1:
-                await bot.reply_to(message, command_error_msg("weather", "City_Name"))
-            else:
-                city = " ".join(command_args[1:])
-                await plugin.weather.handle_weather_command(bot, message, city)
+            action = args[1].lower()
 
-        @bot.message_handler(commands=['bin'])
-        async def listen_bin_command(message: types.Message):
-            await plugin.bin.handle_bin_command(bot, message)
+            if action == "list":
+                plugin_manager.load_local_plugins()
+                plugins_text = "📋 *已安装的插件:*\n\n"
+                for p in plugin_manager.plugins:
+                    status = "✅ 启用" if p.status else "❌ 禁用"
+                    version = f"v{p.version}" if p.version else "未知版本"
+                    plugins_text += f"• `{p.name}` - {status} ({version})\n"
+                await bot.reply_to(message, plugins_text, parse_mode="Markdown")
 
-        @bot.message_handler(commands=['bc'])
-        async def listen_bc_command(message: types.Message):
-            await plugin.bc.handle_bc_command(bot, message)
+            elif action == "enable" and len(args) == 3:
+                plugin_name = args[2]
+                if plugin_manager.enable_plugin(plugin_name):
+                    await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已启用", parse_mode="Markdown")
+                    await plugin_manager.reload_all_plugins(bot)
+                else:
+                    await bot.reply_to(message, f"❌ 启用失败", parse_mode="Markdown")
 
-        @bot.message_handler(commands=['ping'])
-        async def listen_ping_command(message: types.Message):
-            command_args = message.text.split()
-            if len(command_args) == 2:
-                await plugin.ping.handle_ping_command(bot, message)
-            else:
-                await bot.reply_to(message, command_error_msg("ping", "Domain_or_IP"))
+            elif action == "disable" and len(args) == 3:
+                plugin_name = args[2]
+                if plugin_manager.disable_plugin(plugin_name):
+                    await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已禁用", parse_mode="Markdown")
+                    await plugin_manager.reload_all_plugins(bot)
+                else:
+                    await bot.reply_to(message, f"❌ 禁用失败", parse_mode="Markdown")
 
-        @bot.message_handler(commands=['tcping'])
-        async def listen_tcping_command(message: types.Message):
-            await plugin.tcping.handle_tcping_command(bot, message)
+            elif action == "reload":
+                msg = await bot.reply_to(message, "🔄 正在重载插件...")
+                await plugin_manager.reload_all_plugins(bot)
+                await bot.edit_message_text("✅ 插件重载完成", msg.chat.id, msg.message_id)
 
-        @bot.message_handler(commands=['trace'])
-        async def listen_trace_command(message: types.Message):
-            await plugin.trace.handle_trace_command(bot, message)
+            elif action == "remove" and len(args) == 3:
+                plugin_name = args[2]
+                if plugin_manager.remove_plugin(plugin_name):
+                    await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已删除", parse_mode="Markdown")
+                else:
+                    await bot.reply_to(message, f"❌ 删除失败", parse_mode="Markdown")
 
-        @bot.message_handler(starts_with_alarm=True)
-        async def handle_specific_start(message: types.Message):
-            type_dict = {"喜报": 0, "悲报": 1, "通报": 2, "警报": 3}
-            await plugin.xibao.good_news(bot, message, type_dict[message.text[:2]])
+        # ==================== 动态加载插件 ====================
+        logger.info("🔌 开始加载插件...")
+        plugin_manager.load_local_plugins()
+        await plugin_manager.load_plugin_handlers(bot)
 
-        @bot.message_handler(content_types=['document'], chat_types=['private'])
-        async def handle_keybox_file(message: types.Message):
-            document = message.document
-            await plugin.keybox.handle_keybox_check(bot, message, document)
-
-        @bot.message_handler(content_types=['photo'], chat_types=['private'])
-        async def handle_photo_ocr(message: types.Message):
-            await plugin.ocr.process_photo(bot, message)
-
-        @bot.message_handler(commands=['lottery'], chat_types=["group", "supergroup"])
-        async def listen_lottery_command(message: types.Message):
-            await plugin.lottery.handle_lottery_command(bot, message)
-
-        @bot.message_handler(lottery_join=True, content_types=['text'], chat_types=['group', 'supergroup'])
-        async def handle_lottery_join(message: types.Message):
-            await plugin.lottery.process_lottery_message(bot, message)
-
-        @bot.message_handler(func=lambda message: message.from_user.id in BotConfig["xiatou"]["id"],
-                             content_types=['text', 'photo', 'video', 'document'], starts_with_alarm=False)
-        async def handle_xiatou(message: types.Message):
-            logger.debug(f"[XiaTou][{message.from_user.id}]: {message.text}")
-            await plugin.xiatou.handle_xiatou(bot, message)
-
-        @bot.message_handler(command_in_group=True, content_types=['text'])
-        async def handle_commands(message: types.Message):
-            if BotElara.exists(str(message.chat.id)):
-                command = re.split(r'[@\s]+', message.text.lower())[0]
-                command = command[1:]
-                lock_cmd_list = BotElara.get(str(message.chat.id), [])
-                if command in lock_cmd_list:
-                    await bot.delete_message(message.chat.id, message.message_id)
-
+        # ==================== 启动 Bot ====================
         try:
+            logger.success("✨ Bot 启动成功,开始轮询...")
             await bot.polling(
-                non_stop=True, allowed_updates=util.update_types, skip_pending=True
+                non_stop=True,
+                allowed_updates=util.update_types,
+                skip_pending=True
             )
         except ApiTelegramException as e:
             logger.opt(exception=e).exception("ApiTelegramException")
         except Exception as e:
             logger.exception(e)
 
+
+# 自定义过滤器保持不变
 class StartsWithFilter(SimpleCustomFilter):
     key = 'starts_with_alarm'
 
@@ -260,12 +138,14 @@ class CommandInChatFilter(SimpleCustomFilter):
         return message.chat.type in ['group', 'supergroup'] and message.text.startswith('/')
 
 
-
 class LotteryJoinFilter(SimpleCustomFilter):
     key = 'lottery_join'
 
     async def check(self, message):
         try:
-            return plugin.lottery.should_pass_lottery_filter(message)
+            import sys
+            if 'plugins.lottery' in sys.modules:
+                from plugins import lottery
+                return lottery.should_pass_lottery_filter(message)
         except Exception:
             return False

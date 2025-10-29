@@ -7,7 +7,14 @@ import re
 import idna
 import aiohttp
 from telebot import types
+from loguru import logger
 from app.utils import escape_md_v2_text
+
+__plugin_name__ = "ip"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "IP 地址查询"
+__commands__ = ["ip"]
 
 
 async def handle_ip_command(bot, message: types.Message):
