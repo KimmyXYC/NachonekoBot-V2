@@ -217,7 +217,7 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         handler_name="xibao_filter",
         priority=50,
-        stop_propagation=True,
+        stop_propagation=False,
         starts_with=['喜报', '悲报', '通报', '警报']
     )
 

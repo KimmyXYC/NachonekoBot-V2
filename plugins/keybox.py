@@ -25,7 +25,7 @@ __plugin_name__ = "keybox"
 __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "Keybox 检查工具"
-__commands__ = ["check"]
+__commands__ = ["check", "ban_keybox", "unban_keybox"]
 
 
 # ==================== 核心功能 ====================
@@ -406,8 +406,8 @@ async def register_handlers(bot, middleware, plugin_name):
     global bot_instance
     bot_instance = bot
 
-    # 命令处理器 - 使用中间件
-    async def check_handler(bot, message: types.Message):
+    # 命令处理器 - 需要回复一个文件
+    async def check_command_handler(bot, message: types.Message):
         if not (message.reply_to_message and message.reply_to_message.document):
             await bot.reply_to(message, "Please reply to a keybox.xml file.")
             return
@@ -416,18 +416,64 @@ async def register_handlers(bot, middleware, plugin_name):
 
     middleware.register_command_handler(
         commands=['check'],
-        callback=check_handler,
+        callback=check_command_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
         chat_types=['private', 'group', 'supergroup']
     )
 
-    # 文档处理器 - 保持原有方式（中间件暂不支持非命令消息）
-    @bot.message_handler(content_types=['document'], chat_types=['private'])
-    async def handle_keybox_file(message: types.Message):
-        document = message.document
-        await handle_keybox_check(bot, message, document)
+    # 文件处理器 - 直接处理上传的文件
+    async def document_handler(bot, message: types.Message):
+        if message.document:
+            document = message.document
+            await handle_keybox_check(bot, message, document)
+
+    middleware.register_message_handler(
+        callback=document_handler,
+        plugin_name=plugin_name,
+        handler_name="keybox_checker_document_handler",
+        priority=50,
+        stop_propagation=False,  # 不阻止其他处理器
+        content_types=['document'],
+        chat_types=['private']
+    )
+
+    # ban_keybox 命令处理器
+    async def ban_keybox_handler(bot, message: types.Message):
+        command_args = message.text.split()
+        if len(command_args) == 2:
+            sn = command_args[1].lower()
+            await ban_keybox(bot, message, sn)
+        else:
+            await bot.reply_to(message, "Usage: /ban_keybox <serial_number>\nExample: /ban_keybox 1a2b3c4d5e6f")
+
+    middleware.register_command_handler(
+        commands=['ban_keybox'],
+        callback=ban_keybox_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
+
+    # unban_keybox 命令处理器
+    async def unban_keybox_handler(bot, message: types.Message):
+        command_args = message.text.split()
+        if len(command_args) == 2:
+            sn = command_args[1].lower()
+            await unban_keybox(bot, message, sn)
+        else:
+            await bot.reply_to(message, "Usage: /unban_keybox <serial_number>\nExample: /unban_keybox 1a2b3c4d5e6f")
+
+    middleware.register_command_handler(
+        commands=['unban_keybox'],
+        callback=unban_keybox_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
 
