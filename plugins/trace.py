@@ -624,12 +624,23 @@ def get_ip_geolocation(ip):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(commands=['trace'])
-    async def trace_command(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    async def trace_handler(bot, message: types.Message):
         await handle_trace_command(bot, message)
+
+    middleware.register_command_handler(
+        commands=['trace'],
+        callback=trace_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
 
@@ -645,3 +656,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

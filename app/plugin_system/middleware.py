@@ -117,7 +117,7 @@ class PluginMiddleware:
         for handler in matched_handlers:
             try:
                 logger.debug(f"  → 执行 {handler.plugin}.{handler.name}")
-                await handler.callback(message)
+                await handler.callback(bot, message)
                 executed_count += 1
 
                 # 记录统计
@@ -144,7 +144,7 @@ class PluginMiddleware:
         executed_count = 0
         for handler in matched_handlers:
             try:
-                await handler.callback(message)
+                await handler.callback(bot, message)
                 executed_count += 1
 
                 if handler.stop_propagation:
