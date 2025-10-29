@@ -304,13 +304,26 @@ async def handle_lottery_command(bot, message: types.Message):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(commands=['lottery'], chat_types=["group", "supergroup"])
-    async def lottery_command(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    # 命令处理器 - 使用中间件
+    async def lottery_handler(bot, message: types.Message):
         await handle_lottery_command(bot, message)
 
+    middleware.register_command_handler(
+        commands=['lottery'],
+        callback=lottery_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['group', 'supergroup']
+    )
+
+    # 自定义过滤器处理器 - 保持原有方式
     @bot.message_handler(lottery_join=True, content_types=['text'], chat_types=['group', 'supergroup'])
     async def handle_lottery_join_handler(message: types.Message):
         await process_lottery_message(bot, message)
@@ -329,3 +342,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None
