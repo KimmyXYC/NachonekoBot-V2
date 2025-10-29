@@ -131,7 +131,15 @@ class PluginManager:
 
                 # 新方式：通过中间件注册
                 if hasattr(module, 'register_handlers'):
-                    await module.register_handlers_v2(bot, self.middleware, plugin.name)
+                    # 检查函数签名，支持新旧两种方式
+                    import inspect
+                    sig = inspect.signature(module.register_handlers)
+                    if len(sig.parameters) == 3:
+                        # 新方式：register_handlers(bot, middleware, plugin_name)
+                        await module.register_handlers(bot, self.middleware, plugin.name)
+                    else:
+                        # 旧方式：register_handlers(bot)
+                        await module.register_handlers(bot)
                     loaded_count += 1
                     logger.success(f"✅ 插件 {plugin.name} 加载成功")
 

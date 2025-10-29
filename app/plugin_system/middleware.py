@@ -117,7 +117,7 @@ class PluginMiddleware:
         for handler in matched_handlers:
             try:
                 logger.debug(f"  → 执行 {handler.plugin}.{handler.name}")
-                await handler.callback(message)
+                await handler.callback(bot, message)
                 executed_count += 1
 
                 # 记录统计
@@ -144,7 +144,7 @@ class PluginMiddleware:
         executed_count = 0
         for handler in matched_handlers:
             try:
-                await handler.callback(message)
+                await handler.callback(bot, message)
                 executed_count += 1
 
                 if handler.stop_propagation:
@@ -175,6 +175,16 @@ class PluginMiddleware:
         # 检查 content_types
         if 'content_types' in filters:
             if message.content_type not in filters['content_types']:
+                return False
+
+        # 检查 starts_with 过滤器（用于喜报/悲报等）
+        if 'starts_with' in filters:
+            if not message.text:
+                return False
+            starts_with_list = filters['starts_with']
+            if not isinstance(starts_with_list, (list, tuple)):
+                starts_with_list = [starts_with_list]
+            if not message.text.startswith(tuple(starts_with_list)):
                 return False
 
         return True

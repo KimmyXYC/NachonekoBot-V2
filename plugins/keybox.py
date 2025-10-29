@@ -400,17 +400,30 @@ async def unban_keybox(bot, message, sn):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(commands=['check'])
-    async def check_command(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    # 命令处理器 - 使用中间件
+    async def check_handler(bot, message: types.Message):
         if not (message.reply_to_message and message.reply_to_message.document):
             await bot.reply_to(message, "Please reply to a keybox.xml file.")
             return
         document = message.reply_to_message.document
         await handle_keybox_check(bot, message, document)
 
+    middleware.register_command_handler(
+        commands=['check'],
+        callback=check_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
+
+    # 文档处理器 - 保持原有方式（中间件暂不支持非命令消息）
     @bot.message_handler(content_types=['document'], chat_types=['private'])
     async def handle_keybox_file(message: types.Message):
         document = message.document
@@ -430,3 +443,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

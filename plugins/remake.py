@@ -76,16 +76,35 @@ async def handle_remake_data_command(bot, message):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(commands=['remake'])
-    async def remake_command(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    async def remake_handler(bot, message: types.Message):
         await handle_remake_command(bot, message)
 
-    @bot.message_handler(commands=['remake_data'])
-    async def remake_data_command(message: types.Message):
+    async def remake_data_handler(bot, message: types.Message):
         await handle_remake_data_command(bot, message)
+
+    middleware.register_command_handler(
+        commands=['remake'],
+        callback=remake_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
+
+    middleware.register_command_handler(
+        commands=['remake_data'],
+        callback=remake_data_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
 
@@ -101,3 +120,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

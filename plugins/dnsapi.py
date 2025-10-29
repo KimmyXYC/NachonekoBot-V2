@@ -74,11 +74,13 @@ async def get_dns_info(domain, record_type):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(commands=['dnsapi'])
-    async def dnsapi_command(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    async def dnsapi_handler(bot, message: types.Message):
         command_args = message.text.split()
         record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
         if len(command_args) == 2:
@@ -90,6 +92,15 @@ async def register_handlers(bot):
             await handle_dns_command(bot, message, command_args[2])
         else:
             await bot.reply_to(message, command_error_msg("dnsapi", "Domain", "Record_Type"))
+
+    middleware.register_command_handler(
+        commands=['dnsapi'],
+        callback=dnsapi_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
 
@@ -105,3 +116,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

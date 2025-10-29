@@ -230,12 +230,23 @@ async def handle_ping_command(bot, message: types.Message, target=None):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(commands=['ping'])
-    async def ping_command(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    async def ping_handler(bot, message: types.Message):
         await handle_ping_command(bot, message)
+
+    middleware.register_command_handler(
+        commands=['ping'],
+        callback=ping_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
 
@@ -251,3 +262,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

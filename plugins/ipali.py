@@ -140,16 +140,27 @@ def get_ip_address(domain):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(commands=['ipali'])
-    async def ipali_command(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    async def ipali_handler(bot, message: types.Message):
         command_args = message.text.split()
         if len(command_args) == 2:
             await handle_ipali_command(bot, message)
         else:
             await bot.reply_to(message, command_error_msg("ipali", "IP Address or Domain"))
+
+    middleware.register_command_handler(
+        commands=['ipali'],
+        callback=ipali_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
 
@@ -165,3 +176,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

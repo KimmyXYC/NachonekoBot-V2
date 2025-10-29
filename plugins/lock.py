@@ -122,11 +122,13 @@ async def handle_list_command(bot, message: types.Message):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(commands=['lock'], chat_types=["group", "supergroup"])
-    async def lock_command(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    async def lock_handler(bot, message: types.Message):
         command_args = message.text.split()
         if len(command_args) == 1:
             await bot.reply_to(message, command_error_msg("lock", "Command"))
@@ -134,8 +136,7 @@ async def register_handlers(bot):
             lock_list = command_args[1:]
             await handle_lock_command(bot, message, lock_list)
 
-    @bot.message_handler(commands=['unlock'], chat_types=["group", "supergroup"])
-    async def unlock_command(message: types.Message):
+    async def unlock_handler(bot, message: types.Message):
         command_args = message.text.split()
         if len(command_args) == 1:
             await bot.reply_to(message, command_error_msg("unlock", "Command"))
@@ -143,9 +144,35 @@ async def register_handlers(bot):
             unlock_list = command_args[1:]
             await handle_unlock_command(bot, message, unlock_list)
 
-    @bot.message_handler(commands=['list'], chat_types=["group", "supergroup"])
-    async def list_command(message: types.Message):
+    async def list_handler(bot, message: types.Message):
         await handle_list_command(bot, message)
+
+    middleware.register_command_handler(
+        commands=['lock'],
+        callback=lock_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['group', 'supergroup']
+    )
+
+    middleware.register_command_handler(
+        commands=['unlock'],
+        callback=unlock_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['group', 'supergroup']
+    )
+
+    middleware.register_command_handler(
+        commands=['list'],
+        callback=list_handler,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['group', 'supergroup']
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
 
@@ -161,3 +188,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

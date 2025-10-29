@@ -34,10 +34,8 @@ class BotRunner:
 
         await event.set_bot_commands(bot)
 
-        # 注册自定义过滤器
-        bot.add_custom_filter(StartsWithFilter())
+        # 注册自定义过滤器（仅保留内部使用的）
         bot.add_custom_filter(CommandInChatFilter())
-        bot.add_custom_filter(LotteryJoinFilter())
 
         # ==================== 核心命令(保留在这里) ====================
         @bot.message_handler(commands=['start', 'help'], chat_types=["private"])
@@ -136,29 +134,9 @@ class BotRunner:
             logger.exception(e)
 
 
-# 自定义过滤器保持不变
-class StartsWithFilter(SimpleCustomFilter):
-    key = 'starts_with_alarm'
-
-    async def check(self, message):
-        return message.text.startswith(('喜报', '悲报', '通报', '警报'))
-
-
+# 自定义过滤器（仅保留内部使用的）
 class CommandInChatFilter(SimpleCustomFilter):
     key = 'command_in_group'
 
     async def check(self, message):
         return message.chat.type in ['group', 'supergroup'] and message.text.startswith('/')
-
-
-class LotteryJoinFilter(SimpleCustomFilter):
-    key = 'lottery_join'
-
-    async def check(self, message):
-        try:
-            import sys
-            if 'plugins.lottery' in sys.modules:
-                from plugins import lottery
-                return lottery.should_pass_lottery_filter(message)
-        except Exception:
-            return False
