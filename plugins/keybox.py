@@ -20,7 +20,15 @@ from cryptography.hazmat.primitives.asymmetric import padding, ec
 from app.utils import markdown_to_telegram_html
 from utils.elaradb import BotElara
 
+# ==================== 插件元数据 ====================
+__plugin_name__ = "keybox"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "Keybox 检查工具"
+__commands__ = ["check"]
 
+
+# ==================== 核心功能 ====================
 async def handle_keybox_check(bot, message: types.Message, document: types.Document):
     """
     Handle the Keybox check command.
@@ -389,3 +397,36 @@ async def unban_keybox(bot, message, sn):
             await bot.reply_to(message, "Unbanned successfully.")
         else:
             await bot.reply_to(message, "This keybox has not been banned.")
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['check'])
+    async def check_command(message: types.Message):
+        if not (message.reply_to_message and message.reply_to_message.document):
+            await bot.reply_to(message, "Please reply to a keybox.xml file.")
+            return
+        document = message.reply_to_message.document
+        await handle_keybox_check(bot, message, document)
+
+    @bot.message_handler(content_types=['document'], chat_types=['private'])
+    async def handle_keybox_file(message: types.Message):
+        document = message.document
+        await handle_keybox_check(bot, message, document)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

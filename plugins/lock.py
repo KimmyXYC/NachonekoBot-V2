@@ -4,10 +4,21 @@
 # @File    : lock.py
 # @Software: PyCharm
 from telebot import types
+from loguru import logger
+from app.utils import command_error_msg
 
 from utils.elaradb import BotElara
 from setting.telegrambot import BotSetting
 
+# ==================== 插件元数据 ====================
+__plugin_name__ = "lock"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "群组命令锁定管理"
+__commands__ = ["lock", "unlock", "list"]
+
+
+# ==================== 核心功能 ====================
 async def check_permissions(bot, message: types.Message):
     """
     检查权限
@@ -108,3 +119,45 @@ async def handle_list_command(bot, message: types.Message):
         msg = "以下命令在本群中被锁定:\n"
         msg += "\n".join(f"- `{item}`" for item in result)
         await bot.reply_to(message, msg, parse_mode='Markdown')
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['lock'], chat_types=["group", "supergroup"])
+    async def lock_command(message: types.Message):
+        command_args = message.text.split()
+        if len(command_args) == 1:
+            await bot.reply_to(message, command_error_msg("lock", "Command"))
+        else:
+            lock_list = command_args[1:]
+            await handle_lock_command(bot, message, lock_list)
+
+    @bot.message_handler(commands=['unlock'], chat_types=["group", "supergroup"])
+    async def unlock_command(message: types.Message):
+        command_args = message.text.split()
+        if len(command_args) == 1:
+            await bot.reply_to(message, command_error_msg("unlock", "Command"))
+        else:
+            unlock_list = command_args[1:]
+            await handle_unlock_command(bot, message, unlock_list)
+
+    @bot.message_handler(commands=['list'], chat_types=["group", "supergroup"])
+    async def list_command(message: types.Message):
+        await handle_list_command(bot, message)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

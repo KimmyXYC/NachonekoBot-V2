@@ -18,6 +18,15 @@ from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 from loguru import logger
 
+# ==================== 插件元数据 ====================
+__plugin_name__ = "trace"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "路由追踪工具"
+__commands__ = ["trace"]
+
+
+# ==================== 核心功能 ====================
 # 主机名解析缓存
 HOSTNAME_CACHE = {}
 
@@ -612,3 +621,27 @@ def get_ip_geolocation(ip):
         logger.debug(f"获取IP地理位置信息失败: {ip} - {str(e)}")
 
     return None
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['trace'])
+    async def trace_command(message: types.Message):
+        await handle_trace_command(bot, message)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

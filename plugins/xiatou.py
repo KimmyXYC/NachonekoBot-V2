@@ -9,8 +9,48 @@ import datetime
 import pytz
 import asyncpg
 from loguru import logger
+from telebot import types
 from utils.yaml import BotConfig
 from utils.postgres import BotDatabase
+
+# ==================== 插件元数据 ====================
+__plugin_name__ = "xiatou"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "下头检测系统（仅对配置用户生效）"
+__commands__ = []  # 这个插件通过过滤器和配置触发，不是命令
+
+
+# ==================== 核心功能 ====================
+def get_today_midnight_ts_utc8() -> int:
+    tz = pytz.timezone('Asia/Shanghai')  # UTC+8
+    now = datetime.datetime.now(tz)
+    midnight = datetime.datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz)
+    return int(midnight.timestamp())
+
+
+async def increment_today_count_pg() -> int:
+    ts = get_today_midnight_ts_utc8()
+    conn = BotDatabase.conn
+    try:
+        result = await conn.execute(
+            "UPDATE xiatou SET count = count + 1 WHERE time = $1",
+            ts
+        )
+        if result == 'UPDATE 0':
+            await conn.execute(
+                "INSERT INTO xiatou (time, count) VALUES ($1, 1) ON CONFLICT (time) DO NOTHING",
+                ts
+            )
+        row = await conn.fetchrow(
+            "SELECT count FROM xiatou WHERE time = $1",
+            ts
+        )
+        return row['count'] if row else 0
+    except asyncpg.PostgresError as e:
+        logger.error(f"[XiaTou][Postgres Error]: {e}")
+        return 0
+
 
 async def handle_xiatou(bot, message):
     if message.content_type == 'text':
@@ -100,31 +140,30 @@ async def handle_xiatou(bot, message):
     return
 
 
-async def increment_today_count_pg() -> int:
-    ts = get_today_midnight_ts_utc8()
-    conn = BotDatabase.conn
-    try:
-        result = await conn.execute(
-            "UPDATE xiatou SET count = count + 1 WHERE time = $1",
-            ts
-        )
-        if result == 'UPDATE 0':
-            await conn.execute(
-                "INSERT INTO xiatou (time, count) VALUES ($1, 1) ON CONFLICT (time) DO NOTHING",
-                ts
-            )
-        row = await conn.fetchrow(
-            "SELECT count FROM xiatou WHERE time = $1",
-            ts
-        )
-        return row['count'] if row else 0
-    except asyncpg.PostgresError as e:
-        logger.error(f"[XiaTou][Postgres Error]: {e}")
-        return 0
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
 
+    @bot.message_handler(
+        func=lambda message: message.from_user.id in BotConfig["xiatou"]["id"],
+        content_types=['text', 'photo', 'video', 'document'],
+        starts_with_alarm=False
+    )
+    async def handle_xiatou_handler(message: types.Message):
+        logger.debug(f"[XiaTou][{message.from_user.id}]: {message.text if message.content_type == 'text' else message.caption}")
+        await handle_xiatou(bot, message)
 
-def get_today_midnight_ts_utc8() -> int:
-    tz = pytz.timezone('Asia/Shanghai')  # UTC+8
-    now = datetime.datetime.now(tz)
-    midnight = datetime.datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz)
-    return int(midnight.timestamp())
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 下头检测系统")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

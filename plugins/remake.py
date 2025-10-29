@@ -8,8 +8,27 @@ import random
 import pandas as pd
 
 from loguru import logger
+from telebot import types
 
 from utils.postgres import BotDatabase
+
+# ==================== 插件元数据 ====================
+__plugin_name__ = "remake"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "转生系统"
+__commands__ = ["remake", "remake_data"]
+
+
+# ==================== 核心功能 ====================
+def get_csv_data_list():
+    df = pd.read_csv('res/csv/data.csv', encoding='utf-8')
+
+    country_list = df['Country'].tolist()
+    weight_list = df['Weight'].tolist()
+
+    return country_list, weight_list
+
 
 async def handle_remake_command(bot, message):
     rd_data, rd_weights = get_csv_data_list()
@@ -56,11 +75,29 @@ async def handle_remake_data_command(bot, message):
         await bot.reply_to(message, "查询失败，请稍后再试。")
 
 
-def get_csv_data_list():
-    df = pd.read_csv('res/csv/data.csv', encoding='utf-8')
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
 
-    country_list = df['Country'].tolist()
-    weight_list = df['Weight'].tolist()
+    @bot.message_handler(commands=['remake'])
+    async def remake_command(message: types.Message):
+        await handle_remake_command(bot, message)
 
-    return country_list, weight_list
+    @bot.message_handler(commands=['remake_data'])
+    async def remake_data_command(message: types.Message):
+        await handle_remake_data_command(bot, message)
 
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

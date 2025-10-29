@@ -11,8 +11,17 @@ from loguru import logger
 from telebot import types
 
 from utils.yaml import BotConfig
+from app.utils import command_error_msg
+
+# ==================== 插件元数据 ====================
+__plugin_name__ = "shorturl"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "短链接生成工具"
+__commands__ = ["short"]
 
 
+# ==================== 核心功能 ====================
 async def handle_short_command(bot, message: types.Message, url):
     """
     处理短链接命令
@@ -85,3 +94,32 @@ async def handle_short_command(bot, message: types.Message, url):
                 disable_web_page_preview=True,
                 parse_mode="Markdown",
             )
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['short'])
+    async def short_command(message: types.Message):
+        command_args = message.text.split()
+        if len(command_args) == 2:
+            url = command_args[1]
+            await handle_short_command(bot, message, url)
+        else:
+            await bot.reply_to(message, command_error_msg("short", "URL"))
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

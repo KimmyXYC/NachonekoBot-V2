@@ -6,8 +6,17 @@
 from PIL import Image, ImageDraw, ImageFont
 from telebot import types
 from io import BytesIO
+from loguru import logger
+
+# ==================== 插件元数据 ====================
+__plugin_name__ = "xibao"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "喜报/悲报/通报/警报生成器"
+__commands__ = []  # 这个插件通过自定义过滤器触发，不是命令
 
 
+# ==================== 核心功能 ====================
 async def good_news(bot, message: types.Message, news_type):
     if news_type == 0:
         pic_dir = "res/pic/xibao.png"
@@ -188,3 +197,28 @@ def is_ascii_word(word):
     判断是否为ASCII字符组成的单词
     """
     return all(ord(c) < 128 for c in word)
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(starts_with_alarm=True)
+    async def handle_specific_start(message: types.Message):
+        type_dict = {"喜报": 0, "悲报": 1, "通报": 2, "警报": 3}
+        await good_news(bot, message, type_dict[message.text[:2]])
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持喜报/悲报/通报/警报")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

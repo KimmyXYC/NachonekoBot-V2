@@ -237,7 +237,7 @@ async def register_handlers(bot):
     async def ping_command(message: types.Message):
         await handle_ping_command(bot, message)
 
-    logger.info(f"✅ Ping测试插件已注册")
+    logger.info("✅ Ping测试插件已注册")
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
