@@ -20,9 +20,12 @@ class PluginManager:
     def __init__(self):
         self.version_map: Dict[str, float] = {}
         self.plugins: List[LocalPlugin] = []
-        self.loaded_handlers = []  # 存储已注册的处理器
+        self.loaded_handlers = {}
 
-        # 确保插件目录存在
+        # 导入中间件
+        from .middleware import middleware
+        self.middleware = middleware
+
         plugins_path.mkdir(exist_ok=True)
         if not (plugins_path / "__init__.py").exists():
             (plugins_path / "__init__.py").touch()
@@ -108,7 +111,7 @@ class PluginManager:
         return False
 
     async def load_plugin_handlers(self, bot):
-        """动态加载所有启用的插件处理器"""
+        """使用中间件加载插件"""
         loaded_count = 0
         failed_count = 0
 
@@ -117,29 +120,20 @@ class PluginManager:
                 continue
 
             try:
-                # 动态导入插件模块
                 module_name = f"plugins.{plugin.name}"
 
                 if module_name in sys.modules:
-                    # 重新加载已存在的模块
                     importlib.reload(sys.modules[module_name])
                 else:
-                    # 首次加载
                     importlib.import_module(module_name)
 
                 module = sys.modules[module_name]
 
-                # 调用插件的注册函数(如果存在)
+                # 新方式：通过中间件注册
                 if hasattr(module, 'register_handlers'):
-                    await module.register_handlers(bot)
+                    await module.register_handlers_v2(bot, self.middleware, plugin.name)
                     loaded_count += 1
                     logger.success(f"✅ 插件 {plugin.name} 加载成功")
-                elif hasattr(module, 'setup'):
-                    await module.setup(bot)
-                    loaded_count += 1
-                    logger.success(f"✅ 插件 {plugin.name} 加载成功")
-                else:
-                    logger.warning(f"⚠️  插件 {plugin.name} 缺少 register_handlers 或 setup 函数")
 
             except Exception as e:
                 failed_count += 1

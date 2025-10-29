@@ -96,8 +96,19 @@ async def handle_bin_command(bot, message: types.Message):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
+
+    global bot_instance
+    bot_instance = bot
+    middleware.register_command_handler(
+        commands=['bin'],
+        callback=handle_bin_command,
+        plugin_name=plugin_name,
+        priority=50,  # 优先级
+        stop_propagation=True,  # 阻止后续处理器
+        chat_types=['private', 'group', 'supergroup']  # 过滤器
+    )
 
     @bot.message_handler(commands=['bin'])
     async def bin_command(message: types.Message):
@@ -117,3 +128,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

@@ -104,6 +104,19 @@ class BotRunner:
                 else:
                     await bot.reply_to(message, f"❌ 删除失败", parse_mode="Markdown")
 
+        # ==================== 中间件分发器 ====================
+        @bot.message_handler(func=lambda m: m.text and m.text.startswith('/'))
+        async def middleware_dispatcher(message: types.Message):
+            """统一命令分发器"""
+            executed = await plugin_manager.middleware.dispatch_command(bot, message)
+            if executed > 0:
+                logger.info(f"✨ 命令处理完成，执行了 {executed} 个处理器")
+
+        @bot.message_handler(content_types=['text', 'photo', 'video', 'document'])
+        async def message_dispatcher(message: types.Message):
+            """统一消息分发器"""
+            await plugin_manager.middleware.dispatch_message(bot, message)
+
         # ==================== 动态加载插件 ====================
         logger.info("🔌 开始加载插件...")
         plugin_manager.load_local_plugins()
