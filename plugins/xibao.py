@@ -200,13 +200,26 @@ def is_ascii_word(word):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(starts_with_alarm=True)
-    async def handle_specific_start(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    async def xibao_handler(bot, message: types.Message):
+        """处理喜报/悲报/通报/警报消息"""
         type_dict = {"喜报": 0, "悲报": 1, "通报": 2, "警报": 3}
         await good_news(bot, message, type_dict[message.text[:2]])
+
+    # 使用中间件注册，添加 starts_with 过滤器
+    middleware.register_message_handler(
+        callback=xibao_handler,
+        plugin_name=plugin_name,
+        handler_name="xibao_filter",
+        priority=50,
+        stop_propagation=True,
+        starts_with=['喜报', '悲报', '通报', '警报']
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持喜报/悲报/通报/警报")
 
@@ -222,3 +235,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None

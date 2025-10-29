@@ -323,10 +323,20 @@ async def register_handlers(bot, middleware, plugin_name):
         chat_types=['group', 'supergroup']
     )
 
-    # 自定义过滤器处理器 - 保持原有方式
-    @bot.message_handler(lottery_join=True, content_types=['text'], chat_types=['group', 'supergroup'])
-    async def handle_lottery_join_handler(message: types.Message):
+    # 抽奖参与处理器 - 使用中间件
+    async def lottery_join_handler(bot, message: types.Message):
         await process_lottery_message(bot, message)
+
+    middleware.register_message_handler(
+        callback=lottery_join_handler,
+        plugin_name=plugin_name,
+        handler_name="lottery_join",
+        priority=50,
+        stop_propagation=False,
+        content_types=['text'],
+        chat_types=['group', 'supergroup'],
+        func=should_pass_lottery_filter
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
 

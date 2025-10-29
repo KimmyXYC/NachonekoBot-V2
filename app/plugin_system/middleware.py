@@ -177,6 +177,16 @@ class PluginMiddleware:
             if message.content_type not in filters['content_types']:
                 return False
 
+        # 检查 starts_with 过滤器（用于喜报/悲报等）
+        if 'starts_with' in filters:
+            if not message.text:
+                return False
+            starts_with_list = filters['starts_with']
+            if not isinstance(starts_with_list, (list, tuple)):
+                starts_with_list = [starts_with_list]
+            if not message.text.startswith(tuple(starts_with_list)):
+                return False
+
         return True
 
     def get_stats(self) -> Dict[str, int]:

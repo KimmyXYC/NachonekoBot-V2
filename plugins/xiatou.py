@@ -141,17 +141,38 @@ async def handle_xiatou(bot, message):
 
 
 # ==================== 插件注册 ====================
-async def register_handlers(bot):
+async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
 
-    @bot.message_handler(
-        func=lambda message: message.from_user.id in BotConfig["xiatou"]["id"],
-        content_types=['text', 'photo', 'video', 'document'],
-        starts_with_alarm=False
-    )
-    async def handle_xiatou_handler(message: types.Message):
+    global bot_instance
+    bot_instance = bot
+
+    async def xiatou_handler(bot, message: types.Message):
+        """处理下头检测消息"""
         logger.debug(f"[XiaTou][{message.from_user.id}]: {message.text if message.content_type == 'text' else message.caption}")
         await handle_xiatou(bot, message)
+
+    # 定义自定义过滤器函数
+    def xiatou_filter(message: types.Message) -> bool:
+        """过滤器：只处理配置用户的消息"""
+        try:
+            # 检查是否是配置的用户
+            if message.from_user.id not in BotConfig["xiatou"]["id"]:
+                return False
+            return True
+        except Exception:
+            return False
+
+    # 使用中间件注册
+    middleware.register_message_handler(
+        callback=xiatou_handler,
+        plugin_name=plugin_name,
+        handler_name="xiatou_detector",
+        priority=50,
+        stop_propagation=False,  # 不阻止其他处理器
+        content_types=['text', 'photo', 'video', 'document'],
+        func=xiatou_filter
+    )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 下头检测系统")
 
@@ -167,3 +188,6 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
+# 保持全局 bot 引用
+bot_instance = None
