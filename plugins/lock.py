@@ -112,7 +112,7 @@ async def handle_list_command(bot, message: types.Message):
     :param message: 消息对象
     :return:
     """
-    result = await BotElara.get(str(message.chat.id))
+    result = BotElara.get(str(message.chat.id))
     if not result:
         await bot.reply_to(message, "本群未锁定任何命令")
     else:
