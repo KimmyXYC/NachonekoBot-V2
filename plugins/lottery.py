@@ -11,11 +11,21 @@ from typing import Dict, Set
 from loguru import logger
 from telebot import types
 
+# ==================== 插件元数据 ====================
+__plugin_name__ = "lottery"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "抽奖系统"
+__commands__ = ["lottery"]
+
+
+# ==================== 核心功能 ====================
 # 逐群维护抽奖状态，避免不同群互相影响
 # chat_id -> state
 _lotteries: Dict[int, dict] = {}
 # chat_id -> asyncio.Lock
 _locks: Dict[int, asyncio.Lock] = {}
+
 
 
 create_text = (
@@ -291,3 +301,31 @@ async def handle_lottery_command(bot, message: types.Message):
     except FileExistsError:
         await bot.reply_to(message, "有抽奖活动正在进行，请稍后再试")
         return
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['lottery'], chat_types=["group", "supergroup"])
+    async def lottery_command(message: types.Message):
+        await handle_lottery_command(bot, message)
+
+    @bot.message_handler(lottery_join=True, content_types=['text'], chat_types=['group', 'supergroup'])
+    async def handle_lottery_join_handler(message: types.Message):
+        await process_lottery_message(bot, message)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

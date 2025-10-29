@@ -11,7 +11,17 @@ import asyncio  # 添加 asyncio 模块用于并行处理
 from telebot import types
 from loguru import logger
 from utils.yaml import BotConfig
+from app.utils import command_error_msg
 
+# ==================== 插件元数据 ====================
+__plugin_name__ = "weather"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "天气查询"
+__commands__ = ["weather"]
+
+
+# ==================== 核心功能 ====================
 icons = {
     "01d": "🌞",
     "01n": "🌚",
@@ -209,3 +219,32 @@ async def handle_weather_command(bot, message: types.Message, city: str):
             chat_id=message.chat.id,
             text=f"出错了呜呜呜 ~ 无法获取天气信息。错误信息: {str(e)}"
         )
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['weather'])
+    async def weather_command(message: types.Message):
+        command_args = message.text.split()
+        if len(command_args) == 1:
+            await bot.reply_to(message, command_error_msg("weather", "City_Name"))
+        else:
+            city = " ".join(command_args[1:])
+            await handle_weather_command(bot, message, city)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

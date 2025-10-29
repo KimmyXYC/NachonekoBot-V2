@@ -8,8 +8,9 @@ import idna
 import aiohttp
 from telebot import types
 from loguru import logger
-from app.utils import escape_md_v2_text
+from app.utils import escape_md_v2_text, command_error_msg
 
+# ==================== 插件元数据 ====================
 __plugin_name__ = "ip"
 __version__ = 1.0
 __author__ = "KimmyXYC"
@@ -17,6 +18,7 @@ __description__ = "IP 地址查询"
 __commands__ = ["ip"]
 
 
+# ==================== 核心功能 ====================
 async def handle_ip_command(bot, message: types.Message):
     """
     处理 IP 查询命令
@@ -102,3 +104,31 @@ def convert_to_punycode(domain):
         return idna.encode(domain).decode('ascii')
     else:
         return domain
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['ip'])
+    async def ip_command(message: types.Message):
+        command_args = message.text.split()
+        if len(command_args) == 2:
+            await handle_ip_command(bot, message)
+        else:
+            await bot.reply_to(message, command_error_msg("ip", "IP Address or Domain"))
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

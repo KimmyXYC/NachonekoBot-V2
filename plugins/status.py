@@ -7,8 +7,18 @@
 import psutil
 import platform
 from telebot import types
+from loguru import logger
+from utils.yaml import BotConfig
+
+# ==================== 插件元数据 ====================
+__plugin_name__ = "status"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "系统状态查询（仅限管理员）"
+__commands__ = ["status"]
 
 
+# ==================== 核心功能 ====================
 async def handle_status_command(bot, message: types.Message):
     """
     处理 /status 命令
@@ -39,3 +49,30 @@ async def handle_status_command(bot, message: types.Message):
     )
 
     await bot.reply_to(message, info_message, parse_mode='Markdown')
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(
+        func=lambda m: m.from_user.id in BotConfig["admin"]["id"],
+        commands=['status']
+    )
+    async def status_command(message: types.Message):
+        await handle_status_command(bot, message)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

@@ -9,13 +9,17 @@ import dns.reversename
 import dns.exception
 from telebot import types
 from loguru import logger
+from app.utils import command_error_msg
 
+# ==================== 插件元数据 ====================
 __plugin_name__ = "dns"
 __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "DNS 记录查询"
 __commands__ = ["dns"]
 
+
+# ==================== 核心功能 ====================
 async def handle_dns_command(bot, message: types.Message, record_type):
     """
     处理 DNS 查询命令
@@ -107,3 +111,37 @@ def escape_html(text):
         "'": '&#39;'
     }
     return ''.join(html_escape_table.get(c, c) for c in text)
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['dns'])
+    async def dns_command(message: types.Message):
+        command_args = message.text.split()
+        record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "PTR"]
+        if len(command_args) == 2:
+            await handle_dns_command(bot, message, "A")
+        elif len(command_args) == 3:
+            if command_args[2].upper() not in record_types:
+                await bot.reply_to(message, command_error_msg(reason="invalid_type"))
+                return
+            await handle_dns_command(bot, message, command_args[2])
+        else:
+            await bot.reply_to(message, command_error_msg("dns", "Domain", "Record_Type"))
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

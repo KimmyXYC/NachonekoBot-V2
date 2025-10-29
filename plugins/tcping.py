@@ -274,3 +274,27 @@ async def handle_tcping_command(bot, message: types.Message):
             chat_id=processing_msg.chat.id,
             message_id=processing_msg.message_id
         )
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['tcping'])
+    async def tcping_command(message: types.Message):
+        await handle_tcping_command(bot, message)
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }

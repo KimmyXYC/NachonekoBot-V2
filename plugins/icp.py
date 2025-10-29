@@ -7,9 +7,18 @@ import aiohttp
 from telebot import types
 from loguru import logger
 
-from app.utils import markdown_to_telegram_html
+from app.utils import markdown_to_telegram_html, command_error_msg
 from utils.yaml import BotConfig
 
+# ==================== 插件元数据 ====================
+__plugin_name__ = "icp"
+__version__ = 1.0
+__author__ = "KimmyXYC"
+__description__ = "ICP 备案查询"
+__commands__ = ["icp"]
+
+
+# ==================== 核心功能 ====================
 async def handle_icp_command(bot, message: types.Message):
     """
     处理 ICP 命令
@@ -59,3 +68,31 @@ async def icp_record_check(domain, retries=5):
                 logger.error(f"Attempt {attempt + 1} failed with exception: {e}")
 
     return False, "All retry attempts failed"
+
+
+# ==================== 插件注册 ====================
+async def register_handlers(bot):
+    """注册插件处理器"""
+
+    @bot.message_handler(commands=['icp'])
+    async def icp_command(message: types.Message):
+        command_args = message.text.split()
+        if len(command_args) == 2:
+            await handle_icp_command(bot, message)
+        else:
+            await bot.reply_to(message, command_error_msg("icp", "Domain"))
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+# ==================== 插件信息 ====================
+def get_plugin_info() -> dict:
+    """
+    获取插件信息
+    """
+    return {
+        "name": __plugin_name__,
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "commands": __commands__,
+    }
