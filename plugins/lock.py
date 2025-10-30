@@ -16,6 +16,16 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "群组命令锁定管理"
 __commands__ = ["lock", "unlock", "list"]
+__command_descriptions__ = {
+    "lock": "锁定群组中的命令",
+    "unlock": "解锁群组中的命令",
+    "list": "列出群组中被锁定的命令"
+}
+__command_help__ = {
+    "lock": "/lock [Command] - 锁定群组中的命令",
+    "unlock": "/unlock [Command] - 解锁群组中的命令",
+    "list": "/list - 列出群组中被锁定的命令"
+}
 
 
 # ==================== 核心功能 ====================

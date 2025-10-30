@@ -17,6 +17,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "TCP 端口连通性测试"
 __commands__ = ["tcping"]
+__command_descriptions__ = {
+    "tcping": "TCP Ping 测试"
+}
+__command_help__ = {
+    "tcping": "/tcping [IP/Domain]:[Port] - TCP Ping 测试"
+}
 
 
 def is_valid_hostname(hostname):

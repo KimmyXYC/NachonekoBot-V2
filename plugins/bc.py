@@ -18,6 +18,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "币种转换工具"
 __commands__ = ["bc"]
+__command_descriptions__ = {
+    "bc": "货币转换"
+}
+__command_help__ = {
+    "bc": "/bc [Amount] [Currency_From] [Currency_To] - 货币转换"
+}
 
 
 # ==================== 核心功能 ====================

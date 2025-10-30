@@ -30,15 +30,21 @@ class BotRunner:
             asyncio_helper.proxy = BotSetting.proxy_address
             logger.info("🌐 Proxy tunnels are being used!")
 
-        await event.set_bot_commands(bot)
-
         # 注册自定义过滤器（仅保留内部使用的）
         bot.add_custom_filter(CommandInChatFilter())
+
+        # ==================== 动态加载插件 ====================
+        logger.info("🔌 开始加载插件...")
+        plugin_manager.load_local_plugins()
+        await plugin_manager.load_plugin_handlers(bot)
+
+        # ==================== 设置机器人命令（在插件加载后） ====================
+        await event.set_bot_commands(bot, plugin_manager)
 
         # ==================== 核心命令(保留在这里) ====================
         @bot.message_handler(commands=['start', 'help'], chat_types=["private"])
         async def listen_help_command(message: types.Message):
-            await event.listen_help_command(bot, message)
+            await event.listen_help_command(bot, message, plugin_manager)
 
         # ==================== 插件管理命令 ====================
         @bot.message_handler(
@@ -112,11 +118,6 @@ class BotRunner:
         async def message_dispatcher(message: types.Message):
             """统一消息分发器"""
             await plugin_manager.middleware.dispatch_message(bot, message)
-
-        # ==================== 动态加载插件 ====================
-        logger.info("🔌 开始加载插件...")
-        plugin_manager.load_local_plugins()
-        await plugin_manager.load_plugin_handlers(bot)
 
         # ==================== 启动 Bot ====================
         try:

@@ -19,6 +19,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "天气查询"
 __commands__ = ["weather"]
+__command_descriptions__ = {
+    "weather": "查询天气信息"
+}
+__command_help__ = {
+    "weather": "/weather [City_Name] - 查询天气信息"
+}
 
 
 # ==================== 核心功能 ====================

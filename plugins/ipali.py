@@ -19,6 +19,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "阿里云 IP 地址查询"
 __commands__ = ["ipali"]
+__command_descriptions__ = {
+    "ipali": "使用阿里 API 查询 IP 或域名"
+}
+__command_help__ = {
+    "ipali": "/ipali [IP/Domain] - 使用阿里 API 查询 IP 或域名"
+}
 
 
 # ==================== 核心功能 ====================

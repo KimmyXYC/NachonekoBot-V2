@@ -14,6 +14,16 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "呼叫医生、MTF、警察等趣味功能"
 __commands__ = ["calldoctor", "callmtf", "callpolice"]
+__command_descriptions__ = {
+    "calldoctor": "呼叫医生",
+    "callmtf": "呼叫 MTF",
+    "callpolice": "呼叫警察"
+}
+__command_help__ = {
+    "calldoctor": "/calldoctor - 呼叫医生",
+    "callmtf": "/callmtf - 呼叫 MTF",
+    "callpolice": "/callpolice - 呼叫警察"
+}
 
 
 # ==================== 核心功能 ====================

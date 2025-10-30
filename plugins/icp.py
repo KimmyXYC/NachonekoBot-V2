@@ -16,6 +16,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "ICP 备案查询"
 __commands__ = ["icp"]
+__command_descriptions__ = {
+    "icp": "查询域名 ICP 备案信息"
+}
+__command_help__ = {
+    "icp": "/icp [Domain] - 查询域名 ICP 备案信息"
+}
 
 
 # ==================== 核心功能 ====================

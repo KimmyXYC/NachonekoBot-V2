@@ -14,6 +14,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "Whois 域名查询"
 __commands__ = ["whois"]
+__command_descriptions__ = {
+    "whois": "查询 Whois 信息"
+}
+__command_help__ = {
+    "whois": "/whois [Domain] - 查询 Whois 信息"
+}
 
 
 # ==================== 核心功能 ====================
