@@ -7,11 +7,10 @@ import json
 import os
 import importlib
 import sys
-from pathlib import Path
 from typing import List, Optional, Dict
 from loguru import logger
 
-from .models import LocalPlugin, plugins_path, PluginMetadata
+from .models import LocalPlugin, plugins_path
 
 
 class PluginManager:

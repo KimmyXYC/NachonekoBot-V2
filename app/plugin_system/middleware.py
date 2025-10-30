@@ -6,11 +6,10 @@
 """
 插件中间件系统 - 支持多 Handler 执行
 """
-from typing import List, Callable, Awaitable, Dict, Any
+from typing import List, Callable, Dict, Any
 from dataclasses import dataclass, field
 from loguru import logger
 from telebot import types
-import asyncio
 
 
 @dataclass

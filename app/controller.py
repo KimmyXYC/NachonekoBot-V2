@@ -2,7 +2,6 @@
 # @Time    : 2023/11/18 上午12:18
 # @File    : controller.py
 # @Software: PyCharm
-import re
 from loguru import logger
 from telebot import types, util
 from telebot.async_telebot import AsyncTeleBot
@@ -12,7 +11,6 @@ from telebot.asyncio_filters import SimpleCustomFilter
 
 from setting.telegrambot import BotSetting
 from utils.yaml import BotConfig
-from utils.elaradb import BotElara
 from app import event
 from app.plugin_system.manager import plugin_manager
 
@@ -80,7 +78,7 @@ class BotRunner:
                     await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已启用", parse_mode="Markdown")
                     await plugin_manager.reload_all_plugins(bot)
                 else:
-                    await bot.reply_to(message, f"❌ 启用失败", parse_mode="Markdown")
+                    await bot.reply_to(message, "❌ 启用失败", parse_mode="Markdown")
 
             elif action == "disable" and len(args) == 3:
                 plugin_name = args[2]
@@ -88,7 +86,7 @@ class BotRunner:
                     await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已禁用", parse_mode="Markdown")
                     await plugin_manager.reload_all_plugins(bot)
                 else:
-                    await bot.reply_to(message, f"❌ 禁用失败", parse_mode="Markdown")
+                    await bot.reply_to(message, "❌ 禁用失败", parse_mode="Markdown")
 
             elif action == "reload":
                 msg = await bot.reply_to(message, "🔄 正在重载插件...")
@@ -100,7 +98,7 @@ class BotRunner:
                 if plugin_manager.remove_plugin(plugin_name):
                     await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已删除", parse_mode="Markdown")
                 else:
-                    await bot.reply_to(message, f"❌ 删除失败", parse_mode="Markdown")
+                    await bot.reply_to(message, "❌ 删除失败", parse_mode="Markdown")
 
         # ==================== 中间件分发器 ====================
         @bot.message_handler(func=lambda m: m.text and m.text.startswith('/'))
