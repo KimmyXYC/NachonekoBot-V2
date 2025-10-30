@@ -25,7 +25,7 @@ __plugin_name__ = "keybox"
 __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "Keybox 检查工具"
-__commands__ = ["check", "ban_keybox", "unban_keybox"]
+__commands__ = ["check"]  # ban_keybox 和 unban_keybox 是隐藏命令，不在帮助中显示
 __command_descriptions__ = {
     "check": "检查 keybox.xml 文件"
 }
@@ -481,7 +481,7 @@ async def register_handlers(bot, middleware, plugin_name):
         chat_types=['private', 'group', 'supergroup']
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: check, ban_keybox, unban_keybox (check 显示在帮助中)")
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
