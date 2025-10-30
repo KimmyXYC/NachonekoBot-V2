@@ -17,6 +17,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "Ping 网络连通性测试"
 __commands__ = ["ping"]
+__command_descriptions__ = {
+    "ping": "Ping 测试"
+}
+__command_help__ = {
+    "ping": "/ping [IP/Domain] - Ping 测试"
+}
 
 
 # ==================== 核心功能 ====================

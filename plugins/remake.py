@@ -18,6 +18,14 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "转生系统"
 __commands__ = ["remake", "remake_data"]
+__command_descriptions__ = {
+    "remake": "转生",
+    "remake_data": "查看转生数据"
+}
+__command_help__ = {
+    "remake": "/remake - 转生",
+    "remake_data": "/remake_data - 查看转生数据"
+}
 
 
 # ==================== 核心功能 ====================

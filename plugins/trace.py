@@ -24,6 +24,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "路由追踪工具"
 __commands__ = ["trace"]
+__command_descriptions__ = {
+    "trace": "追踪路由"
+}
+__command_help__ = {
+    "trace": "/trace [IP/Domain] - 追踪路由"
+}
 
 
 # ==================== 核心功能 ====================

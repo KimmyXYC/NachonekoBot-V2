@@ -26,6 +26,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "Keybox 检查工具"
 __commands__ = ["check", "ban_keybox", "unban_keybox"]
+__command_descriptions__ = {
+    "check": "检查 keybox.xml 文件"
+}
+__command_help__ = {
+    "check": "/check - 检查 keybox.xml 文件"
+}
 
 
 # ==================== 核心功能 ====================

@@ -16,6 +16,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "IP 地址查询"
 __commands__ = ["ip"]
+__command_descriptions__ = {
+    "ip": "查询 IP 或域名信息"
+}
+__command_help__ = {
+    "ip": "/ip [IP/Domain] - 查询 IP 或域名信息"
+}
 
 
 # ==================== 核心功能 ====================

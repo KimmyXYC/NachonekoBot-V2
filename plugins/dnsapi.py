@@ -14,6 +14,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "DNS API 查询（使用 MySSL API）"
 __commands__ = ["dnsapi"]
+__command_descriptions__ = {
+    "dnsapi": "使用 API 查询 DNS 记录"
+}
+__command_help__ = {
+    "dnsapi": "/dnsapi [Domain] [Record_Type] - 使用 API 查询 DNS 记录"
+}
 
 
 # ==================== 核心功能 ====================

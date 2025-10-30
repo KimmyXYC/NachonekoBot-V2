@@ -17,6 +17,12 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "抽奖系统"
 __commands__ = ["lottery"]
+__command_descriptions__ = {
+    "lottery": "抽奖"
+}
+__command_help__ = {
+    "lottery": "/lottery [Winners]/[Participants] [Keyword] [Title] - 抽奖"
+}
 
 
 # ==================== 核心功能 ====================

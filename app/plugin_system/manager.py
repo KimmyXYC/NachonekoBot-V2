@@ -165,6 +165,52 @@ class PluginManager:
 
         logger.success("所有插件重新加载完成")
 
+    def get_plugin_commands_info(self):
+        """
+        从所有已加载的插件中收集命令信息
+        返回: List of dicts with 'command', 'description', 'help_text'
+        """
+        commands_info = []
+        
+        for plugin in self.plugins:
+            if not plugin.status:
+                continue
+            
+            try:
+                module_name = f"plugins.{plugin.name}"
+                if module_name not in sys.modules:
+                    continue
+                    
+                module = sys.modules[module_name]
+                
+                # 获取插件的命令列表
+                if hasattr(module, '__commands__'):
+                    plugin_commands = module.__commands__
+                    
+                    # 获取命令描述映射
+                    command_descriptions = {}
+                    command_help_texts = {}
+                    
+                    if hasattr(module, '__command_descriptions__'):
+                        command_descriptions = module.__command_descriptions__
+                    
+                    if hasattr(module, '__command_help__'):
+                        command_help_texts = module.__command_help__
+                    
+                    # 为每个命令添加信息
+                    for cmd in plugin_commands:
+                        commands_info.append({
+                            'command': cmd,
+                            'description': command_descriptions.get(cmd, ''),
+                            'help_text': command_help_texts.get(cmd, ''),
+                            'plugin': plugin.name
+                        })
+                        
+            except Exception as e:
+                logger.error(f"收集插件 {plugin.name} 命令信息时出错: {e}")
+        
+        return commands_info
+
 
 # 全局插件管理器实例
 plugin_manager = PluginManager()
