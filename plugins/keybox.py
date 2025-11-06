@@ -45,7 +45,6 @@ async def handle_keybox_check(bot, message: types.Message, document: types.Docum
     :return: None
     """
     if document.mime_type != 'application/xml' and document.mime_type != 'text/xml':
-        await bot.reply_to(message, "File format error")
         return
     if document.file_size > 20 * 1024:
         await bot.reply_to(message, "File size is too large")
