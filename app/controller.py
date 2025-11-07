@@ -11,8 +11,14 @@ from telebot.asyncio_filters import SimpleCustomFilter
 
 from setting.telegrambot import BotSetting
 from utils.yaml import BotConfig
+from utils.postgres import BotDatabase
 from app import event
 from app.plugin_system.manager import plugin_manager
+from app.plugin_system.plugin_settings import (
+    has_change_info_permission,
+    build_keyboard_and_text,
+    get_toggleable_plugins,
+)
 
 StepCache = StateMemoryStorage()
 
@@ -106,6 +112,96 @@ class BotRunner:
                 else:
                     await bot.reply_to(message, "❌ 删除失败", parse_mode="Markdown")
 
+        # ==================== 插件设置面板（核心命令） ====================
+        @bot.message_handler(commands=['plugin_settings'], chat_types=['group', 'supergroup'])
+        async def core_plugin_settings(message: types.Message):
+            try:
+                user_id = message.from_user.id
+                chat_id = message.chat.id
+
+                if not await has_change_info_permission(bot, chat_id, user_id):
+                    await bot.reply_to(message, "你没有权限使用该功能（需要“更改群信息”权限）。")
+                    return
+
+                plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
+                if not plugin_list:
+                    await bot.reply_to(message, "当前没有支持开关的插件。")
+                    return
+
+                await BotDatabase.ensure_group_row(chat_id)
+                states = [await BotDatabase.get_plugin_enabled(chat_id, name) for name in plugin_list]
+
+                text, kb = build_keyboard_and_text(plugin_list, states)
+                await bot.reply_to(message, text, reply_markup=kb)
+            except Exception as e:
+                logger.error(f"/plugin_settings 处理失败: {e}")
+                try:
+                    await bot.reply_to(message, f"获取插件设置失败：{e}")
+                except Exception:
+                    pass
+
+        # 回调：处理插件开关切换（核心处理，不经中间件）
+        @bot.callback_query_handler(func=lambda c: c.data and c.data.startswith('plg_toggle:'))
+        async def core_handle_toggle_callback(call: types.CallbackQuery):
+            try:
+                chat = call.message.chat
+                chat_id = chat.id
+                user_id = call.from_user.id
+
+                if not await has_change_info_permission(bot, chat_id, user_id):
+                    await bot.answer_callback_query(call.id, "无权限")
+                    return
+
+                plugin_name_clicked = call.data.split(':', 1)[1]
+
+                current = await BotDatabase.get_plugin_enabled(chat_id, plugin_name_clicked)
+                new_state = not current
+                ok = await BotDatabase.set_plugin_enabled(chat_id, plugin_name_clicked, new_state)
+                if not ok:
+                    await bot.answer_callback_query(call.id, "更新失败")
+                    return
+
+                plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
+                states = [await BotDatabase.get_plugin_enabled(chat_id, name) for name in plugin_list]
+                text, kb = build_keyboard_and_text(plugin_list, states)
+
+                await bot.edit_message_text(
+                    text=text,
+                    chat_id=chat_id,
+                    message_id=call.message.message_id,
+                    reply_markup=kb
+                )
+                await bot.answer_callback_query(call.id, "已更新")
+            except Exception as e:
+                logger.error(f"切换插件失败: {e}")
+                try:
+                    await bot.answer_callback_query(call.id, f"失败: {e}")
+                except Exception:
+                    pass
+
+        # 回调：处理关闭按钮（删除消息）
+        @bot.callback_query_handler(func=lambda c: c.data and c.data == 'plg_close')
+        async def core_handle_close_callback(call: types.CallbackQuery):
+            try:
+                chat_id = call.message.chat.id
+                message_id = call.message.message_id
+                user_id = call.from_user.id
+
+                # 检查权限
+                if not await has_change_info_permission(bot, chat_id, user_id):
+                    await bot.answer_callback_query(call.id, "无权限")
+                    return
+
+                # 删除消息
+                await bot.delete_message(chat_id, message_id)
+                await bot.answer_callback_query(call.id, "已关闭")
+            except Exception as e:
+                logger.error(f"关闭插件面板失败: {e}")
+                try:
+                    await bot.answer_callback_query(call.id, f"关闭失败: {e}")
+                except Exception:
+                    pass
+
         # ==================== 中间件分发器 ====================
         @bot.message_handler(func=lambda m: m.text and m.text.startswith('/'))
         async def middleware_dispatcher(message: types.Message):
@@ -118,6 +214,13 @@ class BotRunner:
         async def message_dispatcher(message: types.Message):
             """统一消息分发器"""
             await plugin_manager.middleware.dispatch_message(bot, message)
+
+        # 回调分发器（除核心前缀外，其余交由中间件处理）
+        @bot.callback_query_handler(func=lambda c: not (c.data and c.data.startswith('plg_toggle:')))
+        async def callback_dispatcher(call: types.CallbackQuery):
+            executed = await plugin_manager.middleware.dispatch_callback(bot, call)
+            if executed > 0:
+                logger.info(f"✨ 回调处理完成，执行了 {executed} 个处理器")
 
         # ==================== 启动 Bot ====================
         try:

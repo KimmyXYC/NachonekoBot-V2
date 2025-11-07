@@ -10,6 +10,7 @@ from typing import List, Callable, Dict, Any
 from dataclasses import dataclass, field
 from loguru import logger
 from telebot import types
+from utils.postgres import BotDatabase
 
 
 @dataclass
@@ -33,6 +34,14 @@ class PluginMiddleware:
             'callback': [],  # 回调 handlers
         }
         self._execution_stats = {}  # 统计信息
+        # 可切换开关的插件集合（由插件管理器在加载时标记）
+        self.toggleable_plugins = set()
+
+    def mark_toggleable(self, plugin_name: str):
+        self.toggleable_plugins.add(plugin_name)
+
+    def is_toggleable(self, plugin_name: str) -> bool:
+        return plugin_name in self.toggleable_plugins
 
     def register_command_handler(
             self,
@@ -115,6 +124,12 @@ class PluginMiddleware:
         executed_count = 0
         for handler in matched_handlers:
             try:
+                # 插件开关检查（仅群组）
+                if message.chat.type in ('group', 'supergroup') and self.is_toggleable(handler.plugin):
+                    enabled = await BotDatabase.get_plugin_enabled(message.chat.id, handler.plugin)
+                    if not enabled:
+                        logger.info(f"⏭️ 跳过插件 {handler.plugin}（群 {message.chat.id} 已关闭）")
+                        continue
                 logger.debug(f"  → 执行 {handler.plugin}.{handler.name}")
                 await handler.callback(bot, message)
                 executed_count += 1
@@ -143,6 +158,12 @@ class PluginMiddleware:
         executed_count = 0
         for handler in matched_handlers:
             try:
+                # 插件开关检查（仅群组）
+                if getattr(message, 'chat', None) and message.chat.type in ('group', 'supergroup') and self.is_toggleable(handler.plugin):
+                    enabled = await BotDatabase.get_plugin_enabled(message.chat.id, handler.plugin)
+                    if not enabled:
+                        logger.info(f"⏭️ 跳过插件 {handler.plugin}（群 {message.chat.id} 已关闭）")
+                        continue
                 await handler.callback(bot, message)
                 executed_count += 1
 
@@ -153,6 +174,32 @@ class PluginMiddleware:
                 logger.error(f"❌ Handler {handler.plugin}.{handler.name} 执行失败: {e}")
 
         return executed_count
+
+    def register_callback_handler(
+            self,
+            callback: Callable,
+            plugin_name: str,
+            handler_name: str = None,
+            priority: int = 50,
+            stop_propagation: bool = False,
+            **filters
+    ):
+        """注册回调查询处理器 (CallbackQuery)
+        过滤器支持：
+        - data_startswith: str | list[str] 回调 data 前缀匹配
+        - chat_types: ['group','supergroup','private']
+        - func: 自定义过滤函数，接收 CallbackQuery
+        """
+        handler = HandlerMetadata(
+            name=handler_name or f"{plugin_name}_callback",
+            plugin=plugin_name,
+            callback=callback,
+            priority=priority,
+            stop_propagation=stop_propagation,
+            filters=filters
+        )
+        self.handlers['callback'].append(handler)
+        self.handlers['callback'].sort(key=lambda h: h.priority, reverse=True)
 
     def _check_filters(self, handler: HandlerMetadata, message: types.Message) -> bool:
         """检查消息是否符合 handler 的过滤条件"""
@@ -187,6 +234,70 @@ class PluginMiddleware:
                 return False
 
         return True
+
+    def _check_callback_filters(self, handler: HandlerMetadata, call: types.CallbackQuery) -> bool:
+        """检查回调查询是否符合 handler 的过滤条件"""
+        filters = handler.filters
+
+        # chat_types 依据回调所属消息的 chat 类型
+        if 'chat_types' in filters:
+            if not getattr(call, 'message', None):
+                return False
+            chat_type = getattr(call.message.chat, 'type', None)
+            if chat_type not in filters['chat_types']:
+                return False
+
+        # func 自定义过滤
+        if 'func' in filters:
+            try:
+                if not filters['func'](call):
+                    return False
+            except Exception:
+                return False
+
+        # data_startswith 过滤
+        if 'data_startswith' in filters:
+            if not getattr(call, 'data', None):
+                return False
+            starts = filters['data_startswith']
+            if not isinstance(starts, (list, tuple)):
+                starts = [starts]
+            if not any(call.data.startswith(s) for s in starts):
+                return False
+
+        return True
+
+    async def dispatch_callback(self, bot, call: types.CallbackQuery) -> int:
+        """分发回调查询到匹配的 handlers，返回执行数量"""
+        matched_handlers = [
+            h for h in self.handlers['callback']
+            if self._check_callback_filters(h, call)
+        ]
+
+        if not matched_handlers:
+            return 0
+
+        executed_count = 0
+        for handler in matched_handlers:
+            try:
+                # 插件开关检查（仅群组）
+                chat = getattr(call, 'message', None) and call.message.chat
+                if chat and getattr(chat, 'type', None) in ('group', 'supergroup') and self.is_toggleable(handler.plugin):
+                    enabled = await BotDatabase.get_plugin_enabled(chat.id, handler.plugin)
+                    if not enabled:
+                        logger.info(f"⏭️ 跳过插件 {handler.plugin}（群 {chat.id} 已关闭）")
+                        continue
+
+                await handler.callback(bot, call)
+                executed_count += 1
+
+                if handler.stop_propagation:
+                    break
+
+            except Exception as e:
+                logger.error(f"❌ Callback Handler {handler.plugin}.{handler.name} 执行失败: {e}")
+
+        return executed_count
 
     def get_stats(self) -> Dict[str, int]:
         """获取执行统计"""

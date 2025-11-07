@@ -14,6 +14,7 @@ __version__ = 1.0
 __author__ = "KimmyXYC"
 __description__ = "喜报/悲报/通报/警报生成器"
 __commands__ = []  # 这个插件通过自定义过滤器触发，不是命令
+__toggleable__ = True  # 支持在群组中开关
 
 
 # ==================== 核心功能 ====================
@@ -40,6 +41,8 @@ async def good_news(bot, message: types.Message, news_type):
     img = Image.open(pic_dir).convert("RGB")
     text = message.text[2:]
     if text.startswith(" "):
+        text = text[1:]
+    if text.startswith("，") or text.startswith("。") or text.startswith(",") or text.startswith("."):
         text = text[1:]
 
     if text == "":

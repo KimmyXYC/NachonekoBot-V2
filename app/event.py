@@ -14,7 +14,8 @@ async def set_bot_commands(bot, plugin_manager):
     # 核心命令（不属于任何插件）
     commands = [
         types.BotCommand("help", "获取帮助信息"),
-        types.BotCommand("plugin", "插件管理（仅管理员）"),
+        types.BotCommand("plugin", "全局插件管理（仅 Bot 管理员）"),
+        types.BotCommand("plugin_settings", "群组插件设置（仅群组管理员）"),
     ]
     
     # 从插件收集命令
@@ -42,7 +43,8 @@ async def listen_help_command(bot, message: types.Message, plugin_manager):
     
     # 核心命令帮助
     help_lines.append(formatting.mcode("/help - 获取帮助信息"))
-    help_lines.append(formatting.mcode("/plugin - 插件管理（仅管理员）"))
+    help_lines.append(formatting.mcode("/plugin - 全局插件管理（仅 Bot 管理员）"))
+    help_lines.append(formatting.mcode("/plugin_settings - 群组插件设置（仅群组管理员）"))
     
     # 从插件收集帮助信息
     plugin_commands_info = plugin_manager.get_plugin_commands_info()
@@ -67,4 +69,5 @@ async def listen_help_command(bot, message: types.Message, plugin_manager):
         message=message,
         text=formatting.format_text(*help_lines),
         parse_mode="MarkdownV2",
+        disable_web_page_preview=True,
     )

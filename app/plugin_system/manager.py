@@ -11,6 +11,7 @@ from typing import List, Optional, Dict
 from loguru import logger
 
 from .models import LocalPlugin, plugins_path
+from utils.postgres import BotDatabase
 
 
 class PluginManager:
@@ -62,7 +63,7 @@ class PluginManager:
         for file in os.listdir(plugins_path):
             if file.endswith(".py") or file.endswith(".py.disabled"):
                 plugin_name = file.replace(".py.disabled", "").replace(".py", "")
-                if plugin_name == "__init__":
+                if plugin_name in "__init__":
                     continue
 
                 self.plugins.append(
@@ -128,6 +129,15 @@ class PluginManager:
 
                 module = sys.modules[module_name]
 
+                # 若插件支持开关，确保 setting 表中存在对应列，并标记为可切换
+                try:
+                    if getattr(module, '__toggleable__', False):
+                        await BotDatabase.ensure_plugin_column(plugin.name)
+                        self.middleware.mark_toggleable(plugin.name)
+                        logger.info(f"🔧 插件 {plugin.name} 已注册为可开关，并确保 settings 列存在")
+                except Exception as e:
+                    logger.error(f"初始化插件开关列失败: {plugin.name}: {e}")
+
                 # 新方式：通过中间件注册
                 if hasattr(module, 'register_handlers'):
                     # 检查函数签名，支持新旧两种方式
@@ -153,9 +163,8 @@ class PluginManager:
         """重新加载所有插件"""
         logger.info("开始重新加载所有插件...")
 
-        # 清除已注册的处理器
-        bot.message_handlers.clear()
-        bot.callback_query_handlers.clear()
+        # 仅清除中间件中的处理器，保留核心（controller）已注册的 bot 级处理器
+        self.middleware.clear_handlers()
 
         # 重新扫描插件
         self.load_local_plugins()
