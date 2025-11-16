@@ -1,6 +1,5 @@
 # NachonekoBot-V2
 
-![Ruff](https://github.com/KimmyXYC/NachonekoBot-V2/actions/workflows/ruff.yml/badge.svg)
 ![Docker Build](https://github.com/KimmyXYC/NachonekoBot-V2/actions/workflows/docker-build.yml/badge.svg)
 
 ## 描述
