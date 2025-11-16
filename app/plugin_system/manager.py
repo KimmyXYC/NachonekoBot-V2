@@ -7,6 +7,7 @@ import json
 import os
 import importlib
 import sys
+import ast
 from typing import List, Optional, Dict
 from loguru import logger
 
@@ -63,15 +64,62 @@ class PluginManager:
         for file in os.listdir(plugins_path):
             if file.endswith(".py") or file.endswith(".py.disabled"):
                 plugin_name = file.replace(".py.disabled", "").replace(".py", "")
-                if plugin_name in "__init__":
+                if plugin_name == "__init__":
                     continue
+
+                # 优先从 version.json 读取版本
+                local_version = self.get_local_version(plugin_name)
+
+                # 如果本地未记录版本，尝试从插件源代码中解析 __version__
+                parsed_version = None
+                try:
+                    file_path = plugins_path / file
+                    with open(file_path, "r", encoding="utf-8") as pf:
+                        source = pf.read()
+                    # 使用 AST 安全解析顶层 __version__ 赋值
+                    try:
+                        tree = ast.parse(source, filename=str(file_path))
+                        for node in tree.body:
+                            if isinstance(node, ast.Assign):
+                                target_names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+                                if "__version__" in target_names:
+                                    value = node.value
+                                    v = None
+                                    if hasattr(ast, "Constant") and isinstance(value, ast.Constant):
+                                        v = value.value
+                                    elif isinstance(value, ast.Num):
+                                        v = value.n
+                                    elif isinstance(value, ast.Str):
+                                        v = value.s
+                                    # 仅接受数字或可转换为浮点的字符串
+                                    if isinstance(v, (int, float)):
+                                        parsed_version = float(v)
+                                    elif isinstance(v, str):
+                                        try:
+                                            parsed_version = float(v)
+                                        except ValueError:
+                                            parsed_version = None
+                                    break
+                    except Exception:
+                        parsed_version = None
+                except Exception:
+                    parsed_version = None
+
+                version_value = local_version if local_version is not None else parsed_version
+
+                # 若解析到版本但本地不存在记录，则写入 version.json
+                if local_version is None and parsed_version is not None:
+                    try:
+                        self.set_local_version(plugin_name, parsed_version)
+                    except Exception:
+                        pass
 
                 self.plugins.append(
                     LocalPlugin(
                         name=plugin_name,
                         installed=plugin_name in self.version_map,
                         status=file.endswith(".py"),
-                        version=self.get_local_version(plugin_name),
+                        version=version_value,
                     )
                 )
 
@@ -128,6 +176,25 @@ class PluginManager:
                     importlib.import_module(module_name)
 
                 module = sys.modules[module_name]
+
+                # 若 version.json 未记录，尝试在导入模块后直接读取 __version__ 并写入
+                try:
+                    if getattr(module, "__version__", None) is not None and plugin.name not in self.version_map:
+                        v = getattr(module, "__version__")
+                        ver = None
+                        if isinstance(v, (int, float)):
+                            ver = float(v)
+                        elif isinstance(v, str):
+                            try:
+                                ver = float(v)
+                            except ValueError:
+                                ver = None  # 非数字字符串版本暂不持久化
+                        if ver is not None:
+                            self.set_local_version(plugin.name, ver)
+                            # 同步到当前内存的插件对象
+                            plugin.version = ver
+                except Exception as e:
+                    logger.debug(f"跳过写入版本: {plugin.name}: {e}")
 
                 # 若插件支持开关，确保 setting 表中存在对应列，并标记为可切换
                 try:
