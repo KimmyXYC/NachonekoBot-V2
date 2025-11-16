@@ -53,8 +53,9 @@ async def whois_check(data):
                     return False, result
                 result = result['whois']['whois']
                 lines = result.splitlines()
-                filtered_result = [line for line in lines if
-                                   'REDACTED FOR PRIVACY' not in line and 'Please query the' not in line
+                filtered_result = [line for line in lines
+                                   if 'REDACTED' not in line
+                                   and 'Please query the' not in line
                                    and not line.strip().endswith(':')]
                 cleaned = "\n".join(filtered_result)
                 cleaned = cleaned.split("For more information")[0]
