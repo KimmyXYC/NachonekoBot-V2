@@ -6,10 +6,8 @@
 
 import importlib
 import os
-from typing import TYPE_CHECKING
 
-__all__ = ["status", "callanyone", "shorturl", "lock", "dnsapi", "icp", "ip", "ipali", "whois",
-           "xiatou", "remake", "xibao", "keybox", "weather", "dns", "ping", "tcping", "trace", "bin", "bc", "lottery"]
+__all__ = []
 
 module_dir = os.path.dirname(__file__)
 
@@ -19,7 +17,3 @@ for file in os.listdir(module_dir):
         module = importlib.import_module(f".{module_name}", package=__name__)
         globals()[module_name] = module
         __all__.append(module_name)
-
-if TYPE_CHECKING:
-    from . import (status, callanyone, shorturl, lock, dnsapi, icp, ip, ipali, whois,
-                   xiatou, remake, xibao, keybox, weather, dns, ping, tcping, trace, bin, bc, lottery)
