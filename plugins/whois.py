@@ -62,6 +62,7 @@ async def whois_check(data):
                 cleaned = "\n".join(filtered_result)
                 cleaned = cleaned.split("For more information")[0]
                 cleaned = cleaned.split("RDAP TERMS OF SERVICE:")[0]
+                cleaned = cleaned.split("TERMS OF SERVICE:")[0]
                 return True, cleaned
             else:
                 return False, f"Request failed with status {response.status}"
