@@ -53,6 +53,66 @@ class PluginManager:
         self.version_map[name] = version
         self.save_version_map()
 
+    def sync_plugin_versions(self) -> Dict[str, tuple]:
+        """
+        强制同步所有插件版本
+        返回: Dict[plugin_name, (old_version, new_version)]
+        """
+        self.load_version_map()
+        updates = {}
+
+        if not plugins_path.exists():
+            return updates
+
+        for file in os.listdir(plugins_path):
+            if file.endswith(".py") or file.endswith(".py.disabled"):
+                plugin_name = file.replace(".py.disabled", "").replace(".py", "")
+                if plugin_name == "__init__":
+                    continue
+
+                try:
+                    file_path = plugins_path / file
+                    with open(file_path, "r", encoding="utf-8") as pf:
+                        source = pf.read()
+
+                    tree = ast.parse(source, filename=str(file_path))
+                    for node in tree.body:
+                        if isinstance(node, ast.Assign):
+                            target_names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+                            if "__version__" in target_names:
+                                value = node.value
+                                v = None
+                                if hasattr(ast, "Constant") and isinstance(value, ast.Constant):
+                                    v = value.value
+                                elif isinstance(value, ast.Num):
+                                    v = value.n
+                                elif isinstance(value, ast.Str):
+                                    v = value.s
+
+                                parsed_version = None
+                                if isinstance(v, (int, float)):
+                                    parsed_version = float(v)
+                                elif isinstance(v, str):
+                                    try:
+                                        parsed_version = float(v)
+                                    except ValueError:
+                                        pass
+
+                                if parsed_version is not None:
+                                    old_version = self.version_map.get(plugin_name)
+                                    if old_version != parsed_version:
+                                        self.version_map[plugin_name] = parsed_version
+                                        updates[plugin_name] = (old_version, parsed_version)
+                                break
+                except Exception as e:
+                    logger.error(f"同步插件 {plugin_name} 版本失败: {e}")
+
+        if updates:
+            self.save_version_map()
+            logger.info(f"✅ 同步了 {len(updates)} 个插件的版本信息")
+
+        return updates
+
     def load_local_plugins(self) -> List[LocalPlugin]:
         """扫描并加载本地插件列表"""
         self.load_version_map()
@@ -61,16 +121,18 @@ class PluginManager:
         if not plugins_path.exists():
             return self.plugins
 
+        updated_versions = False
+
         for file in os.listdir(plugins_path):
             if file.endswith(".py") or file.endswith(".py.disabled"):
                 plugin_name = file.replace(".py.disabled", "").replace(".py", "")
                 if plugin_name == "__init__":
                     continue
 
-                # 优先从 version.json 读取版本
-                local_version = self.get_local_version(plugin_name)
+                # 从 version.json 读取已记录的版本
+                cached_version = self.get_local_version(plugin_name)
 
-                # 如果本地未记录版本，尝试从插件源代码中解析 __version__
+                # 从插件源代码中解析实际 __version__
                 parsed_version = None
                 try:
                     file_path = plugins_path / file
@@ -105,23 +167,36 @@ class PluginManager:
                 except Exception:
                     parsed_version = None
 
-                version_value = local_version if local_version is not None else parsed_version
-
-                # 若解析到版本但本地不存在记录，则写入 version.json
-                if local_version is None and parsed_version is not None:
-                    try:
-                        self.set_local_version(plugin_name, parsed_version)
-                    except Exception:
-                        pass
+                # 检测版本不匹配并更新
+                final_version = parsed_version
+                if parsed_version is not None:
+                    if cached_version is None:
+                        # 首次记录版本
+                        self.version_map[plugin_name] = parsed_version
+                        updated_versions = True
+                        logger.debug(f"📝 插件 {plugin_name} 首次记录版本: {parsed_version}")
+                    elif cached_version != parsed_version:
+                        # 检测到版本更新
+                        self.version_map[plugin_name] = parsed_version
+                        updated_versions = True
+                        logger.info(f"🔄 插件 {plugin_name} 版本更新: {cached_version} -> {parsed_version}")
+                    final_version = parsed_version
+                elif cached_version is not None:
+                    # 源码中没有版本但缓存中有，使用缓存版本
+                    final_version = cached_version
 
                 self.plugins.append(
                     LocalPlugin(
                         name=plugin_name,
                         installed=plugin_name in self.version_map,
                         status=file.endswith(".py"),
-                        version=version_value,
+                        version=final_version,
                     )
                 )
+
+        # 批量保存版本更新
+        if updated_versions:
+            self.save_version_map()
 
         logger.info(f"发现 {len(self.plugins)} 个本地插件")
         return self.plugins
@@ -177,9 +252,9 @@ class PluginManager:
 
                 module = sys.modules[module_name]
 
-                # 若 version.json 未记录，尝试在导入模块后直接读取 __version__ 并写入
+                # 检测并更新插件版本（处理运行时版本变化）
                 try:
-                    if getattr(module, "__version__", None) is not None and plugin.name not in self.version_map:
+                    if getattr(module, "__version__", None) is not None:
                         v = getattr(module, "__version__")
                         ver = None
                         if isinstance(v, (int, float)):
@@ -189,12 +264,19 @@ class PluginManager:
                                 ver = float(v)
                             except ValueError:
                                 ver = None  # 非数字字符串版本暂不持久化
+
                         if ver is not None:
-                            self.set_local_version(plugin.name, ver)
-                            # 同步到当前内存的插件对象
-                            plugin.version = ver
+                            cached_ver = self.version_map.get(plugin.name)
+                            if cached_ver != ver:
+                                # 版本不匹配，更新到最新版本
+                                self.set_local_version(plugin.name, ver)
+                                plugin.version = ver
+                                if cached_ver is None:
+                                    logger.debug(f"📝 插件 {plugin.name} 记录版本: {ver}")
+                                else:
+                                    logger.info(f"🔄 插件 {plugin.name} 版本同步: {cached_ver} -> {ver}")
                 except Exception as e:
-                    logger.debug(f"跳过写入版本: {plugin.name}: {e}")
+                    logger.debug(f"版本检测失败 {plugin.name}: {e}")
 
                 # 若插件支持开关，确保 setting 表中存在对应列，并标记为可切换
                 try:
