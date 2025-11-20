@@ -12,11 +12,14 @@
 from typing import List, Tuple
 from loguru import logger
 from telebot import types
+from utils.yaml import BotConfig
 
 
 async def has_change_info_permission(bot, chat_id: int, user_id: int) -> bool:
     """检查用户是否具备"更改群信息"权限（群主或管理员可更改信息）。"""
     try:
+        if user_id in BotConfig["admin"]["id"]:
+            return True
         member = await bot.get_chat_member(chat_id, user_id)
         status = getattr(member, 'status', None)
         if status == 'creator':
