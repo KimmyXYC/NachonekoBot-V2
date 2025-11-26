@@ -39,7 +39,7 @@ async def handle_bcup_command(bot, message: types.Message) -> None:
     currency_to = command_args[3].upper()
     logger.debug("处理法币转换命令: {} {} -> {}", amount, currency_from, currency_to)
 
-    UnionPayAPI = f"https://m.unionpayintl.com/jfimg/{datetime.now(ZoneInfo("Asia/Shanghai")).strftime('%Y%m%d')}.json"
+    UnionPayAPI = f"https://m.unionpayintl.com/jfimg/{datetime.now().strftime('%Y%m%d')}.json"
     logger.debug("请求银联汇率 API: {}", UnionPayAPI)
     async with aiohttp.ClientSession() as session:
         async with session.get(UnionPayAPI) as response:
