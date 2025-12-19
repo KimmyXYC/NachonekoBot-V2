@@ -86,10 +86,9 @@ async def fetch_chrome_version() -> str:
         return FALLBACK_CHROME_VERSION
 
 
-async def generate_mastercard_headers() -> dict:
+async def generate_headers() -> dict:
     """
-    生成Mastercard API请求头
-    完全匹配 TypeScript 版本的实现
+    生成请求头
     """
     chrome_version = await fetch_chrome_version()
     ua = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version}.0.0.0 Safari/537.36"
@@ -103,7 +102,7 @@ async def generate_mastercard_headers() -> dict:
         "sec-ch-ua-platform": "Windows"
     }
 
-    logger.debug("生成Mastercard请求头，Chrome版本: {}", chrome_version)
+    logger.debug("生成请求头，Chrome版本: {}", chrome_version)
     return headers
 
 
@@ -119,6 +118,8 @@ async def init() -> list:
             for i in rate_data:
                 currencies.append(i['@currency'])
                 data[i['@currency']] = float(i['@rate'])
+            data['EUR'] = 1.0
+            currencies.append('EUR')
             currencies.sort()
     return [currencies, data]
 
@@ -128,10 +129,6 @@ async def fetch_eu_rate(amount: float, currency_from: str, currency_to: str, eu_
     获取欧盟汇率
     """
     try:
-        # EUR is the base currency (rate = 1.0), add it if not present
-        if 'EUR' not in eu_data:
-            eu_data['EUR'] = 1.0
-
         if currency_from not in eu_data or currency_to not in eu_data:
             logger.error("欧盟不支持的交易对: {} -> {}", currency_from, currency_to)
             return {
@@ -234,7 +231,7 @@ async def fetch_mastercard_rate(amount: float, currency_from: str, currency_to: 
             }
 
         api_endpoint = "https://www.mastercard.com/marketingservices/public/mccom-services/currency-conversions/conversion-rates"
-        headers = await generate_mastercard_headers()
+        headers = await generate_headers()
         params = {
             "exchange_date": datetime.now().strftime('%Y-%m-%d'),
             "transaction_currency": currency_from,
@@ -321,7 +318,7 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
             }
 
         api_endpoint = "https://usa.visa.com/cmsapi/fx/rates"
-        headers = await generate_mastercard_headers()
+        headers = await generate_headers()
 
         # 格式化日期为 MM/DD/YYYY
         date_str = datetime.now().strftime('%m/%d/%Y')
@@ -365,8 +362,8 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
             result = response.json()
 
         # 从响应中提取数据
-        converted_amount = result.get("convertedAmount")
-        conversion_rate = result.get("fxRateWithAdditionalFee")
+        converted_amount = result.get("toAmountWithVisaRate")
+        conversion_rate = result.get("fxRateVisa")
 
         if conversion_rate is None or converted_amount is None:
             logger.error("Visa API响应数据格式错误: {}", result)
