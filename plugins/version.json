@@ -1,6 +1,5 @@
 {
-  "bc": 1.0,
-  "bcp": 1.0,
+  "bc": 1.1,
   "bin": 1.0,
   "callanyone": 1.0,
   "dns": 1.0,
@@ -22,6 +21,5 @@
   "weather": 1.0,
   "whois": 1.1,
   "xiatou": 1.0,
-  "xibao": 1.0,
-  "bcup": 1.0
+  "xibao": 1.0
 }
