@@ -359,7 +359,7 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
                     "error": f"Visa汇率获取失败 (HTTP {response.status_code})"
                 }
 
-            result = response.json()
+            result = response.json().get("originalValues")
 
         # 从响应中提取数据
         converted_amount = result.get("toAmountWithVisaRate")
