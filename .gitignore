@@ -1,6 +1,7 @@
 # Config
 conf_dir/*.yaml
 conf_dir/*.db
+pdm.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
