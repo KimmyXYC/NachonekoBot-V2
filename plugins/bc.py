@@ -128,6 +128,10 @@ async def fetch_eu_rate(amount: float, currency_from: str, currency_to: str, eu_
     获取欧盟汇率
     """
     try:
+        # EUR is the base currency (rate = 1.0), add it if not present
+        if 'EUR' not in eu_data:
+            eu_data['EUR'] = 1.0
+
         if currency_from not in eu_data or currency_to not in eu_data:
             logger.error("欧盟不支持的交易对: {} -> {}", currency_from, currency_to)
             return {
@@ -377,8 +381,8 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
 
         return {
             "success": True,
-            "rate": float(converted_amount),
-            "converted_amount": float(conversion_rate),
+            "rate": float(conversion_rate),
+            "converted_amount": float(converted_amount),
             "error": None
         }
 
