@@ -1,49 +1,40 @@
 # -*- coding: utf-8 -*-
-# @Time    : 2025/7/5 12:04
+# @Time    : 2025/12/19 00:00
 # @Author  : KimmyXYC
-# @File    : bc.py
+# @File    : bcpro.py
 # @Software: PyCharm
-from datetime import datetime, UTC
 import asyncio
 import aiohttp
 import time
-from telebot import types
 from loguru import logger
-from binance.spot import Spot
-from binance.error import ClientError
-import xmltodict
+from telebot import types
+from datetime import datetime
 
 try:
     from curl_cffi.requests import AsyncSession
     CURL_CFFI_AVAILABLE = True
 except ImportError:
     CURL_CFFI_AVAILABLE = False
-    logger.warning("curl_cffi 未安装，Mastercard 和 Visa 汇率查询可能失败。请运行: pip install curl_cffi")
-
+    logger.warning("curl_cffi 未安装，Mastercard 汇率查询可能失败。请运行: pip install curl_cffi")
 
 # ==================== 插件元数据 ====================
-__plugin_name__ = "bc"
+__plugin_name__ = "bcpro"
 __version__ = 1.0
 __author__ = "KimmyXYC"
-__description__ = "货币转换工具（支持法币多汇率源+加密货币）"
-__commands__ = ["bc"]
+__description__ = "法币转换工具（银联+Mastercard+Visa汇率）"
+__commands__ = ["bcp"]
 __command_descriptions__ = {
-    "bc": "货币转换（支持法币多汇率源+加密货币）"
+    "bcp": "法币转换（银联+Mastercard+Visa汇率）"
 }
 __command_help__ = {
-    "bc": "/bc [Amount] [Currency_From] [Currency_To] - 货币转换（法币支持欧盟/银联/Mastercard/Visa多汇率源）"
+    "bcp": "/bcp [Amount] [Currency_From] [Currency_To] - 法币转换（银联+Mastercard+Visa汇率）"
 }
-
 
 # ==================== Chrome版本缓存 ====================
 _chrome_version_cache = None
 _chrome_version_timestamp = 0
 CHROME_VERSION_TTL = 86400  # 24小时
 FALLBACK_CHROME_VERSION = "131"
-
-
-# ==================== 核心功能 ====================
-API = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
 
 
 async def fetch_chrome_version() -> str:
@@ -67,6 +58,8 @@ async def fetch_chrome_version() -> str:
                     text = await response.text()
                     # 移除前缀 )]}'\n
                     cleaned_data = text.replace(")]}'\n", "")
+                    data = await response.json()
+                    # 如果已经读取了text，需要重新请求或者直接解析cleaned_data
                     import json
                     channels = json.loads(cleaned_data)
                     stable_channel = channels.get("stable", {})
@@ -106,57 +99,7 @@ async def generate_mastercard_headers() -> dict:
     return headers
 
 
-async def init() -> list:
-    """ 初始化货币数据 """
-    async with aiohttp.ClientSession() as session:
-        async with session.get(API) as response:
-            result = await response.read()
-            currencies = []
-            data = {}
-            rate_data = xmltodict.parse(result)
-            rate_data = rate_data['gesmes:Envelope']['Cube']['Cube']['Cube']
-            for i in rate_data:
-                currencies.append(i['@currency'])
-                data[i['@currency']] = float(i['@rate'])
-            currencies.sort()
-    return [currencies, data]
-
-
-async def fetch_eu_rate(amount: float, currency_from: str, currency_to: str, eu_data: dict) -> dict:
-    """
-    获取欧盟汇率
-    """
-    try:
-        if currency_from not in eu_data or currency_to not in eu_data:
-            logger.error("欧盟不支持的交易对: {} -> {}", currency_from, currency_to)
-            return {
-                "success": False,
-                "rate": None,
-                "converted_amount": None,
-                "error": f"不支持的交易对: {currency_from} -> {currency_to}"
-            }
-
-        rate = eu_data[currency_to] / eu_data[currency_from]
-        converted_amount = amount * rate
-        logger.debug("欧盟汇率转换: {} {} -> {} {}, 汇率: {}", amount, currency_from, converted_amount, currency_to, rate)
-
-        return {
-            "success": True,
-            "rate": rate,
-            "converted_amount": converted_amount,
-            "error": None
-        }
-
-    except Exception as e:
-        logger.error("欧盟汇率获取异常: {}", str(e))
-        return {
-            "success": False,
-            "rate": None,
-            "converted_amount": None,
-            "error": "欧盟汇率获取失败"
-        }
-
-
+# ==================== 核心功能 ====================
 async def fetch_unionpay_rate(amount: float, currency_from: str, currency_to: str) -> dict:
     """
     获取银联汇率
@@ -391,202 +334,68 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
         }
 
 
-
-async def handle_bc_command(bot, message: types.Message) -> None:
+async def handle_bcp_command(bot, message: types.Message) -> None:
     """
-    处理币种转换命令
-    :param bot: Bot 对象
-    :param message: 消息对象
-    :return:
+    处理bcp命令
     """
     command_args = message.text.split()
-
-    # 初始化数据
-    try:
-        currencies, data = await init()
-        binanceclient = Spot()
-        nowtimestamp = binanceclient.time()
-        nowtime = datetime.fromtimestamp(float(nowtimestamp['serverTime']) / 1000, UTC)
-    except Exception as e:
-        await bot.reply_to(message, f"初始化失败: {str(e)}")
-        return
-
-    # 无参数时显示BTC和ETH的价格
-    if len(command_args) == 1:
-        try:
-            btc_price_data = binanceclient.ticker_price("BTCUSDT")
-            eth_price_data = binanceclient.ticker_price("ETHUSDT")
-
-            response_text = (
-                f'{nowtime.strftime("%Y-%m-%d %H:%M:%S")} UTC\n'
-                f'1 BTC = {float(btc_price_data["price"]):.2f} USDT\n'
-                f'1 ETH = {float(eth_price_data["price"]):.2f} USDT'
-            )
-
-            await bot.reply_to(message, response_text)
-            return
-        except Exception as e:
-            await bot.reply_to(message, f"获取价格失败: {str(e)}")
-            return
-
-    # 参数不足
     if len(command_args) < 4:
         usage_text = (
-            "使用方法: /bc <数量> <币种1> <币种2>\n"
-            "例如: /bc 100 USD EUR - 将100美元转换为欧元\n"
-            "例如: /bc 1 BTC USD - 将1比特币转换为美元\n"
-            "例如: /bc 0.5 ETH BTC - 将0.5以太坊转换为比特币"
+            "使用方法: /bcp <数量> <币种1> <币种2>\n"
+            "例如: /bcp 100 USD CNY - 将100美元转换为人民币"
         )
         await bot.reply_to(message, usage_text)
         return
 
-    # 解析参数
     try:
-        number = float(command_args[1])
+        amount = float(command_args[1])
     except ValueError:
-        await bot.reply_to(message, "数量必须是有效的数字")
+        await bot.reply_to(message, "请输入有效的数量。")
         return
 
-    _from = command_args[2].upper().strip()
-    _to = command_args[3].upper().strip()
+    currency_from = command_args[2].upper()
+    currency_to = command_args[3].upper()
+    logger.debug("处理法币转换命令: {} {} -> {}", amount, currency_from, currency_to)
 
-    msg = await bot.reply_to(message, f"正在转换 {number} {_from} 到 {_to}...")
+    # 并行获取三个提供商的汇率
+    unionpay_result, mastercard_result, visa_result = await asyncio.gather(
+        fetch_unionpay_rate(amount, currency_from, currency_to),
+        fetch_mastercard_rate(amount, currency_from, currency_to),
+        fetch_visa_rate(amount, currency_from, currency_to)
+    )
 
-    # 两种都是法定货币
-    if (currencies.count(_from) != 0) and (currencies.count(_to) != 0):
-        # 并行获取四个提供商的汇率
-        eu_result, unionpay_result, mastercard_result, visa_result = await asyncio.gather(
-            fetch_eu_rate(number, _from, _to, data),
-            fetch_unionpay_rate(number, _from, _to),
-            fetch_mastercard_rate(number, _from, _to),
-            fetch_visa_rate(number, _from, _to)
+    # 构建响应消息
+    response_lines = []
+
+    # 银联结果
+    if unionpay_result["success"]:
+        response_lines.append(
+            f"银联: {amount:.2f} {currency_from} ≈ {unionpay_result['converted_amount']:.2f} {currency_to} "
+            f"(汇率: {unionpay_result['rate']:.4f})"
         )
+    else:
+        response_lines.append(f"银联: {unionpay_result['error']}")
 
-        # 构建响应消息
-        response_lines = []
-
-        # 欧盟结果
-        if eu_result["success"]:
-            response_lines.append(
-                f"欧盟: {number:.2f} {_from} ≈ {eu_result['converted_amount']:.2f} {_to} "
-                f"(汇率: {eu_result['rate']:.4f})"
-            )
-        else:
-            response_lines.append(f"欧盟: {eu_result['error']}")
-
-        # 银联结果
-        if unionpay_result["success"]:
-            response_lines.append(
-                f"银联: {number:.2f} {_from} ≈ {unionpay_result['converted_amount']:.2f} {_to} "
-                f"(汇率: {unionpay_result['rate']:.4f})"
-            )
-        else:
-            response_lines.append(f"银联: {unionpay_result['error']}")
-
-        # Mastercard结果
-        if mastercard_result["success"]:
-            response_lines.append(
-                f"Mastercard: {number:.2f} {_from} ≈ {mastercard_result['converted_amount']:.2f} {_to} "
-                f"(汇率: {mastercard_result['rate']:.4f})"
-            )
-        else:
-            response_lines.append(f"Mastercard: {mastercard_result['error']}")
-
-        # Visa结果
-        if visa_result["success"]:
-            response_lines.append(
-                f"Visa: {number:.2f} {_from} ≈ {visa_result['converted_amount']:.2f} {_to} "
-                f"(汇率: {visa_result['rate']:.4f})"
-            )
-        else:
-            response_lines.append(f"Visa: {visa_result['error']}")
-
-        result_text = "\n".join(response_lines)
-        await bot.edit_message_text(
-            result_text,
-            message.chat.id, msg.message_id
+    # Mastercard结果
+    if mastercard_result["success"]:
+        response_lines.append(
+            f"Mastercard: {amount:.2f} {currency_from} ≈ {mastercard_result['converted_amount']:.2f} {currency_to} "
+            f"(汇率: {mastercard_result['rate']:.4f})"
         )
-        return
+    else:
+        response_lines.append(f"Mastercard: {mastercard_result['error']}")
 
-    # 从法定货币到加密货币
-    if currencies.count(_from) != 0:
-        try:
-            usd_number = number * data["USD"] / data[_from]
-            try:
-                price_data = binanceclient.ticker_price(f"{_to}USDT")
-                crypto_amount = 1 / float(price_data['price']) * usd_number
-
-                await bot.edit_message_text(
-                    f"{number} {_from} = {crypto_amount:.8f} {_to}\n"
-                    f"{number} {_from} = {usd_number:.2f} USD",
-                    message.chat.id, msg.message_id
-                )
-            except ClientError:
-                await bot.edit_message_text(
-                    f"找不到交易对 {_to}USDT",
-                    message.chat.id, msg.message_id
-                )
-        except Exception as e:
-            await bot.edit_message_text(
-                f"转换失败: {str(e)}",
-                message.chat.id, msg.message_id
-            )
-        return
-
-    # 从加密货币到法定货币
-    if currencies.count(_to) != 0:
-        try:
-            price_data = binanceclient.ticker_price(f"{_from}USDT")
-            usd_price = float(price_data['price'])
-            fiat_amount = usd_price * number * data[_to] / data["USD"]
-
-            await bot.edit_message_text(
-                f"{number} {_from} = {fiat_amount:.2f} {_to}\n"
-                f"1 {_from} = {usd_price:.2f} USD",
-                message.chat.id, msg.message_id
-            )
-        except ClientError:
-            await bot.edit_message_text(
-                f"找不到交易对 {_from}USDT",
-                message.chat.id, msg.message_id
-            )
-        except Exception as e:
-            await bot.edit_message_text(
-                f"转换失败: {str(e)}",
-                message.chat.id, msg.message_id
-            )
-        return
-
-    # 两种都是加密货币
-    try:
-        try:
-            price_data = binanceclient.ticker_price(f"{_from}{_to}")
-            result = float(price_data['price']) * number
-
-            await bot.edit_message_text(
-                f"{number} {_from} = {result} {_to}",
-                message.chat.id, msg.message_id
-            )
-        except ClientError:
-            # 尝试反向交易对
-            try:
-                price_data = binanceclient.ticker_price(f"{_to}{_from}")
-                result = number / float(price_data['price'])
-
-                await bot.edit_message_text(
-                    f"{number} {_from} = {result} {_to}",
-                    message.chat.id, msg.message_id
-                )
-            except ClientError:
-                await bot.edit_message_text(
-                    f"找不到交易对 {_from}{_to} 或 {_to}{_from}",
-                    message.chat.id, msg.message_id
-                )
-    except Exception as e:
-        await bot.edit_message_text(
-            f"转换失败: {str(e)}",
-            message.chat.id, msg.message_id
+    # Visa结果
+    if visa_result["success"]:
+        response_lines.append(
+            f"Visa: {amount:.2f} {currency_from} ≈ {visa_result['converted_amount']:.2f} {currency_to} "
+            f"(汇率: {visa_result['rate']:.4f})"
         )
+    else:
+        response_lines.append(f"Visa: {visa_result['error']}")
+
+    result_text = "\n".join(response_lines)
+    await bot.reply_to(message, result_text)
 
 
 # ==================== 插件注册 ====================
@@ -596,8 +405,8 @@ async def register_handlers(bot, middleware, plugin_name):
     global bot_instance
     bot_instance = bot
     middleware.register_command_handler(
-        commands=['bc'],
-        callback=handle_bc_command,
+        commands=['bcp'],
+        callback=handle_bcp_command,
         plugin_name=plugin_name,
         priority=50,  # 优先级
         stop_propagation=True,  # 阻止后续处理器
@@ -605,6 +414,7 @@ async def register_handlers(bot, middleware, plugin_name):
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -619,5 +429,7 @@ def get_plugin_info() -> dict:
         "commands": __commands__,
     }
 
+
 # 保持全局 bot 引用
 bot_instance = None
+
