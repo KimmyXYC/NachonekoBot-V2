@@ -39,7 +39,7 @@ __command_help__ = {
 _chrome_version_cache = None
 _chrome_version_timestamp = 0
 CHROME_VERSION_TTL = 86400  # 24小时
-FALLBACK_CHROME_VERSION = "131"
+FALLBACK_CHROME_VERSION = "136"
 
 
 # ==================== 核心功能 ====================
@@ -50,6 +50,7 @@ async def fetch_chrome_version() -> str:
     """
     获取Chrome版本，使用TTL缓存
     """
+    return FALLBACK_CHROME_VERSION
     global _chrome_version_cache, _chrome_version_timestamp
 
     # 检查缓存是否有效
