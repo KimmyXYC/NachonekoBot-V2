@@ -3,7 +3,7 @@
 # @Author  : KimmyXYC
 # @File    : bc.py
 # @Software: PyCharm
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timezone, timedelta
 import asyncio
 import aiohttp
 import time
@@ -44,6 +44,37 @@ FALLBACK_CHROME_VERSION = "136"
 
 # ==================== 核心功能 ====================
 API = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
+
+
+def get_exchange_rate_date() -> datetime:
+    """
+    获取汇率日期（基于UTC+8时区）
+    - 早上11点前使用前一天的日期
+    - 11点后使用当天日期
+
+    Returns:
+        datetime: 应该使用的汇率日期
+    """
+    utc8_tz = timezone(timedelta(hours=8))
+    now_utc8 = datetime.now(utc8_tz)
+
+    # 如果当前时间早于11点，使用前一天的日期
+    if now_utc8.hour < 11:
+        rate_date = now_utc8 - timedelta(days=1)
+        logger.debug("当前UTC+8时间: {} ({}:{}), 使用前一天汇率日期: {}",
+                    now_utc8.strftime('%Y-%m-%d %H:%M:%S'),
+                    now_utc8.hour,
+                    now_utc8.minute,
+                    rate_date.strftime('%Y-%m-%d'))
+    else:
+        rate_date = now_utc8
+        logger.debug("当前UTC+8时间: {} ({}:{}), 使用当天汇率日期: {}",
+                    now_utc8.strftime('%Y-%m-%d %H:%M:%S'),
+                    now_utc8.hour,
+                    now_utc8.minute,
+                    rate_date.strftime('%Y-%m-%d'))
+
+    return rate_date
 
 
 async def fetch_chrome_version() -> str:
@@ -164,7 +195,8 @@ async def fetch_unionpay_rate(amount: float, currency_from: str, currency_to: st
     获取银联汇率
     """
     try:
-        unionpay_api = f"https://m.unionpayintl.com/jfimg/{datetime.now().strftime('%Y%m%d')}.json"
+        rate_date = get_exchange_rate_date()
+        unionpay_api = f"https://m.unionpayintl.com/jfimg/{rate_date.strftime('%Y%m%d')}.json"
         logger.debug("请求银联汇率 API: {}", unionpay_api)
 
         async with aiohttp.ClientSession() as session:
