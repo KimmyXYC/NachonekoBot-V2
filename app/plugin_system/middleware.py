@@ -32,6 +32,7 @@ class PluginMiddleware:
             'command': [],  # 命令 handlers
             'message': [],  # 消息 handlers
             'callback': [],  # 回调 handlers
+            'inline': [],  # inline_query handlers
         }
         self._execution_stats = {}  # 统计信息
         # 可切换开关的插件集合（由插件管理器在加载时标记）
@@ -201,6 +202,31 @@ class PluginMiddleware:
         self.handlers['callback'].append(handler)
         self.handlers['callback'].sort(key=lambda h: h.priority, reverse=True)
 
+    def register_inline_handler(
+            self,
+            callback: Callable,
+            plugin_name: str,
+            handler_name: str = None,
+            priority: int = 50,
+            stop_propagation: bool = False,
+            **filters
+    ):
+        """注册 InlineQuery 处理器
+
+        过滤器支持：
+        - func: 自定义过滤函数，接收 InlineQuery
+        """
+        handler = HandlerMetadata(
+            name=handler_name or f"{plugin_name}_inline",
+            plugin=plugin_name,
+            callback=callback,
+            priority=priority,
+            stop_propagation=stop_propagation,
+            filters=filters
+        )
+        self.handlers['inline'].append(handler)
+        self.handlers['inline'].sort(key=lambda h: h.priority, reverse=True)
+
     def _check_filters(self, handler: HandlerMetadata, message: types.Message) -> bool:
         """检查消息是否符合 handler 的过滤条件"""
         filters = handler.filters
@@ -266,6 +292,45 @@ class PluginMiddleware:
                 return False
 
         return True
+
+    def _check_inline_filters(self, handler: HandlerMetadata, inline_query: types.InlineQuery) -> bool:
+        """检查 inline query 是否符合 handler 的过滤条件"""
+        filters = handler.filters
+
+        if 'func' in filters:
+            try:
+                if not filters['func'](inline_query):
+                    return False
+            except Exception:
+                return False
+
+        return True
+
+    async def dispatch_inline(self, bot, inline_query: types.InlineQuery) -> int:
+        """分发 InlineQuery 到匹配的 handlers，返回执行数量"""
+        matched_handlers = [
+            h for h in self.handlers['inline']
+            if self._check_inline_filters(h, inline_query)
+        ]
+
+        if not matched_handlers:
+            return 0
+
+        executed_count = 0
+        for handler in matched_handlers:
+            try:
+                await handler.callback(bot, inline_query)
+                executed_count += 1
+
+                key = f"{handler.plugin}.{handler.name}"
+                self._execution_stats[key] = self._execution_stats.get(key, 0) + 1
+
+                if handler.stop_propagation:
+                    break
+            except Exception as e:
+                logger.error(f"❌ Inline Handler {handler.plugin}.{handler.name} 执行失败: {e}")
+
+        return executed_count
 
     async def dispatch_callback(self, bot, call: types.CallbackQuery) -> int:
         """分发回调查询到匹配的 handlers，返回执行数量"""

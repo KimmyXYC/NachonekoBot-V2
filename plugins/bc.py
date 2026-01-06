@@ -31,7 +31,8 @@ __command_descriptions__ = {
     "bc": "货币转换（支持法币多汇率源+加密货币）"
 }
 __command_help__ = {
-    "bc": "/bc [Amount] [Currency_From] [Currency_To] - 货币转换（法币支持欧盟/银联/Mastercard/Visa多汇率源）"
+    "bc": "/bc [Amount] [Currency_From] [Currency_To] - 货币转换（法币支持欧盟/银联/Mastercard/Visa多汇率源）\n"
+          "Inline: @NachoNekoX_bot bc [Amount] [Currency_From] [Currency_To]"
 }
 
 
@@ -392,15 +393,28 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
         }
 
 
+def _normalize_bc_tokens(tokens: list[str]) -> list[str]:
+    """将输入 tokens 规整为 bc 的参数列表。
 
-async def handle_bc_command(bot, message: types.Message) -> None:
+    - 命令：['/bc', '1', 'USD', 'CNY'] -> ['1', 'USD', 'CNY']
+    - Inline：['bc', '1', 'USD', 'CNY'] -> ['1', 'USD', 'CNY']
     """
-    处理币种转换命令
-    :param bot: Bot 对象
-    :param message: 消息对象
-    :return:
-    """
-    command_args = message.text.split()
+    if not tokens:
+        return []
+
+    first = tokens[0]
+    if first.startswith('/'):
+        first = first[1:].split('@')[0]
+
+    if first.lower() == 'bc':
+        return tokens[1:]
+
+    return tokens
+
+
+async def query_bc_text(raw_tokens: list[str]) -> str:
+    """生成与 `/bc` 命令一致的输出文本，用于命令与 Inline 复用。"""
+    args = _normalize_bc_tokens(raw_tokens)
 
     # 初始化数据
     try:
@@ -409,11 +423,10 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         nowtimestamp = binanceclient.time()
         nowtime = datetime.fromtimestamp(float(nowtimestamp['serverTime']) / 1000, UTC)
     except Exception as e:
-        await bot.reply_to(message, f"初始化失败: {str(e)}")
-        return
+        return f"初始化失败: {str(e)}"
 
     # 无参数时显示BTC和ETH的价格
-    if len(command_args) == 1:
+    if len(args) == 0:
         try:
             btc_price_data = binanceclient.ticker_price("BTCUSDT")
             eth_price_data = binanceclient.ticker_price("ETHUSDT")
@@ -423,35 +436,28 @@ async def handle_bc_command(bot, message: types.Message) -> None:
                 f'1 BTC = {float(btc_price_data["price"]):.2f} USDT\n'
                 f'1 ETH = {float(eth_price_data["price"]):.2f} USDT'
             )
-
-            await bot.reply_to(message, response_text)
-            return
+            return response_text
         except Exception as e:
-            await bot.reply_to(message, f"获取价格失败: {str(e)}")
-            return
+            return f"获取价格失败: {str(e)}"
 
     # 参数不足
-    if len(command_args) < 4:
+    if len(args) < 3:
         usage_text = (
             "使用方法: /bc <数量> <币种1> <币种2>\n"
             "例如: /bc 100 USD EUR - 将100美元转换为欧元\n"
             "例如: /bc 1 BTC USD - 将1比特币转换为美元\n"
             "例如: /bc 0.5 ETH BTC - 将0.5以太坊转换为比特币"
         )
-        await bot.reply_to(message, usage_text)
-        return
+        return usage_text
 
     # 解析参数
     try:
-        number = float(command_args[1])
+        number = float(args[0])
     except ValueError:
-        await bot.reply_to(message, "数量必须是有效的数字")
-        return
+        return "数量必须是有效的数字"
 
-    _from = command_args[2].upper().strip()
-    _to = command_args[3].upper().strip()
-
-    msg = await bot.reply_to(message, f"正在转换 {number} {_from} 到 {_to}...")
+    _from = args[1].upper().strip()
+    _to = args[2].upper().strip()
 
     # 优先尝试四种法币汇率源（欧盟/银联/Mastercard/Visa）
     # 只有当四种方式全部失败时，才尝试加密货币交易对。
@@ -497,9 +503,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         else:
             response_lines.append(f"Visa: {visa_result['error']}")
 
-        result_text = "\n".join(response_lines)
-        await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
-        return
+        return "\n".join(response_lines)
 
     # 从法定货币到加密货币
     if currencies.count(_from) != 0:
@@ -509,22 +513,14 @@ async def handle_bc_command(bot, message: types.Message) -> None:
                 price_data = binanceclient.ticker_price(f"{_to}USDT")
                 crypto_amount = 1 / float(price_data['price']) * usd_number
 
-                await bot.edit_message_text(
+                return (
                     f"{number} {_from} = {crypto_amount:.8f} {_to}\n"
-                    f"{number} {_from} = {usd_number:.2f} USD",
-                    message.chat.id, msg.message_id
+                    f"{number} {_from} = {usd_number:.2f} USD"
                 )
             except ClientError:
-                await bot.edit_message_text(
-                    f"找不到交易对 {_to}USDT",
-                    message.chat.id, msg.message_id
-                )
+                return f"找不到交易对 {_to}USDT"
         except Exception as e:
-            await bot.edit_message_text(
-                f"转换失败: {str(e)}",
-                message.chat.id, msg.message_id
-            )
-        return
+            return f"转换失败: {str(e)}"
 
     # 从加密货币到法定货币
     if currencies.count(_to) != 0:
@@ -533,53 +529,126 @@ async def handle_bc_command(bot, message: types.Message) -> None:
             usd_price = float(price_data['price'])
             fiat_amount = usd_price * number * data[_to] / data["USD"]
 
-            await bot.edit_message_text(
+            return (
                 f"{number} {_from} = {fiat_amount:.2f} {_to}\n"
-                f"1 {_from} = {usd_price:.2f} USD",
-                message.chat.id, msg.message_id
+                f"1 {_from} = {usd_price:.2f} USD"
             )
         except ClientError:
-            await bot.edit_message_text(
-                f"找不到交易对 {_from}USDT",
-                message.chat.id, msg.message_id
-            )
+            return f"找不到交易对 {_from}USDT"
         except Exception as e:
-            await bot.edit_message_text(
-                f"转换失败: {str(e)}",
-                message.chat.id, msg.message_id
-            )
-        return
+            return f"转换失败: {str(e)}"
 
     # 两种都是加密货币
     try:
         try:
             price_data = binanceclient.ticker_price(f"{_from}{_to}")
             result = float(price_data['price']) * number
-
-            await bot.edit_message_text(
-                f"{number} {_from} = {result} {_to}",
-                message.chat.id, msg.message_id
-            )
+            return f"{number} {_from} = {result} {_to}"
         except ClientError:
             # 尝试反向交易对
             try:
                 price_data = binanceclient.ticker_price(f"{_to}{_from}")
                 result = number / float(price_data['price'])
-
-                await bot.edit_message_text(
-                    f"{number} {_from} = {result} {_to}",
-                    message.chat.id, msg.message_id
-                )
+                return f"{number} {_from} = {result} {_to}"
             except ClientError:
-                await bot.edit_message_text(
-                    f"找不到交易对 {_from}{_to} 或 {_to}{_from}",
-                    message.chat.id, msg.message_id
-                )
+                return f"找不到交易对 {_from}{_to} 或 {_to}{_from}"
     except Exception as e:
-        await bot.edit_message_text(
-            f"转换失败: {str(e)}",
-            message.chat.id, msg.message_id
+        return f"转换失败: {str(e)}"
+
+
+async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
+    """处理 Inline Query：@Bot bc [Amount] [Currency_From] [Currency_To]"""
+    query = (inline_query.query or "").strip()
+    tokens = query.split()
+
+    # 仅在 middleware 过滤后进来；此处再做一次兜底
+    if not tokens or tokens[0].lower() != 'bc':
+        text = (
+            "使用方法: bc <数量> <币种1> <币种2>\n"
+            "例如: bc 100 USD EUR"
         )
+        result = types.InlineQueryResultArticle(
+            id="bc_usage",
+            title="货币转换 (bc)",
+            description="用法：bc [Amount] [Currency_From] [Currency_To]",
+            input_message_content=types.InputTextMessageContent(text)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        return
+
+    args = _normalize_bc_tokens(tokens)
+    if len(args) not in (0, 3):
+        text = (
+            "使用方法: bc <数量> <币种1> <币种2>\n"
+            "例如: bc 100 USD EUR"
+        )
+        result = types.InlineQueryResultArticle(
+            id="bc_usage",
+            title="货币转换 (bc)",
+            description="用法：bc [Amount] [Currency_From] [Currency_To]",
+            input_message_content=types.InputTextMessageContent(text)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        return
+
+    result_text = await query_bc_text(tokens)
+    title = "bc"
+    result_id = "bc_prices"
+    if len(args) == 3:
+        title = f"{args[0]} {args[1].upper()} -> {args[2].upper()}"
+        result_id = f"bc_{args[0]}_{args[1].upper()}_{args[2].upper()}"
+
+    result = types.InlineQueryResultArticle(
+        id=result_id,
+        title=title,
+        description="发送转换结果",
+        input_message_content=types.InputTextMessageContent(result_text)
+    )
+    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+
+
+
+async def handle_bc_command(bot, message: types.Message) -> None:
+    """
+    处理币种转换命令
+    :param bot: Bot 对象
+    :param message: 消息对象
+    :return:
+    """
+    command_args = message.text.split()
+    args = _normalize_bc_tokens(command_args)
+
+    # 无参数时显示BTC和ETH的价格
+    if len(args) == 0:
+        response_text = await query_bc_text(command_args)
+        await bot.reply_to(message, response_text)
+        return
+
+    # 参数不足
+    if len(args) < 3:
+        usage_text = (
+            "使用方法: /bc <数量> <币种1> <币种2>\n"
+            "例如: /bc 100 USD EUR - 将100美元转换为欧元\n"
+            "例如: /bc 1 BTC USD - 将1比特币转换为美元\n"
+            "例如: /bc 0.5 ETH BTC - 将0.5以太坊转换为比特币"
+        )
+        await bot.reply_to(message, usage_text)
+        return
+
+    # 解析参数（仅用于提示“正在转换”）
+    try:
+        number = float(args[0])
+    except ValueError:
+        await bot.reply_to(message, "数量必须是有效的数字")
+        return
+
+    _from = args[1].upper().strip()
+    _to = args[2].upper().strip()
+
+    msg = await bot.reply_to(message, f"正在转换 {number} {_from} 到 {_to}...")
+
+    result_text = await query_bc_text(command_args)
+    await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
 
 # ==================== 插件注册 ====================
@@ -595,6 +664,14 @@ async def register_handlers(bot, middleware, plugin_name):
         priority=50,  # 优先级
         stop_propagation=True,  # 阻止后续处理器
         chat_types=['private', 'group', 'supergroup']  # 过滤器
+    )
+
+    middleware.register_inline_handler(
+        callback=handle_bc_inline_query,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('bc')
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")

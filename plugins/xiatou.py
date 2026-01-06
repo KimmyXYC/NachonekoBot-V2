@@ -15,7 +15,7 @@ from utils.postgres import BotDatabase
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "xiatou"
-__version__ = 1.0
+__version__ = 1.1
 __author__ = "KimmyXYC"
 __description__ = "下头检测系统（仅对配置用户生效）"
 __commands__ = []  # 这个插件通过过滤器和配置触发，不是命令
@@ -27,6 +27,38 @@ def get_today_midnight_ts_utc8() -> int:
     now = datetime.datetime.now(tz)
     midnight = datetime.datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz)
     return int(midnight.timestamp())
+
+
+async def _sum_xiatou_since_midnight(start_midnight_ts_utc8: int, end_midnight_ts_utc8: int) -> int:
+    """统计 xiatou 表在 [start_midnight, end_midnight]（按 UTC+8 当天0点ts）范围内的 count 之和。"""
+    conn = BotDatabase.conn
+    try:
+        val = await conn.fetchval(
+            "SELECT COALESCE(SUM(count), 0) FROM xiatou WHERE time BETWEEN $1 AND $2",
+            start_midnight_ts_utc8,
+            end_midnight_ts_utc8
+        )
+        return int(val or 0)
+    except Exception as e:
+        logger.error(f"[INB] 统计失败: {e}")
+        return 0
+
+
+async def query_inb_text() -> str:
+    """生成与 /inb 命令一致的输出文本，用于命令与 Inline 复用。"""
+    today_midnight = get_today_midnight_ts_utc8()
+    day = 86400
+
+    sum_1 = await _sum_xiatou_since_midnight(today_midnight, today_midnight)
+    sum_7 = await _sum_xiatou_since_midnight(today_midnight - 6 * day, today_midnight)
+    sum_31 = await _sum_xiatou_since_midnight(today_midnight - 30 * day, today_midnight)
+
+    return (
+        f"inb 虾头次数统计"
+        f"近1天：{sum_1}\n"
+        f"近7天：{sum_7}\n"
+        f"近31天：{sum_31}"
+    )
 
 
 async def increment_today_count_pg() -> int:
@@ -140,6 +172,39 @@ async def handle_xiatou(bot, message):
     return
 
 
+async def handle_inb_command(bot, message: types.Message):
+    """隐藏命令：/inb"""
+    text = await query_inb_text()
+    await bot.reply_to(message, text)
+
+
+async def handle_inb_inline_query(bot, inline_query: types.InlineQuery):
+    """处理 Inline Query：@Bot inb"""
+    query = (inline_query.query or "").strip()
+    tokens = query.split()
+
+    # 仅在 middleware 过滤后进来；此处再做一次兜底
+    if not tokens or tokens[0].lower() != 'inb' or len(tokens) != 1:
+        usage = "用法：inb"
+        result = types.InlineQueryResultArticle(
+            id="inb_usage",
+            title="下头次数统计 (inb)",
+            description="用法：inb",
+            input_message_content=types.InputTextMessageContent(usage)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        return
+
+    text = await query_inb_text()
+    result = types.InlineQueryResultArticle(
+        id="inb_stats",
+        title="下头次数统计",
+        description="发送统计结果",
+        input_message_content=types.InputTextMessageContent(text)
+    )
+    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+
+
 # ==================== 插件注册 ====================
 async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
@@ -174,7 +239,26 @@ async def register_handlers(bot, middleware, plugin_name):
         func=xiatou_filter
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 下头检测系统")
+    # 隐藏命令 /inb（不加入 __commands__，避免出现在 /help 或 bot command list 中）
+    middleware.register_command_handler(
+        commands=['inb'],
+        callback=handle_inb_command,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=['private', 'group', 'supergroup']
+    )
+
+    # Inline: @NachoNekoX_bot inb
+    middleware.register_inline_handler(
+        callback=handle_inb_inline_query,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('inb')
+    )
+
+    logger.info(f"✅ {__plugin_name__} 插件已注册 - 下头检测系统（含隐藏命令 /inb 与 Inline inb）")
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:

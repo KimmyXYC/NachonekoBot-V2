@@ -227,6 +227,13 @@ class BotRunner:
             if executed > 0:
                 logger.info(f"✨ 回调处理完成，执行了 {executed} 个处理器")
 
+        # Inline Query 分发器（交由中间件处理）
+        @bot.inline_handler(func=lambda q: True)
+        async def inline_dispatcher(inline_query: types.InlineQuery):
+            executed = await plugin_manager.middleware.dispatch_inline(bot, inline_query)
+            if executed > 0:
+                logger.info(f"✨ InlineQuery 处理完成，执行了 {executed} 个处理器")
+
         # ==================== 启动 Bot ====================
         try:
             logger.success("✨ Bot 启动成功,开始轮询...")
