@@ -18,11 +18,19 @@ __command_descriptions__ = {
     "whois": "查询 Whois 信息"
 }
 __command_help__ = {
-    "whois": "/whois [Domain] - 查询 Whois 信息"
+    "whois": "/whois [Domain] - 查询 Whois 信息\nInline: @NachoNekoX_bot whois [Domain]"
 }
 
 
 # ==================== 核心功能 ====================
+async def query_whois_text(data: str) -> str:
+    """生成与 `/whois` 命令一致的输出文本，用于命令与 Inline 复用（MarkdownV2）。"""
+    status, result = await whois_check(data)
+    if not status:
+        return f"请求失败: `{result}`"
+    return f"`{result}`"
+
+
 async def handle_whois_command(bot, message: types.Message):
     """
     处理 Whois 命令
@@ -31,12 +39,36 @@ async def handle_whois_command(bot, message: types.Message):
     :return:
     """
     data = message.text.split()[1]
-    msg = await bot.reply_to(message, f"正在查询 {message.text.split()[1]} Whois 信息...", disable_web_page_preview=True)
-    status, result = await whois_check(data)
-    if not status:
-        await bot.edit_message_text(f"请求失败: `{result}`", message.chat.id, msg.message_id, parse_mode="MarkdownV2")
+    msg = await bot.reply_to(message, f"正在查询 {data} Whois 信息...", disable_web_page_preview=True)
+    text = await query_whois_text(data)
+    await bot.edit_message_text(text, message.chat.id, msg.message_id, parse_mode="MarkdownV2")
+
+
+async def handle_whois_inline_query(bot, inline_query: types.InlineQuery):
+    """处理 Inline Query：@Bot whois [Domain]"""
+    query = (inline_query.query or "").strip()
+    tokens = query.split()
+
+    if len(tokens) != 2 or tokens[0].lower() != 'whois':
+        usage = "用法：whois [Domain]"
+        result = types.InlineQueryResultArticle(
+            id="whois_usage",
+            title="Whois 查询",
+            description="用法：whois [Domain]",
+            input_message_content=types.InputTextMessageContent(usage)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
         return
-    await bot.edit_message_text(f"`{result}`", message.chat.id, msg.message_id, parse_mode="MarkdownV2")
+
+    domain = tokens[1]
+    result_text = await query_whois_text(domain)
+    result = types.InlineQueryResultArticle(
+        id=f"whois_{domain}",
+        title=f"Whois：{domain}",
+        description="发送查询结果",
+        input_message_content=types.InputTextMessageContent(result_text, parse_mode="MarkdownV2")
+    )
+    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
 
 
 async def whois_check(data):
@@ -89,6 +121,14 @@ async def register_handlers(bot, middleware, plugin_name):
         priority=50,
         stop_propagation=True,
         chat_types=['private', 'group', 'supergroup']
+    )
+
+    middleware.register_inline_handler(
+        callback=handle_whois_inline_query,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('whois')
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")

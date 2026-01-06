@@ -21,11 +21,16 @@ __command_descriptions__ = {
     "dns": "查询 DNS 记录"
 }
 __command_help__ = {
-    "dns": "/dns [Domain] [Record_Type] - 查询 DNS 记录"
+    "dns": "/dns [Domain] [Record_Type] - 查询 DNS 记录\nInline: @NachoNekoX_bot dns [Domain] [Record_Type]"
 }
 
 
 # ==================== 核心功能 ====================
+async def query_dns_text(domain: str, record_type: str) -> str:
+    """生成与 `/dns` 命令一致的输出文本，用于命令与 Inline 复用（HTML）。"""
+    return await dns_lookup(domain, record_type)
+
+
 async def handle_dns_command(bot, message: types.Message, record_type):
     """
     处理 DNS 查询命令
@@ -41,10 +46,65 @@ async def handle_dns_command(bot, message: types.Message, record_type):
     msg = await bot.reply_to(message, f"正在查询 {domain} 的 {record_type.upper()} 记录...", disable_web_page_preview=True)
 
     # 进行 DNS 查询
-    result = await dns_lookup(domain, record_type)
+    result = await query_dns_text(domain, record_type)
 
     # 更新消息内容为查询结果
     await bot.edit_message_text(result, message.chat.id, msg.message_id, parse_mode="HTML")
+
+
+async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
+    """处理 Inline Query：@Bot dns [Domain] [Record_Type]"""
+    query = (inline_query.query or "").strip()
+    tokens = query.split()
+
+    record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "PTR"]
+    if not tokens or tokens[0].lower() != 'dns':
+        usage = "用法：dns [Domain] [Record_Type]（Record_Type 可选，默认 A）"
+        result = types.InlineQueryResultArticle(
+            id="dns_usage",
+            title="DNS 查询",
+            description="用法：dns [Domain] [Record_Type]",
+            input_message_content=types.InputTextMessageContent(usage)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        return
+
+    args = tokens[1:]
+    if len(args) == 1:
+        domain = args[0]
+        record_type = "A"
+    elif len(args) == 2:
+        domain = args[0]
+        record_type = args[1].upper()
+        if record_type not in record_types:
+            usage = "用法：dns [Domain] [Record_Type]（Record_Type: A/AAAA/CNAME/MX/NS/TXT/SOA/PTR）"
+            result = types.InlineQueryResultArticle(
+                id="dns_usage",
+                title="DNS 查询",
+                description="Record_Type 无效",
+                input_message_content=types.InputTextMessageContent(usage)
+            )
+            await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+            return
+    else:
+        usage = "用法：dns [Domain] [Record_Type]（Record_Type 可选，默认 A）"
+        result = types.InlineQueryResultArticle(
+            id="dns_usage",
+            title="DNS 查询",
+            description="参数不正确",
+            input_message_content=types.InputTextMessageContent(usage)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        return
+
+    result_text = await query_dns_text(domain, record_type)
+    result = types.InlineQueryResultArticle(
+        id=f"dns_{domain}_{record_type}",
+        title=f"DNS {domain} {record_type}",
+        description="发送查询结果",
+        input_message_content=types.InputTextMessageContent(result_text, parse_mode="HTML")
+    )
+    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
 
 async def dns_lookup(domain, record_type):
     """
@@ -146,6 +206,14 @@ async def register_handlers(bot, middleware, plugin_name):
         priority=50,
         stop_propagation=True,
         chat_types=['private', 'group', 'supergroup']
+    )
+
+    middleware.register_inline_handler(
+        callback=handle_dns_inline_query,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('dns')
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")

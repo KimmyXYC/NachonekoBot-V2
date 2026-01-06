@@ -18,11 +18,23 @@ __command_descriptions__ = {
     "dnsapi": "使用 API 查询 DNS 记录"
 }
 __command_help__ = {
-    "dnsapi": "/dnsapi [Domain] [Record_Type] - 使用 API 查询 DNS 记录"
+    "dnsapi": "/dnsapi [Domain] [Record_Type] - 使用 API 查询 DNS 记录\n"
+              "Inline: @NachoNekoX_bot dnsapi [Domain] [Record_Type]"
 }
 
 
 # ==================== 核心功能 ====================
+async def query_dnsapi_text(domain: str, record_type: str) -> str:
+    """生成与 `/dnsapi` 命令一致的输出文本，用于命令与 Inline 复用（MarkdownV2）。"""
+    status, result = await get_dns_info(domain, record_type)
+    if not status:
+        return f"请求失败: `{result}`"
+
+    dns_info = f"CN:\nTime Consume: {result['86'][0]['answer']['time_consume']}\n"
+    dns_info += f"Records: {result['86'][0]['answer']['records']}\n\n"
+    return f"`{dns_info}`"
+
+
 async def handle_dns_command(bot, message: types.Message, record_type):
     """
     处理 DNS 命令
@@ -31,15 +43,66 @@ async def handle_dns_command(bot, message: types.Message, record_type):
     :param record_type: 记录类型
     :return:
     """
-    msg = await bot.reply_to(message, f"DNS lookup {message.text.split()[1]} as {record_type.upper()} ...", disable_web_page_preview=True)
-    status, result = await get_dns_info(message.text.split()[1], record_type)
-    if not status:
-        await bot.edit_message_text(f"请求失败: `{result}`", message.chat.id, msg.message_id, parse_mode="MarkdownV2")
+    domain = message.text.split()[1]
+    msg = await bot.reply_to(message, f"DNS lookup {domain} as {record_type.upper()} ...", disable_web_page_preview=True)
+    text = await query_dnsapi_text(domain, record_type)
+    await bot.edit_message_text(text, message.chat.id, msg.message_id, parse_mode="MarkdownV2")
+
+
+async def handle_dnsapi_inline_query(bot, inline_query: types.InlineQuery):
+    """处理 Inline Query：@Bot dnsapi [Domain] [Record_Type]"""
+    query = (inline_query.query or "").strip()
+    tokens = query.split()
+
+    record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
+
+    if not tokens or tokens[0].lower() != 'dnsapi':
+        usage = "用法：dnsapi [Domain] [Record_Type]（Record_Type 可选，默认 A）"
+        result = types.InlineQueryResultArticle(
+            id="dnsapi_usage",
+            title="DNS API 查询 (dnsapi)",
+            description="用法：dnsapi [Domain] [Record_Type]",
+            input_message_content=types.InputTextMessageContent(usage)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
         return
-    dns_info = f"CN:\nTime Consume: {result['86'][0]['answer']['time_consume']}\n"
-    dns_info += f"Records: {result['86'][0]['answer']['records']}\n\n"
-    dns_info = f"`{dns_info}`"
-    await bot.edit_message_text(dns_info, message.chat.id, msg.message_id, parse_mode="MarkdownV2")
+
+    args = tokens[1:]
+    if len(args) == 1:
+        domain = args[0]
+        record_type = "A"
+    elif len(args) == 2:
+        domain = args[0]
+        record_type = args[1].upper()
+        if record_type not in record_types:
+            usage = "用法：dnsapi [Domain] [Record_Type]（Record_Type: A/AAAA/CNAME/MX/NS/TXT）"
+            result = types.InlineQueryResultArticle(
+                id="dnsapi_usage",
+                title="DNS API 查询 (dnsapi)",
+                description="Record_Type 无效",
+                input_message_content=types.InputTextMessageContent(usage)
+            )
+            await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+            return
+    else:
+        usage = "用法：dnsapi [Domain] [Record_Type]（Record_Type 可选，默认 A）"
+        result = types.InlineQueryResultArticle(
+            id="dnsapi_usage",
+            title="DNS API 查询 (dnsapi)",
+            description="参数不正确",
+            input_message_content=types.InputTextMessageContent(usage)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        return
+
+    result_text = await query_dnsapi_text(domain, record_type)
+    result = types.InlineQueryResultArticle(
+        id=f"dnsapi_{domain}_{record_type}",
+        title=f"DNSAPI {domain} {record_type}",
+        description="发送查询结果",
+        input_message_content=types.InputTextMessageContent(result_text, parse_mode="MarkdownV2")
+    )
+    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
 
 async def get_dns_info(domain, record_type):
     """
@@ -106,6 +169,14 @@ async def register_handlers(bot, middleware, plugin_name):
         priority=50,
         stop_propagation=True,
         chat_types=['private', 'group', 'supergroup']
+    )
+
+    middleware.register_inline_handler(
+        callback=handle_dnsapi_inline_query,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('dnsapi')
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")

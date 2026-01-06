@@ -20,6 +20,11 @@ __author__ = "KimmyXYC"
 __description__ = "下头检测系统（仅对配置用户生效）"
 __commands__ = []  # 这个插件通过过滤器和配置触发，不是命令
 
+# 隐藏功能：/inb 与 inline inb（用于统计）
+__command_help__ = {
+    "inb": "Inline: @NachoNekoX_bot inb"
+}
+
 
 # ==================== 核心功能 ====================
 def get_today_midnight_ts_utc8() -> int:

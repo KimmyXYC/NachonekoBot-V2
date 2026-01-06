@@ -20,11 +20,33 @@ __command_descriptions__ = {
     "icp": "查询域名 ICP 备案信息"
 }
 __command_help__ = {
-    "icp": "/icp [Domain] - 查询域名 ICP 备案信息"
+    "icp": "/icp [Domain] - 查询域名 ICP 备案信息\nInline: @NachoNekoX_bot icp [Domain]"
 }
 
 
 # ==================== 核心功能 ====================
+async def query_icp_text(domain: str) -> str:
+    """生成与 `/icp` 命令一致的输出文本，用于命令与 Inline 复用（HTML）。"""
+    status, data = await icp_record_check(domain)
+    if not status:
+        return markdown_to_telegram_html(f"请求失败: `{data}`")
+
+    if not data:
+        icp_info = f"""查询目标:  `{domain}`\n备案状态:  `未备案`"""
+    else:
+        icp_info = ""
+        for item in data:
+            icp_info += (
+                f"域名:  `{item['domain']}`\n"
+                f"备案号:  `{item['mainLicence']}`\n"
+                f"备案主体:  `{item['unitName']}`\n"
+                f"备案性质:  `{item['natureName']}`\n"
+                f"备案时间:  `{item['updateRecordTime']}`\n\n"
+            )
+
+    return markdown_to_telegram_html(icp_info)
+
+
 async def handle_icp_command(bot, message: types.Message):
     """
     处理 ICP 命令
@@ -32,18 +54,37 @@ async def handle_icp_command(bot, message: types.Message):
     :param message: 消息对象
     :return:
     """
-    msg = await bot.reply_to(message, f"正在查询域名 {message.text.split()[1]} 备案信息...", disable_web_page_preview=True)
-    status, data = await icp_record_check(message.text.split()[1])
-    if not status:
-        await bot.edit_message_text(message, f"请求失败: `{data}`", message.chat.id, msg.message_id, parse_mode="MarkdownV2")
+    domain = message.text.split()[1]
+    msg = await bot.reply_to(message, f"正在查询域名 {domain} 备案信息...", disable_web_page_preview=True)
+    text = await query_icp_text(domain)
+    await bot.edit_message_text(text, message.chat.id, msg.message_id, parse_mode="HTML")
+
+
+async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
+    """处理 Inline Query：@Bot icp [Domain]"""
+    query = (inline_query.query or "").strip()
+    tokens = query.split()
+
+    if len(tokens) != 2 or tokens[0].lower() != 'icp':
+        usage = "用法：icp [Domain]"
+        result = types.InlineQueryResultArticle(
+            id="icp_usage",
+            title="ICP 备案查询",
+            description="用法：icp [Domain]",
+            input_message_content=types.InputTextMessageContent(usage)
+        )
+        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
         return
-    if not data:
-        icp_info = f"""查询目标:  `{message.text.split()[1]}`\n备案状态:  `未备案`"""
-    else:
-        icp_info = ""
-        for item in data:
-            icp_info += f"""域名:  `{item["domain"]}`\n备案号:  `{item["mainLicence"]}`\n备案主体:  `{item["unitName"]}`\n备案性质:  `{item["natureName"]}`\n备案时间:  `{item["updateRecordTime"]}`\n\n"""
-    await bot.edit_message_text(markdown_to_telegram_html(icp_info), message.chat.id, msg.message_id, parse_mode="HTML")
+
+    domain = tokens[1]
+    result_text = await query_icp_text(domain)
+    result = types.InlineQueryResultArticle(
+        id=f"icp_{domain}",
+        title=f"ICP：{domain}",
+        description="发送查询结果",
+        input_message_content=types.InputTextMessageContent(result_text, parse_mode="HTML")
+    )
+    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
 
 
 async def icp_record_check(domain, retries=5):
@@ -97,6 +138,14 @@ async def register_handlers(bot, middleware, plugin_name):
         priority=50,
         stop_propagation=True,
         chat_types=['private', 'group', 'supergroup']
+    )
+
+    middleware.register_inline_handler(
+        callback=handle_icp_inline_query,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('icp')
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")

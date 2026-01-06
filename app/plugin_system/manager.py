@@ -369,6 +369,47 @@ class PluginManager:
         
         return commands_info
 
+    def get_inline_commands_info(self) -> List[dict]:
+        """从所有已加载插件中收集 Inline 命令信息。
+
+        规则：
+        - 仅从插件模块的 `__command_help__` 中提取包含 `Inline:` 的条目
+        - 允许条目不在 `__commands__` 中声明（用于隐藏命令/仅 inline 功能）
+
+        返回: List[{ 'command': str, 'help_text': str, 'plugin': str }]
+        """
+        inline_info: List[dict] = []
+
+        for plugin in self.plugins:
+            if not plugin.status:
+                continue
+
+            module_name = f"plugins.{plugin.name}"
+            if module_name not in sys.modules:
+                continue
+
+            try:
+                module = sys.modules[module_name]
+                help_map = getattr(module, '__command_help__', None)
+                if not isinstance(help_map, dict):
+                    continue
+
+                for cmd, help_text in help_map.items():
+                    if not isinstance(help_text, str):
+                        continue
+                    if 'Inline:' not in help_text:
+                        continue
+
+                    inline_info.append({
+                        'command': str(cmd),
+                        'help_text': help_text,
+                        'plugin': plugin.name
+                    })
+            except Exception as e:
+                logger.error(f"收集插件 {plugin.name} Inline 命令信息时出错: {e}")
+
+        return inline_info
+
 
 # 全局插件管理器实例
 plugin_manager = PluginManager()
