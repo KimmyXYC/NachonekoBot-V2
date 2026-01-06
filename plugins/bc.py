@@ -23,7 +23,7 @@ except ImportError:
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "bc"
-__version__ = 1.1
+__version__ = 1.2
 __author__ = "KimmyXYC"
 __description__ = "货币转换工具（支持法币多汇率源+加密货币）"
 __commands__ = ["bc"]
@@ -82,39 +82,6 @@ async def fetch_chrome_version() -> str:
     获取Chrome版本，使用TTL缓存
     """
     return FALLBACK_CHROME_VERSION
-    global _chrome_version_cache, _chrome_version_timestamp
-
-    # 检查缓存是否有效
-    current_time = time.time()
-    if _chrome_version_cache is not None and (current_time - _chrome_version_timestamp) < CHROME_VERSION_TTL:
-        logger.debug("使用缓存的Chrome版本: {}", _chrome_version_cache)
-        return str(_chrome_version_cache)
-
-    # 尝试获取最新版本
-    try:
-        logger.debug("从chromestatus.com获取最新Chrome版本")
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://chromestatus.com/api/v0/channels", timeout=aiohttp.ClientTimeout(total=10)) as response:
-                if response.status == 200:
-                    text = await response.text()
-                    # 移除前缀 )]}'\n
-                    cleaned_data = text.replace(")]}'\n", "")
-                    import json
-                    channels = json.loads(cleaned_data)
-                    stable_channel = channels.get("stable", {})
-                    version = str(stable_channel.get("version", FALLBACK_CHROME_VERSION))
-
-                    # 更新缓存
-                    _chrome_version_cache = version
-                    _chrome_version_timestamp = current_time
-                    logger.debug("获取到Chrome版本: {}", version)
-                    return version
-                else:
-                    logger.debug("获取Chrome版本失败，状态码: {}，使用fallback版本: {}", response.status, FALLBACK_CHROME_VERSION)
-                    return FALLBACK_CHROME_VERSION
-    except Exception as e:
-        logger.debug("获取Chrome版本异常: {}，使用fallback版本: {}", str(e), FALLBACK_CHROME_VERSION)
-        return FALLBACK_CHROME_VERSION
 
 
 async def generate_headers() -> dict:
@@ -486,20 +453,18 @@ async def handle_bc_command(bot, message: types.Message) -> None:
 
     msg = await bot.reply_to(message, f"正在转换 {number} {_from} 到 {_to}...")
 
-    # 两种都是法定货币
-    if (currencies.count(_from) != 0) and (currencies.count(_to) != 0):
-        # 并行获取四个提供商的汇率
-        eu_result, unionpay_result, mastercard_result, visa_result = await asyncio.gather(
-            fetch_eu_rate(number, _from, _to, data),
-            fetch_unionpay_rate(number, _from, _to),
-            fetch_mastercard_rate(number, _from, _to),
-            fetch_visa_rate(number, _from, _to)
-        )
+    # 优先尝试四种法币汇率源（欧盟/银联/Mastercard/Visa）
+    # 只有当四种方式全部失败时，才尝试加密货币交易对。
+    eu_result, unionpay_result, mastercard_result, visa_result = await asyncio.gather(
+        fetch_eu_rate(number, _from, _to, data),
+        fetch_unionpay_rate(number, _from, _to),
+        fetch_mastercard_rate(number, _from, _to),
+        fetch_visa_rate(number, _from, _to)
+    )
 
-        # 构建响应消息
+    if any(r.get("success") for r in (eu_result, unionpay_result, mastercard_result, visa_result)):
         response_lines = []
 
-        # 欧盟结果
         if eu_result["success"]:
             response_lines.append(
                 f"欧盟: {number:.2f} {_from} ≈ {eu_result['converted_amount']:.2f} {_to} "
@@ -508,7 +473,6 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         else:
             response_lines.append(f"欧盟: {eu_result['error']}")
 
-        # 银联结果
         if unionpay_result["success"]:
             response_lines.append(
                 f"银联: {number:.2f} {_from} ≈ {unionpay_result['converted_amount']:.2f} {_to} "
@@ -517,7 +481,6 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         else:
             response_lines.append(f"银联: {unionpay_result['error']}")
 
-        # Mastercard结果
         if mastercard_result["success"]:
             response_lines.append(
                 f"Mastercard: {number:.2f} {_from} ≈ {mastercard_result['converted_amount']:.2f} {_to} "
@@ -526,7 +489,6 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         else:
             response_lines.append(f"Mastercard: {mastercard_result['error']}")
 
-        # Visa结果
         if visa_result["success"]:
             response_lines.append(
                 f"Visa: {number:.2f} {_from} ≈ {visa_result['converted_amount']:.2f} {_to} "
@@ -536,10 +498,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
             response_lines.append(f"Visa: {visa_result['error']}")
 
         result_text = "\n".join(response_lines)
-        await bot.edit_message_text(
-            result_text,
-            message.chat.id, msg.message_id
-        )
+        await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
         return
 
     # 从法定货币到加密货币
