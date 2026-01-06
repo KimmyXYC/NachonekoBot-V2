@@ -51,13 +51,17 @@ async def query_inb_text() -> str:
 
     sum_1 = await _sum_xiatou_since_midnight(today_midnight, today_midnight)
     sum_7 = await _sum_xiatou_since_midnight(today_midnight - 6 * day, today_midnight)
-    sum_31 = await _sum_xiatou_since_midnight(today_midnight - 30 * day, today_midnight)
+    sum_30 = await _sum_xiatou_since_midnight(today_midnight - 29 * day, today_midnight)
+    sum_180 = await _sum_xiatou_since_midnight(today_midnight - 179 * day, today_midnight)
+    sum_365 = await _sum_xiatou_since_midnight(today_midnight - 364 * day, today_midnight)
 
     return (
         f"inb 虾头次数统计\n"
-        f"近1天：{sum_1}\n"
-        f"近7天：{sum_7}\n"
-        f"近31天：{sum_31}"
+        f"近1天：{sum_1} 次\n"
+        f"近7天：{sum_7} 次\n"
+        f"近30天：{sum_30} 次\n"
+        f"近180天：{sum_180} 次\n"
+        f"近365天：{sum_365} 次"
     )
 
 
