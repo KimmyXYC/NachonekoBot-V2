@@ -54,7 +54,7 @@ async def query_inb_text() -> str:
     sum_31 = await _sum_xiatou_since_midnight(today_midnight - 30 * day, today_midnight)
 
     return (
-        f"inb 虾头次数统计"
+        f"inb 虾头次数统计\n"
         f"近1天：{sum_1}\n"
         f"近7天：{sum_7}\n"
         f"近31天：{sum_31}"
