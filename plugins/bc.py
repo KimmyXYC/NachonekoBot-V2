@@ -170,7 +170,7 @@ async def fetch_unionpay_rate(amount: float, currency_from: str, currency_to: st
         async with aiohttp.ClientSession() as session:
             async with session.get(unionpay_api, timeout=aiohttp.ClientTimeout(total=10)) as response:
                 if response.status != 200:
-                    logger.error("银联API响应状态码: {}", response.status)
+                    logger.error("银联API{}响应状态码: {}", unionpay_api, response.status)
                     return {
                         "success": False,
                         "rate": None,
