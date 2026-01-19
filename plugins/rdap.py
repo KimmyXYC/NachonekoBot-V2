@@ -207,7 +207,13 @@ def format_rdap_response(rdap_data: dict) -> str:
                                 lines.append(f"  Phone: {field_value}")
                             elif field_name == 'adr':
                                 if isinstance(field_value, list):
-                                    addr = [v for v in field_value if v]
+                                    # 展平嵌套的list，将所有元素转换为字符串
+                                    def flatten_to_str(item):
+                                        if isinstance(item, list):
+                                            return ', '.join(flatten_to_str(sub) for sub in item if sub)
+                                        return str(item) if item else ''
+                                    
+                                    addr = [flatten_to_str(v) for v in field_value if v]
                                     if addr:
                                         lines.append(f"  Address: {', '.join(addr)}")
     
