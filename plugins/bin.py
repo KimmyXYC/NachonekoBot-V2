@@ -11,7 +11,7 @@ from loguru import logger
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "bin"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "BIN 号码查询"
 __commands__ = ["bin"]

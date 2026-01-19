@@ -15,7 +15,7 @@ plugins_path = Path("plugins")
 class PluginMetadata(BaseModel):
     """插件元数据"""
     name: str
-    version: float
+    version: str
     author: str = "Unknown"
     description: str = ""
     commands: List[str] = []
@@ -28,7 +28,7 @@ class LocalPlugin(BaseModel):
     name: str
     status: bool  # 是否启用
     installed: bool = False
-    version: Optional[float] = None
+    version: Optional[str] = None
     metadata: Optional[PluginMetadata] = None
 
     @property

@@ -12,7 +12,7 @@ from utils.yaml import BotConfig
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "icp"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "ICP 备案查询"
 __commands__ = ["icp"]

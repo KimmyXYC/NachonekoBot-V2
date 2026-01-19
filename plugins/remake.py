@@ -14,7 +14,7 @@ from utils.postgres import BotDatabase
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "remake"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "转生系统"
 __commands__ = ["remake", "remake_data"]

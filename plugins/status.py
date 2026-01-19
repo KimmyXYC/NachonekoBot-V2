@@ -12,7 +12,7 @@ from utils.yaml import BotConfig
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "status"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "系统状态查询（仅限管理员）"
 __commands__ = ["status"]

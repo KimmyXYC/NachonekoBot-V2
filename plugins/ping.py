@@ -13,7 +13,7 @@ from loguru import logger
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "ping"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "Ping 网络连通性测试"
 __commands__ = ["ping"]

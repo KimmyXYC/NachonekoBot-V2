@@ -15,7 +15,7 @@ from utils.postgres import BotDatabase
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "xiatou"
-__version__ = 1.1
+__version__ = "1.1.0"
 __author__ = "KimmyXYC"
 __description__ = "下头检测系统（仅对配置用户生效）"
 __commands__ = []  # 这个插件通过过滤器和配置触发，不是命令

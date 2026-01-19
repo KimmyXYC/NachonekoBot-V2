@@ -22,7 +22,7 @@ from app.utils import escape_md_v2_text
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "quote_reply"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "/$ 与 \\$ 开头的动作引用插件"
 __commands__ = ["$"]  # 仅用于展示，实际通过 message handler 拦截

@@ -10,7 +10,7 @@ from loguru import logger
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "xibao"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "喜报/悲报/通报/警报生成器"
 __commands__ = []  # 这个插件通过自定义过滤器触发，不是命令

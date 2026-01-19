@@ -17,7 +17,7 @@ class PluginManager:
     """插件管理器"""
 
     def __init__(self):
-        self.version_map: Dict[str, float] = {}
+        self.version_map: Dict[str, str] = {}
         self.plugins: List[LocalPlugin] = []
         self.loaded_handlers = []  # 存储已注册的处理器
 
@@ -39,11 +39,11 @@ class PluginManager:
         with open(version_file, "w", encoding="utf-8") as f:
             json.dump(self.version_map, f, indent=2, ensure_ascii=False)
 
-    def get_local_version(self, name: str) -> Optional[float]:
+    def get_local_version(self, name: str) -> Optional[str]:
         """获取本地插件版本"""
         return self.version_map.get(name)
 
-    def set_local_version(self, name: str, version: float):
+    def set_local_version(self, name: str, version: str):
         """设置插件版本"""
         self.version_map[name] = version
         self.save_version_map()

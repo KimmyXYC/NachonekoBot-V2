@@ -13,7 +13,7 @@ from app.utils import command_error_msg
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "dns"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "DNS 记录查询"
 __commands__ = ["dns"]

@@ -12,7 +12,7 @@ from app.utils import escape_md_v2_text, command_error_msg
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "ip"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "IP 地址查询"
 __commands__ = ["ip"]

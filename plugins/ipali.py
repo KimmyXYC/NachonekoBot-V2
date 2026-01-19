@@ -15,7 +15,7 @@ from app.utils import command_error_msg
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "ipali"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "阿里云 IP 地址查询"
 __commands__ = ["ipali"]

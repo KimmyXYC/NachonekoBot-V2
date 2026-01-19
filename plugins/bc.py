@@ -23,7 +23,7 @@ except ImportError:
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "bc"
-__version__ = 1.2
+__version__ = "1.2.0"
 __author__ = "KimmyXYC"
 __description__ = "货币转换工具（支持法币多汇率源+加密货币）"
 __commands__ = ["bc"]

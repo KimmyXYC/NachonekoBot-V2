@@ -10,7 +10,7 @@ from app.utils import command_error_msg
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "whois"
-__version__ = 1.1
+__version__ = "1.1.0"
 __author__ = "KimmyXYC"
 __description__ = "Whois 域名查询"
 __commands__ = ["whois"]

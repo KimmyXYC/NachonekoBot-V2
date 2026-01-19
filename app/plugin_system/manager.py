@@ -19,7 +19,7 @@ class PluginManager:
     """插件管理器"""
 
     def __init__(self):
-        self.version_map: Dict[str, float] = {}
+        self.version_map: Dict[str, str] = {}
         self.plugins: List[LocalPlugin] = []
         self.loaded_handlers = {}
 
@@ -44,11 +44,11 @@ class PluginManager:
         with open(version_file, "w", encoding="utf-8") as f:
             json.dump(self.version_map, f, indent=2, ensure_ascii=False)
 
-    def get_local_version(self, name: str) -> Optional[float]:
+    def get_local_version(self, name: str) -> Optional[str]:
         """获取本地插件版本"""
         return self.version_map.get(name)
 
-    def set_local_version(self, name: str, version: float):
+    def set_local_version(self, name: str, version: str):
         """设置插件版本"""
         self.version_map[name] = version
         self.save_version_map()
@@ -91,12 +91,11 @@ class PluginManager:
 
                                 parsed_version = None
                                 if isinstance(v, (int, float)):
-                                    parsed_version = float(v)
+                                    # 将数字转换为字符串格式的版本号
+                                    parsed_version = str(float(v))
                                 elif isinstance(v, str):
-                                    try:
-                                        parsed_version = float(v)
-                                    except ValueError:
-                                        pass
+                                    # 直接使用字符串版本号
+                                    parsed_version = v.strip()
 
                                 if parsed_version is not None:
                                     old_version = self.version_map.get(plugin_name)
@@ -153,14 +152,11 @@ class PluginManager:
                                         v = value.n
                                     elif isinstance(value, ast.Str):
                                         v = value.s
-                                    # 仅接受数字或可转换为浮点的字符串
+                                    # 接受数字或字符串作为版本号
                                     if isinstance(v, (int, float)):
-                                        parsed_version = float(v)
+                                        parsed_version = str(float(v))
                                     elif isinstance(v, str):
-                                        try:
-                                            parsed_version = float(v)
-                                        except ValueError:
-                                            parsed_version = None
+                                        parsed_version = v.strip()
                                     break
                     except Exception:
                         parsed_version = None
@@ -258,12 +254,9 @@ class PluginManager:
                         v = getattr(module, "__version__")
                         ver = None
                         if isinstance(v, (int, float)):
-                            ver = float(v)
+                            ver = str(float(v))
                         elif isinstance(v, str):
-                            try:
-                                ver = float(v)
-                            except ValueError:
-                                ver = None  # 非数字字符串版本暂不持久化
+                            ver = v.strip()
 
                         if ver is not None:
                             cached_ver = self.version_map.get(plugin.name)

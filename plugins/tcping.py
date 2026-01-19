@@ -13,7 +13,7 @@ from telebot import types
 from loguru import logger
 
 __plugin_name__ = "tcping"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "TCP 端口连通性测试"
 __commands__ = ["tcping"]

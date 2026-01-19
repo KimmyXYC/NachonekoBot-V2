@@ -10,7 +10,7 @@ from loguru import logger
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "callanyone"
-__version__ = 1.0
+__version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "呼叫医生、MTF、警察等趣味功能"
 __commands__ = ["calldoctor", "callmtf", "callpolice"]
