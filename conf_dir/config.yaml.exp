@@ -23,7 +23,7 @@ icp:
   url: https://icp-api.example.com/query/web
 
 xiatou:
-  id: [2015959023]
+  id: [123456, 789012]
   openai_api: https://api.openai.com
   openai_api_key: sk-abcdefghijklmnopqrstuvwxyz1234567890
   openai_api_model: gpt-3.5-turbo
