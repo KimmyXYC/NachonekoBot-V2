@@ -13,15 +13,15 @@ from app.utils import command_error_msg
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "rdap"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "KimmyXYC"
-__description__ = "RDAP 域名和IP查询"
+__description__ = "RDAP 域名、IP和ASN查询"
 __commands__ = ["rdap"]
 __command_descriptions__ = {
     "rdap": "查询 RDAP 信息"
 }
 __command_help__ = {
-    "rdap": "/rdap [Domain/IP] - 查询 RDAP 信息\nInline: @NachoNekoX_bot rdap [Domain/IP]"
+    "rdap": "/rdap [Domain/IP/ASN] - 查询 RDAP 信息\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\n支持格式：域名(example.com)、IP地址(1.1.1.1)、ASN(AS13335或13335)"
 }
 
 # RDAP Bootstrap服务器
@@ -31,19 +31,44 @@ RDAP_BOOTSTRAP_URL = "https://rdap-bootstrap.arin.net/bootstrap"
 # ==================== 核心功能 ====================
 def validate_rdap_input(data: str) -> tuple[bool, str]:
     """
-    验证 RDAP 输入，防止命令注入攻击，支持国际化域名（IDN）
-    :param data: 待验证的域名或IP地址（可以是中文域名等）
-    :return: (是否有效, 错误信息或转换后的ASCII域名/IP)
+    验证 RDAP 输入，防止命令注入攻击，支持国际化域名（IDN）和ASN
+    :param data: 待验证的域名、IP地址或ASN（可以是中文域名等）
+    :return: (是否有效, 错误信息或转换后的ASCII域名/IP/ASN)
     """
     # 去除首尾空格
     data = data.strip()
 
     # 检查长度限制
     if len(data) > 255:
-        return False, "输入过长，域名或IP地址不应超过255个字符"
+        return False, "输入过长，域名、IP地址或ASN不应超过255个字符"
 
     if not data:
         return False, "输入不能为空"
+
+    # 检查ASN格式（AS123456 或 123456）
+    asn_pattern = r'^[Aa][Ss](\d+)$'
+    asn_match = re.match(asn_pattern, data)
+    if asn_match:
+        asn_number = asn_match.group(1)
+        try:
+            asn_int = int(asn_number)
+            if 0 <= asn_int <= 4294967295:  # 32位ASN范围
+                return True, f"AS{asn_number}"
+            else:
+                return False, "ASN号码超出有效范围（0-4294967295）"
+        except ValueError:
+            return False, "无效的ASN格式"
+    
+    # 纯数字也可能是ASN
+    if data.isdigit():
+        try:
+            asn_int = int(data)
+            if 0 <= asn_int <= 4294967295:
+                return True, f"AS{data}"
+            else:
+                return False, "ASN号码超出有效范围（0-4294967295）"
+        except ValueError:
+            pass
 
     # 检查是否包含危险字符
     dangerous_chars = [';', '&', '|', '$', '`', '(', ')', '<', '>', '\n', '\r', '\\', '"', "'"]
@@ -122,6 +147,18 @@ def format_rdap_response(rdap_data: dict) -> str:
     # 处理域名信息
     if 'ldhName' in rdap_data:
         lines.append(f"Domain: {rdap_data['ldhName']}")
+    
+    # 处理ASN信息
+    if 'startAutnum' in rdap_data:
+        lines.append(f"Start ASN: AS{rdap_data['startAutnum']}")
+    if 'endAutnum' in rdap_data:
+        lines.append(f"End ASN: AS{rdap_data['endAutnum']}")
+    if 'name' in rdap_data and rdap_data['objectClassName'] == 'autnum':
+        lines.append(f"Name: {rdap_data['name']}")
+    if 'type' in rdap_data and rdap_data['objectClassName'] == 'autnum':
+        lines.append(f"Type: {rdap_data['type']}")
+    if 'country' in rdap_data:
+        lines.append(f"Country: {rdap_data['country']}")
     
     # 处理IP网络信息
     if 'startAddress' in rdap_data:
@@ -217,7 +254,7 @@ def format_rdap_response(rdap_data: dict) -> str:
 async def rdap_query(data: str) -> tuple[bool, str]:
     """
     执行 RDAP 查询
-    :param data: 域名或IP地址
+    :param data: 域名、IP地址或ASN
     :return: (是否成功, 结果信息)
     """
     # 验证输入
@@ -227,11 +264,16 @@ async def rdap_query(data: str) -> tuple[bool, str]:
     
     try:
         # 判断查询类型
+        is_asn = validated_data.startswith('AS')
         is_ipv4 = re.match(r'^(\d{1,3}\.){3}\d{1,3}$', validated_data)
         is_ipv6 = ':' in validated_data and not '.' in validated_data
         
         # 构建RDAP查询URL
-        if is_ipv4 or is_ipv6:
+        if is_asn:
+            # ASN查询，提取数字部分
+            asn_number = validated_data[2:]  # 去掉"AS"前缀
+            query_url = f"{RDAP_BOOTSTRAP_URL}/autnum/{asn_number}"
+        elif is_ipv4 or is_ipv6:
             # IP查询
             query_url = f"{RDAP_BOOTSTRAP_URL}/ip/{validated_data}"
         else:
@@ -286,16 +328,16 @@ async def handle_rdap_command(bot, message: types.Message):
 
 
 async def handle_rdap_inline_query(bot, inline_query: types.InlineQuery):
-    """处理 Inline Query：@Bot rdap [Domain/IP]"""
+    """处理 Inline Query：@Bot rdap [Domain/IP/ASN]"""
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     if len(tokens) != 2 or tokens[0].lower() != 'rdap':
-        usage = "用法：rdap [Domain/IP]"
+        usage = "用法：rdap [Domain/IP/ASN]\n支持格式：域名、IP地址、ASN(AS13335或13335)"
         result = types.InlineQueryResultArticle(
             id="rdap_usage",
             title="RDAP 查询",
-            description="用法：rdap [Domain/IP]",
+            description="用法：rdap [Domain/IP/ASN]",
             input_message_content=types.InputTextMessageContent(usage)
         )
         await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
@@ -324,7 +366,7 @@ async def register_handlers(bot, middleware, plugin_name):
         if len(command_args) == 2:
             await handle_rdap_command(bot, message)
         else:
-            await bot.reply_to(message, command_error_msg("rdap", "Domain/IP"))
+            await bot.reply_to(message, command_error_msg("rdap", "Domain/IP/ASN"))
 
     middleware.register_command_handler(
         commands=['rdap'],
