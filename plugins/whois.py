@@ -189,10 +189,29 @@ async def whois_check(data):
 
         # Clean up the result - remove redacted info and common footer text
         lines = result.splitlines()
-        filtered_result = [line for line in lines
-                           if 'REDACTED' not in line
-                           and 'Please query the' not in line
-                           and not (line.strip().endswith(':') and not line.strip()[:-1])]
+        filtered_result = []
+        for line in lines:
+            stripped = line.strip()
+            # 跳过包含 REDACTED 的行
+            if 'REDACTED' in line:
+                continue
+            # 跳过包含特定提示文本的行
+            if 'Please query the' in line:
+                continue
+            # 跳过空行后面的冒号行（即只有标签没有内容的行）
+            # 例如: "Admin Name:" 后面没有任何内容
+            if ':' in stripped:
+                # 分割标签和值
+                parts = stripped.split(':', 1)
+                if len(parts) == 2:
+                    key = parts[0].strip()
+                    value = parts[1].strip()
+                    # 如果值为空，跳过这一行
+                    if not value:
+                        continue
+
+            filtered_result.append(line)
+
         cleaned = "\n".join(filtered_result)
 
         # Remove common footer sections
