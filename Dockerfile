@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsm6 \
     libxext6 \
     libxrender-dev \
+    whois \
     && curl -sL nxtrace.org/nt | bash \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

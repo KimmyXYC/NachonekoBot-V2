@@ -3,14 +3,14 @@
 # @Author  : KimmyXYC
 # @File    : whois.py
 # @Software: PyCharm
-import aiohttp
+import asyncio
 from telebot import types
 from loguru import logger
 from app.utils import command_error_msg
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "whois"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __author__ = "KimmyXYC"
 __description__ = "Whois 域名查询"
 __commands__ = ["whois"]
@@ -73,31 +73,50 @@ async def handle_whois_inline_query(bot, inline_query: types.InlineQuery):
 
 async def whois_check(data):
     """
-    Perform a WHOIS check on a domain or IP address.
+    Perform a WHOIS check on a domain or IP address using command-line whois.
     :param data: The domain or IP address to check.
     :return: A tuple containing the status and the result.
     """
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f'https://namebeta.com/api/search/check?query={data}') as response:
-            if response.status == 200:
-                result = await response.json()
-                if "whois" not in result:
-                    return False, result
-                result = result['whois']['whois']
-                if result is None:
-                    return False, "No WHOIS data found."
-                lines = result.splitlines()
-                filtered_result = [line for line in lines
-                                   if 'REDACTED' not in line
-                                   and 'Please query the' not in line
-                                   and not line.strip().endswith(':')]
-                cleaned = "\n".join(filtered_result)
-                cleaned = cleaned.split("For more information")[0]
-                cleaned = cleaned.split("RDAP TERMS OF SERVICE:")[0]
-                cleaned = cleaned.split("TERMS OF SERVICE:")[0]
-                return True, cleaned
-            else:
-                return False, f"Request failed with status {response.status}"
+    try:
+        # Run whois command asynchronously
+        process = await asyncio.create_subprocess_exec(
+            'whois', data,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+
+        if process.returncode != 0:
+            error_msg = stderr.decode('utf-8', errors='ignore').strip()
+            return False, f"Whois command failed: {error_msg if error_msg else 'Unknown error'}"
+
+        result = stdout.decode('utf-8', errors='ignore').strip()
+
+        if not result or "No match" in result or "NOT FOUND" in result:
+            return False, "No WHOIS data found."
+
+        # Clean up the result - remove redacted info and common footer text
+        lines = result.splitlines()
+        filtered_result = [line for line in lines
+                           if 'REDACTED' not in line
+                           and 'Please query the' not in line
+                           and not (line.strip().endswith(':') and not line.strip()[:-1])]
+        cleaned = "\n".join(filtered_result)
+
+        # Remove common footer sections
+        cleaned = cleaned.split("For more information")[0]
+        cleaned = cleaned.split("RDAP TERMS OF SERVICE:")[0]
+        cleaned = cleaned.split("TERMS OF SERVICE:")[0]
+        cleaned = cleaned.split(">>> Last update of")[0]
+        cleaned = cleaned.split("% This is the")[0]
+
+        return True, cleaned.strip()
+
+    except FileNotFoundError:
+        return False, "Whois command not found. Please install whois tool."
+    except Exception as e:
+        logger.error(f"Whois query error: {e}")
+        return False, f"Error executing whois: {str(e)}"
 
 
 # ==================== 插件注册 ====================
