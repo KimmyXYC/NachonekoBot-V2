@@ -4,6 +4,8 @@
 # @File    : whois.py
 # @Software: PyCharm
 import asyncio
+import re
+import idna
 from telebot import types
 from loguru import logger
 from app.utils import command_error_msg
@@ -23,6 +25,91 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
+def validate_whois_input(data: str) -> tuple[bool, str]:
+    """
+    验证 whois 输入，防止命令注入攻击，支持国际化域名（IDN）
+    :param data: 待验证的域名或IP地址（可以是中文域名等）
+    :return: (是否有效, 错误信息或转换后的ASCII域名/IP)
+    """
+    # 去除首尾空格
+    data = data.strip()
+
+    # 检查长度限制
+    if len(data) > 255:
+        return False, "输入过长，域名或IP地址不应超过255个字符"
+
+    if not data:
+        return False, "输入不能为空"
+
+    # 检查是否包含命令注入常见字符（在转换前检查）
+    dangerous_chars = [';', '&', '|', '$', '`', '(', ')', '<', '>', '\n', '\r', '\\', '"', "'"]
+    for char in dangerous_chars:
+        if char in data:
+            return False, f"输入包含危险字符: {char}"
+
+    # 尝试处理国际化域名（IDN）转换为 Punycode
+    try:
+        # 如果包含非ASCII字符，尝试转换为Punycode
+        if not data.isascii():
+            # 分离可能的端口或路径
+            domain_part = data.split('/')[0].split(':')[0]
+
+            # 尝试 IDN 编码
+            try:
+                encoded_domain = idna.encode(domain_part).decode('ascii')
+                # 如果原始输入有额外部分（如端口），保留它们
+                if '/' in data or ':' in data:
+                    # 重建完整字符串（这里我们主要关注域名部分）
+                    data = encoded_domain
+                else:
+                    data = encoded_domain
+                logger.info(f"国际化域名已转换: {domain_part} -> {encoded_domain}")
+            except idna.IDNAError as e:
+                return False, f"无效的国际化域名格式: {str(e)}"
+    except Exception as e:
+        logger.error(f"IDN转换错误: {e}")
+        return False, f"域名转换失败: {str(e)}"
+
+    # 现在检查转换后的ASCII字符
+    # 只允许字母、数字、点、连字符、冒号（IPv6）、斜杠（CIDR）
+    if not re.match(r'^[a-zA-Z0-9.\-:/]+$', data):
+        return False, "输入包含非法字符，只允许字母、数字、点、连字符、冒号和斜杠"
+
+    # 验证域名格式（简单验证）
+    # 域名标签不能以连字符开头或结尾，不能连续点
+    if '..' in data or data.startswith('.') or data.startswith('-') or data.endswith('-'):
+        return False, "域名格式不正确"
+
+    # IPv4 格式验证
+    ipv4_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    if re.match(ipv4_pattern, data):
+        parts = data.split('.')
+        try:
+            if all(0 <= int(part) <= 255 for part in parts):
+                return True, data
+            else:
+                return False, "无效的IPv4地址"
+        except ValueError:
+            return False, "无效的IPv4地址格式"
+
+    # IPv6 格式简单验证
+    if ':' in data and not '.' in data:  # 排除IPv4:port的情况
+        # 基本的IPv6格式检查
+        if data.count('::') > 1:
+            return False, "无效的IPv6地址格式"
+        return True, data
+
+    # 域名长度和格式检查
+    labels = data.split('.')
+    for label in labels:
+        if len(label) > 63:
+            return False, "域名标签不能超过63个字符"
+        if not label:
+            return False, "域名标签不能为空"
+
+    return True, data
+
+
 async def query_whois_text(data: str) -> str:
     """生成与 `/whois` 命令一致的输出文本，用于命令与 Inline 复用（MarkdownV2）。"""
     status, result = await whois_check(data)
@@ -77,10 +164,15 @@ async def whois_check(data):
     :param data: The domain or IP address to check.
     :return: A tuple containing the status and the result.
     """
+    # 验证输入，防止命令注入
+    is_valid, validated_data = validate_whois_input(data)
+    if not is_valid:
+        return False, f"输入验证失败: {validated_data}"
+
     try:
-        # Run whois command asynchronously
+        # Run whois command asynchronously with validated input
         process = await asyncio.create_subprocess_exec(
-            'whois', data,
+            'whois', validated_data,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
