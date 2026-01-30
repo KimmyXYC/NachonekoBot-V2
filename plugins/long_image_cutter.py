@@ -249,7 +249,6 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                     ))
                     sent += len(batch)
                 except Exception as ex:
-                    # 若媒体组发送失败，退化为逐张发送，尽量保证可用
                     logger.warning(f"[LongImageCutter] media group failed at {start_idx}: {ex}")
 
     except Exception as e:
