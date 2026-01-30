@@ -249,21 +249,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                     sent += len(batch)
                 except Exception as ex:
                     # 若媒体组发送失败，退化为逐张发送，尽量保证可用
-                    logger.warning(f"[LongImageCutter] media group failed at {start_idx}: {ex}, fallback to single sends")
-                    for idx, (l, t, r, b) in enumerate(batch):
-                        try:
-                            crop = im.crop((l, t, r, b))
-                            bio = image_to_bytes(crop, preferred_fmt=preferred_fmt)
-                            caption = f"第 {start_idx + idx + 1}/{total} 张"
-                            await bot.send_photo(
-                                chat_id=message.chat.id,
-                                photo=bio,
-                                caption=caption,
-                                reply_to_message_id=message.message_id,
-                            )
-                            sent += 1
-                        except Exception as ex2:
-                            logger.error(f"[LongImageCutter] send_photo failed at {start_idx + idx}: {ex2}")
+                    logger.warning(f"[LongImageCutter] media group failed at {start_idx}: {ex}")
 
     except Exception as e:
         logger.error(f"[LongImageCutter][{message.chat.id}] error: {e}")
