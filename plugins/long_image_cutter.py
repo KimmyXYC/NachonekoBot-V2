@@ -220,12 +220,12 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         crop = im.crop((l, t, r, b))
                         bio = image_to_bytes(crop, preferred_fmt=preferred_fmt)
                         caption = f"第 {start_idx + 1}/{total} 张"
-                        await bot.send_photo(
+                        await _send_with_retry(lambda: bot.send_photo(
                             chat_id=message.chat.id,
                             photo=bio,
                             caption=caption,
                             reply_to_message_id=message.message_id,
-                        )
+                        ))
                         sent += 1
                         continue
 
@@ -233,19 +233,20 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                     for j, (l, t, r, b) in enumerate(batch):
                         crop = im.crop((l, t, r, b))
                         bio = image_to_bytes(crop, preferred_fmt=preferred_fmt)
+                        file_obj = tb_types.InputFile(bio)
                         # 仅给本组第一张添加简短说明，避免多条 caption 干扰
                         if j == 0:
                             end_no = start_idx + len(batch)
                             cap = f"第 {start_idx + 1}-{end_no} / {total} 张"
-                            media.append(tb_types.InputMediaPhoto(media=bio, caption=cap))
+                            media.append(tb_types.InputMediaPhoto(media=file_obj, caption=cap))
                         else:
-                            media.append(tb_types.InputMediaPhoto(media=bio))
+                            media.append(tb_types.InputMediaPhoto(media=file_obj))
 
-                    await bot.send_media_group(
+                    await _send_with_retry(lambda: bot.send_media_group(
                         chat_id=message.chat.id,
                         media=media,
                         reply_to_message_id=message.message_id,
-                    )
+                    ))
                     sent += len(batch)
                 except Exception as ex:
                     # 若媒体组发送失败，退化为逐张发送，尽量保证可用
@@ -257,6 +258,34 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
             await bot.reply_to(message, f"裁切失败：{e}")
         except Exception:
             pass
+
+
+async def _send_with_retry(send_coro_factory, max_retries: int = 3):
+    """
+    通用发送重试：当遇到 Telegram 429（Too Many Requests）错误时，读取 retry_after 秒等待后重试。
+    send_coro_factory: 一个无参可调用，返回一个 awaitable（即调用具体的 bot 发送方法）。
+    """
+    from asyncio import sleep
+    from loguru import logger as _lg
+    import re
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            return await send_coro_factory()
+        except Exception as e:
+            # 仅在 429 错误时重试，其余异常直接抛出
+            text = str(e)
+            if "Too Many Requests" in text or "429" in text:
+                # 尝试解析 "retry after X" 或 "retry_after X"
+                m = re.search(r"retry(?:\s|_)?after\s(\d+)", text, re.IGNORECASE)
+                retry_sec = int(m.group(1)) + 1 if m else 5
+                _lg.warning(f"[Retry] Telegram 429; waiting {retry_sec}s and retrying (attempt {attempt}/{max_retries})")
+                await sleep(retry_sec)
+                continue
+            # 非 429，直接抛出
+            raise
+    # 超过重试次数，最后再尝试一次，若失败则抛出
+    return await send_coro_factory()
 
 
 # ==================== 插件注册 ====================
