@@ -25,6 +25,21 @@ StepCache = StateMemoryStorage()
 
 class BotRunner:
     def __init__(self):
+        # 检查是否启用自定义 Bot API 服务器
+        botapi_config = BotConfig.get("botapi", {})
+        if botapi_config.get("enable", False):
+            api_server = botapi_config.get("api_server", "")
+            if api_server:
+                from telebot import apihelper
+                # 设置自定义 Bot API URL
+                apihelper.API_URL = f"{api_server}/bot{{0}}/{{1}}"
+                apihelper.FILE_URL = f"{api_server}/file/bot{{0}}/{{1}}"
+                logger.info(f"🌐 使用自定义 Bot API 服务器: {api_server}")
+            else:
+                logger.warning("⚠️ 自定义 Bot API 已启用但未配置 api_server，使用官方服务器")
+        else:
+            logger.info("🌐 使用官方 Bot API 服务器")
+        
         self.bot = AsyncTeleBot(BotSetting.token, state_storage=StepCache)
 
     async def run(self):

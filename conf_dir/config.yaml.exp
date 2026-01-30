@@ -31,3 +31,7 @@ xiatou:
 translate:
   token: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
   location: global
+
+# Custom Bot API server configuration
+botapi:
+  enable: false
