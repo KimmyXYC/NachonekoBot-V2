@@ -325,5 +325,3 @@ class CommandInChatFilter(SimpleCustomFilter):
 
     async def check(self, message):
         return message.chat.type in ['group', 'supergroup'] and message.text.startswith('/')
-
-

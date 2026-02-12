@@ -19,6 +19,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, ec
 from app.utils import markdown_to_telegram_html
 from utils.elaradb import BotElara
+from utils.yaml import BotConfig
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "keybox"
@@ -197,22 +198,41 @@ async def keybox_check(bot, message, document):
     :return: None
     """
     file_info = await bot.get_file(document.file_id)
-    downloaded_file = await bot.download_file(file_info.file_path)
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        temp_file.write(downloaded_file)
-        temp_file.flush()
-        temp_file.close()
-        try:
-            pem_number = parse_number_of_certificates(temp_file.name)
-            pem_certificates = parse_certificates(temp_file.name, pem_number)
-            private_key = parse_private_key(temp_file.name)
-            keybox_info = get_device_ids_and_algorithms(temp_file.name)
-            os.remove(temp_file.name)
-        except Exception as e:
-            logger.error(f"[Keybox Check][{message.chat.id}]: {e}")
-            await bot.reply_to(message, e)
-            os.remove(temp_file.name)
+    botapi_config = BotConfig.get("botapi", {})
+    use_local_path = botapi_config.get("enable", False)
+
+    temp_path = None
+    delete_temp = False
+
+    if use_local_path:
+        temp_path = file_info.file_path
+        if not temp_path or not os.path.isfile(temp_path):
+            logger.error(f"[Keybox Check][{message.chat.id}]: local file not found: {temp_path}")
+            await bot.reply_to(message, "Local Bot API enabled but file path is not accessible.")
             return
+    else:
+        downloaded_file = await bot.download_file(file_info.file_path)
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(downloaded_file)
+            temp_file.flush()
+            temp_path = temp_file.name
+            delete_temp = True
+
+    try:
+        pem_number = parse_number_of_certificates(temp_path)
+        pem_certificates = parse_certificates(temp_path, pem_number)
+        private_key = parse_private_key(temp_path)
+        keybox_info = get_device_ids_and_algorithms(temp_path)
+    except Exception as e:
+        logger.error(f"[Keybox Check][{message.chat.id}]: {e}")
+        await bot.reply_to(message, e)
+        return
+    finally:
+        if delete_temp and temp_path:
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
     try:
         certificate = x509.load_pem_x509_certificate(
             pem_certificates[0].encode(),

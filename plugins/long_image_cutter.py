@@ -9,11 +9,13 @@
 裁切完成后，按每 9 张打包为一组发送（使用媒体组），不再发送事先提示消息。
 """
 import io
+import os
 from typing import List, Tuple
 
 from loguru import logger
 from telebot import types
 from PIL import Image
+from utils.yaml import BotConfig
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "long_image_cutter"
@@ -169,7 +171,18 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
 
         # 拉取文件字节
         file_info = await bot.get_file(document.file_id)
-        file_bytes = await bot.download_file(file_info.file_path)
+        botapi_config = BotConfig.get("botapi", {})
+        use_local_path = botapi_config.get("enable", False)
+        if use_local_path:
+            local_path = file_info.file_path
+            if not local_path or not os.path.isfile(local_path):
+                logger.error(f"[LongImageCutter][{message.chat.id}] local file not found: {local_path}")
+                await bot.reply_to(message, "Local Bot API enabled but file path is not accessible.")
+                return
+            with open(local_path, "rb") as f:
+                file_bytes = f.read()
+        else:
+            file_bytes = await bot.download_file(file_info.file_path)
 
         # 打开图片
         with Image.open(io.BytesIO(file_bytes)) as im:
