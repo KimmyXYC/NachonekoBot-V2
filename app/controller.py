@@ -230,7 +230,7 @@ class BotRunner:
                 # 允许像 quote 这类通过 message handler 解析 '/$' 的插件生效。
                 await plugin_manager.middleware.dispatch_message(bot, message)
 
-        @bot.message_handler(content_types=['text', 'photo', 'video', 'document'])
+        @bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'sticker', 'animation', 'audio', 'voice', 'video_note'])
         async def message_dispatcher(message: types.Message):
             """统一消息分发器"""
             await plugin_manager.middleware.dispatch_message(bot, message)
