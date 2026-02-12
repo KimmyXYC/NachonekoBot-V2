@@ -82,6 +82,23 @@ class AsyncPostgresDB:
                     )
                 ''')
 
+                # Create speech_stats table if it doesn't exist
+                await connection.execute('''
+                    CREATE TABLE IF NOT EXISTS speech_stats (
+                        group_id BIGINT NOT NULL,
+                        user_id BIGINT NOT NULL,
+                        day DATE NOT NULL,
+                        count INTEGER NOT NULL DEFAULT 0,
+                        display_name TEXT NOT NULL,
+                        PRIMARY KEY (group_id, user_id, day)
+                    )
+                ''')
+
+                await connection.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_speech_stats_group_day
+                    ON speech_stats (group_id, day)
+                ''')
+
             logger.success("Database tables checked and created if needed")
         except Exception as e:
             logger.error(f"Error ensuring tables exist: {str(e)}")
