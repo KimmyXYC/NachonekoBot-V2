@@ -35,8 +35,6 @@ def _get_tz():
 
 
 def _get_display_name(user: types.User) -> str:
-    if getattr(user, 'username', None):
-        return f"@{user.username}"
     first = (user.first_name or "").strip()
     last = (user.last_name or "").strip()
     name = f"{first} {last}".strip()
