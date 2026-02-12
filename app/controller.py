@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 # @Time    : 2023/11/18 上午12:18
 # @File    : controller.py
 # @Software: PyCharm
@@ -30,10 +30,13 @@ class BotRunner:
         if botapi_config.get("enable", False):
             api_server = botapi_config.get("api_server", "")
             if api_server:
-                from telebot import apihelper
+                from telebot import apihelper, asyncio_helper
                 # 设置自定义 Bot API URL
                 apihelper.API_URL = f"{api_server}/bot{{0}}/{{1}}"
                 apihelper.FILE_URL = f"{api_server}/file/bot{{0}}/{{1}}"
+                # AsyncTeleBot 使用 asyncio_helper.API_URL
+                asyncio_helper.API_URL = apihelper.API_URL
+                asyncio_helper.FILE_URL = apihelper.FILE_URL
                 logger.info(f"🌐 使用自定义 Bot API 服务器: {api_server}")
             else:
                 logger.warning("⚠️ 自定义 Bot API 已启用但未配置 api_server，使用官方服务器")
@@ -322,3 +325,5 @@ class CommandInChatFilter(SimpleCustomFilter):
 
     async def check(self, message):
         return message.chat.type in ['group', 'supergroup'] and message.text.startswith('/')
+
+
