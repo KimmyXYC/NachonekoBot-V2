@@ -286,14 +286,16 @@ class BotRunner:
 
             # 用户仅输入 @Bot（query 为空）时，返回占位图片
             if not query:
+                logger.debug(f"Received empty inline query, returning placeholder image")
                 placeholder_url = BotConfig.get("inline", {}).get(
                     "empty_placeholder_image",
-                    "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/960px-Telegram_logo.svg.png",
+                    "https://pbs.twimg.com/media/HAckcxubgAARphg?format=jpg&name=4096x4096",
                 )
                 result = types.InlineQueryResultPhoto(
-                    id="inline_empty_placeholder",
+                    id="1",
                     photo_url=placeholder_url,
                     thumbnail_url=placeholder_url,
+                    caption="inline 命令请查阅 /help",
                 )
                 await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
                 return

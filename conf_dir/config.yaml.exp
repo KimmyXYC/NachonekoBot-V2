@@ -33,7 +33,7 @@ translate:
   location: global
 
 inline:
-  empty_placeholder_image: https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/960px-Telegram_logo.svg.png
+  empty_placeholder_image: https://pbs.twimg.com/media/HAckcxubgAARphg?format=jpg&name=4096x4096
 
 # Custom Bot API server configuration
 botapi:
