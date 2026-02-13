@@ -32,6 +32,9 @@ translate:
   token: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
   location: global
 
+inline:
+  empty_placeholder_image: https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/960px-Telegram_logo.svg.png
+
 # Custom Bot API server configuration
 botapi:
   enable: false

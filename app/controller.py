@@ -284,55 +284,18 @@ class BotRunner:
         async def inline_dispatcher(inline_query: types.InlineQuery):
             query = (inline_query.query or "").strip()
 
-            # 用户仅输入 @Bot（query 为空）时，返回所有可用的 inline 命令提示
+            # 用户仅输入 @Bot（query 为空）时，返回占位图片
             if not query:
-                try:
-                    items = plugin_manager.get_inline_commands_info()
-                except Exception as e:
-                    logger.error(f"获取 inline 命令列表失败: {e}")
-                    items = []
-
-                if not items:
-                    result = types.InlineQueryResultArticle(
-                        id="inline_empty",
-                        title="Inline 命令列表",
-                        description="暂无可用的 inline 命令",
-                        input_message_content=types.InputTextMessageContent("暂无可用的 inline 命令")
-                    )
-                    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
-                    return
-
-                # 去重并按命令名排序
-                uniq = {}
-                for it in items:
-                    cmd = (it.get('command') or '').strip()
-                    help_text = (it.get('help_text') or '').strip()
-                    if not cmd or not help_text:
-                        continue
-                    # 仅保留第一条（同名命令以首个为准）
-                    uniq.setdefault(cmd, help_text)
-
-                results = []
-                for cmd in sorted(uniq.keys()):
-                    help_text = uniq[cmd]
-                    # 尽量从 help_text 中提取 Inline 行作为展示
-                    inline_line = None
-                    for line in help_text.splitlines():
-                        if 'Inline:' in line:
-                            inline_line = line.strip()
-                            break
-                    display = inline_line or help_text
-
-                    results.append(
-                        types.InlineQueryResultArticle(
-                            id=f"inline_help_{cmd}",
-                            title=cmd,
-                            description=display.replace('\n', ' '),
-                            input_message_content=types.InputTextMessageContent(display)
-                        )
-                    )
-
-                await bot.answer_inline_query(inline_query.id, results[:50], cache_time=1, is_personal=True)
+                placeholder_url = BotConfig.get("inline", {}).get(
+                    "empty_placeholder_image",
+                    "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/960px-Telegram_logo.svg.png",
+                )
+                result = types.InlineQueryResultPhoto(
+                    id="inline_empty_placeholder",
+                    photo_url=placeholder_url,
+                    thumbnail_url=placeholder_url,
+                )
+                await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
                 return
 
             executed = await plugin_manager.middleware.dispatch_inline(bot, inline_query)
