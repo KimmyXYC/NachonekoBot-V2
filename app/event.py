@@ -42,9 +42,11 @@ async def listen_help_command(bot, message: types.Message, plugin_manager):
     help_lines = [formatting.mbold("🥕 Help")]
     
     # 核心命令帮助
-    help_lines.append(formatting.mcode("/help - 获取帮助信息"))
-    help_lines.append(formatting.mcode("/plugin - 全局插件管理（仅 Bot 管理员）"))
-    help_lines.append(formatting.mcode("/plugin_settings - 群组插件设置（仅群组管理员）"))
+    help_lines.append(formatting.mcite("/help - 获取帮助信息"))
+    help_lines.append(formatting.mcite(""))  # 添加空行分隔
+    help_lines.append(formatting.mcite("/plugin - 全局插件管理（仅 Bot 管理员）"))
+    help_lines.append(formatting.mcite("/plugin_settings - 群组插件设置（仅群组管理员）"))
+    help_lines.append(formatting.mcite(""))  # 添加空行分隔
     
     # 从插件收集帮助信息
     plugin_commands_info = plugin_manager.get_plugin_commands_info()
@@ -52,12 +54,13 @@ async def listen_help_command(bot, message: types.Message, plugin_manager):
     # 添加插件命令的帮助文本
     for cmd_info in plugin_commands_info:
         if cmd_info['help_text']:
-            help_lines.append(formatting.mcode(cmd_info['help_text']))
+            help_lines.append(formatting.mcite(cmd_info['help_text']))
+            help_lines.append(formatting.mcite(""))  # 添加空行分隔
     
     # 添加特殊功能说明
     help_lines.append("")
     help_lines.append(formatting.mitalic("特殊功能："))
-    help_lines.append(formatting.mcode("喜报/悲报/通报/警报 [内容] - 生成对应类型的报告图片"))
+    help_lines.append(formatting.mcite("喜报/悲报/通报/警报 [内容] - 生成对应类型的报告图片"))
     
     # 添加 GitHub 链接
     help_lines.append("")
