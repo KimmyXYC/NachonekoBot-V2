@@ -39,6 +39,8 @@ class AsyncPostgresDB:
             await self.ensure_tables_exist()
             # Ensure plugin setting table exists
             await self.ensure_settings_table()
+            # Ensure scheduled jobs table exists
+            await self.ensure_scheduled_jobs_table()
         except Exception as e:
             logger.error(f"Failed to connect to PostgreSQL database: {str(e)}")
             raise
@@ -119,6 +121,30 @@ class AsyncPostgresDB:
             logger.success("Settings table ensured (setting)")
         except Exception as e:
             logger.error(f"Error ensuring settings table: {e}")
+            raise
+
+    async def ensure_scheduled_jobs_table(self):
+        """Ensure the `scheduled_jobs` table exists for per-group cron job settings."""
+        try:
+            async with self.conn.acquire() as connection:
+                await connection.execute('''
+                    CREATE TABLE IF NOT EXISTS scheduled_jobs (
+                        group_id BIGINT NOT NULL,
+                        job_name TEXT NOT NULL,
+                        enabled BOOLEAN NOT NULL DEFAULT FALSE,
+                        timezone TEXT NOT NULL DEFAULT 'Asia/Shanghai',
+                        cron_expr TEXT NOT NULL DEFAULT '0 4 * * *',
+                        payload TEXT,
+                        PRIMARY KEY (group_id, job_name)
+                    )
+                ''')
+                await connection.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_job_enabled
+                    ON scheduled_jobs (job_name, enabled)
+                ''')
+            logger.success("Scheduled jobs table ensured (scheduled_jobs)")
+        except Exception as e:
+            logger.error(f"Error ensuring scheduled jobs table: {e}")
             raise
 
     def _sanitize_plugin_column(self, plugin_name: str) -> str:
@@ -232,6 +258,116 @@ class AsyncPostgresDB:
         except Exception as e:
             logger.error(f"Error setting plugin enabled for group {group_id}, plugin '{plugin_name}': {e}")
             return False
+
+    # ==================== Scheduled jobs helpers ====================
+    async def ensure_scheduled_job_row(
+        self,
+        group_id: int,
+        job_name: str,
+        timezone: str = "Asia/Shanghai",
+        cron_expr: str = "0 4 * * *",
+        payload: str = None,
+    ):
+        """Ensure a scheduled job row exists for the given group/job."""
+        try:
+            async with self.conn.acquire() as connection:
+                await connection.execute(
+                    """
+                    INSERT INTO scheduled_jobs (group_id, job_name, enabled, timezone, cron_expr, payload)
+                    VALUES ($1, $2, FALSE, $3, $4, $5)
+                    ON CONFLICT (group_id, job_name) DO NOTHING
+                    """,
+                    int(group_id),
+                    job_name,
+                    timezone,
+                    cron_expr,
+                    payload,
+                )
+        except Exception as e:
+            logger.error(f"Error ensuring scheduled job row {group_id}/{job_name}: {e}")
+            raise
+
+    async def get_scheduled_job_enabled(
+        self,
+        group_id: int,
+        job_name: str,
+        timezone: str = "Asia/Shanghai",
+        cron_expr: str = "0 4 * * *",
+        payload: str = None,
+    ) -> bool:
+        """Get whether a scheduled job is enabled in the given group. Defaults to False."""
+        try:
+            await self.ensure_scheduled_job_row(group_id, job_name, timezone, cron_expr, payload)
+            async with self.conn.acquire() as connection:
+                val = await connection.fetchval(
+                    """
+                    SELECT enabled
+                    FROM scheduled_jobs
+                    WHERE group_id = $1 AND job_name = $2
+                    """,
+                    int(group_id),
+                    job_name,
+                )
+                if val is None:
+                    return False
+                return bool(val)
+        except Exception as e:
+            logger.error(f"Error getting scheduled job enabled state for group {group_id}, job '{job_name}': {e}")
+            return False
+
+    async def set_scheduled_job_enabled(
+        self,
+        group_id: int,
+        job_name: str,
+        enabled: bool,
+        timezone: str = None,
+        cron_expr: str = None,
+        payload: str = None,
+    ) -> bool:
+        """Set scheduled job enabled state for a group. Returns True if success."""
+        try:
+            await self.ensure_scheduled_job_row(group_id, job_name)
+            fields = ["enabled = $1"]
+            params = [bool(enabled)]
+            idx = 2
+            if timezone is not None:
+                fields.append(f"timezone = ${idx}")
+                params.append(timezone)
+                idx += 1
+            if cron_expr is not None:
+                fields.append(f"cron_expr = ${idx}")
+                params.append(cron_expr)
+                idx += 1
+            if payload is not None:
+                fields.append(f"payload = ${idx}")
+                params.append(payload)
+                idx += 1
+            params.extend([int(group_id), job_name])
+            query = f"UPDATE scheduled_jobs SET {', '.join(fields)} WHERE group_id = ${idx} AND job_name = ${idx + 1}"
+            async with self.conn.acquire() as connection:
+                await connection.execute(query, *params)
+            logger.info(f"Set scheduled job '{job_name}' enabled={enabled} for group {group_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error setting scheduled job enabled for group {group_id}, job '{job_name}': {e}")
+            return False
+
+    async def get_enabled_scheduled_groups(self, job_name: str):
+        """Get all groups with the scheduled job enabled."""
+        try:
+            async with self.conn.acquire() as connection:
+                rows = await connection.fetch(
+                    """
+                    SELECT group_id, timezone, cron_expr, payload
+                    FROM scheduled_jobs
+                    WHERE job_name = $1 AND enabled = TRUE
+                    """,
+                    job_name,
+                )
+                return rows
+        except Exception as e:
+            logger.error(f"Error getting enabled scheduled groups for job '{job_name}': {e}")
+            return []
 
 
 BotDatabase = AsyncPostgresDB()

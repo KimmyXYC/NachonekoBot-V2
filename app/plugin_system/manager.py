@@ -294,6 +294,31 @@ class PluginManager:
                     loaded_count += 1
                     logger.success(f"✅ 插件 {plugin.name} 加载成功")
 
+                # 支持插件声明定时任务
+                if hasattr(module, '__scheduled_jobs__'):
+                    try:
+                        jobs = getattr(module, '__scheduled_jobs__') or []
+                        for job in jobs:
+                            job_id = job.get('job_id')
+                            callback = job.get('callback')
+                            if not job_id or callback is None:
+                                continue
+                            cron_expr = job.get('cron', '0 4 * * *')
+                            timezone = job.get('timezone', 'Asia/Shanghai')
+                            display_name = job.get('display_name')
+                            self.middleware.register_cron_job(
+                                plugin.name,
+                                job_id,
+                                cron_expr,
+                                timezone,
+                                callback,
+                                display_name=display_name,
+                            )
+                        if jobs:
+                            logger.info(f"⏱️ 插件 {plugin.name} 已注册 {len(jobs)} 个定时任务")
+                    except Exception as e:
+                        logger.error(f"注册插件定时任务失败: {plugin.name}: {e}")
+
             except Exception as e:
                 failed_count += 1
                 logger.error(f"❌ 插件 {plugin.name} 加载失败: {e}")

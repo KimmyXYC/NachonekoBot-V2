@@ -9,7 +9,7 @@
 - 仅用于控制器中的核心命令与回调，不作为插件通过中间件注册。
 - 提供：权限检查、面板文本与键盘构建、可切换插件列表获取。
 """
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from loguru import logger
 from telebot import types
 from utils.yaml import BotConfig
@@ -33,17 +33,21 @@ async def has_change_info_permission(bot, chat_id: int, user_id: int) -> bool:
         return False
 
 
-def build_keyboard_and_text(plugin_names: List[str], states: List[bool]) -> Tuple[str, types.InlineKeyboardMarkup]:
-    """根据插件列表与状态构造文本与 InlineKeyboard。"""
-    text_lines = ["🔧 插件开关状态："]
+def build_keyboard_and_text(items: List[Dict[str, object]]) -> Tuple[str, types.InlineKeyboardMarkup]:
+    """根据项目列表与状态构造文本与 InlineKeyboard。"""
+    text_lines = ["🔧 插件/定时任务开关状态："]
     kb = types.InlineKeyboardMarkup(row_width=2)
     buttons = []
-    for name, enabled in zip(plugin_names, states):
+    for item in items:
+        enabled = bool(item.get("enabled"))
+        label = str(item.get("label"))
+        kind = str(item.get("kind"))
+        key = str(item.get("key"))
         mark = '✅' if enabled else '❌'
-        text_lines.append(f"• {mark} {name}")
+        text_lines.append(f"• {mark} {label}")
         btn = types.InlineKeyboardButton(
-            text=f"{mark}{name}",
-            callback_data=f"plg_toggle:{name}"
+            text=f"{mark}{label}",
+            callback_data=f"plg_toggle:{kind}:{key}"
         )
         buttons.append(btn)
     # 两列排布，使用 add() 方法添加按钮
@@ -65,3 +69,10 @@ async def get_toggleable_plugins(middleware) -> List[str]:
     """从中间件获取可切换插件列表。"""
     names = sorted(getattr(middleware, 'toggleable_plugins', set()))
     return names
+
+
+async def get_toggleable_jobs(middleware) -> List[Tuple[str, str]]:
+    """从中间件获取可切换定时任务列表。"""
+    jobs = list(getattr(middleware, 'scheduled_jobs', {}).items())
+    jobs.sort(key=lambda item: item[0])
+    return jobs

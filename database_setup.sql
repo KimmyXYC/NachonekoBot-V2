@@ -39,6 +39,21 @@ CREATE TABLE IF NOT EXISTS speech_stats (
 CREATE INDEX IF NOT EXISTS idx_speech_stats_group_hour
 ON speech_stats (group_id, hour);
 
+-- Create scheduled_jobs table
+-- This table stores per-group scheduled job configs
+CREATE TABLE IF NOT EXISTS scheduled_jobs (
+    group_id BIGINT NOT NULL,
+    job_name TEXT NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    timezone TEXT NOT NULL DEFAULT 'Asia/Shanghai',
+    cron_expr TEXT NOT NULL DEFAULT '0 4 * * *',
+    payload TEXT,
+    PRIMARY KEY (group_id, job_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_job_enabled
+ON scheduled_jobs (job_name, enabled);
+
 -- Add indexes for performance (if needed)
 -- CREATE INDEX IF NOT EXISTS idx_remake_user_id ON remake(user_id);
 -- CREATE INDEX IF NOT EXISTS idx_xiatou_time ON xiatou(time);
@@ -48,6 +63,7 @@ ON speech_stats (group_id, hour);
 -- GRANT ALL PRIVILEGES ON TABLE remake TO your_user;
 -- GRANT ALL PRIVILEGES ON TABLE xiatou TO your_user;
 -- GRANT ALL PRIVILEGES ON TABLE speech_stats TO your_user;
+-- GRANT ALL PRIVILEGES ON TABLE scheduled_jobs TO your_user;
 
 -- Add comments to tables and columns for documentation
 COMMENT ON TABLE remake IS 'Stores user remake information';
@@ -66,5 +82,12 @@ COMMENT ON COLUMN speech_stats.user_id IS 'Telegram user ID';
 COMMENT ON COLUMN speech_stats.hour IS 'Stat hour (bucketed) in local timezone';
 COMMENT ON COLUMN speech_stats.count IS 'Count of messages';
 COMMENT ON COLUMN speech_stats.display_name IS 'Last known display name';
+
+COMMENT ON TABLE scheduled_jobs IS 'Stores per-group scheduled job configs';
+COMMENT ON COLUMN scheduled_jobs.group_id IS 'Telegram group ID';
+COMMENT ON COLUMN scheduled_jobs.job_name IS 'Scheduled job name';
+COMMENT ON COLUMN scheduled_jobs.enabled IS 'Whether job is enabled';
+COMMENT ON COLUMN scheduled_jobs.timezone IS 'Cron timezone';
+COMMENT ON COLUMN scheduled_jobs.cron_expr IS 'Cron expression';
 
 -- End of script

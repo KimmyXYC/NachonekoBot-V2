@@ -37,12 +37,37 @@ class PluginMiddleware:
         self._execution_stats = {}  # 统计信息
         # 可切换开关的插件集合（由插件管理器在加载时标记）
         self.toggleable_plugins = set()
+        # 可切换的定时任务（job_name -> display_name）
+        self.scheduled_jobs: Dict[str, str] = {}
 
     def mark_toggleable(self, plugin_name: str):
         self.toggleable_plugins.add(plugin_name)
 
     def is_toggleable(self, plugin_name: str) -> bool:
         return plugin_name in self.toggleable_plugins
+
+    def register_cron_job(
+            self,
+            plugin_name: str,
+            job_id: str,
+            cron_expr: str,
+            timezone: str,
+            callback: Callable,
+            display_name: str = None,
+            toggleable: bool = True,
+    ) -> str:
+        job_name = f"{plugin_name}.{job_id}"
+        from app.scheduler import scheduler
+        scheduler.register_cron_job(plugin_name, job_id, cron_expr, timezone, callback)
+        if toggleable:
+            self.scheduled_jobs[job_name] = display_name or job_name
+        return job_name
+
+    def register_schedule_handler(self, *args, **kwargs) -> str:
+        return self.register_cron_job(*args, **kwargs)
+
+    def get_toggleable_jobs(self):
+        return list(self.scheduled_jobs.items())
 
     def register_command_handler(
             self,

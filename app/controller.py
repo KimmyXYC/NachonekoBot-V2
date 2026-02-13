@@ -18,7 +18,9 @@ from app.plugin_system.plugin_settings import (
     has_change_info_permission,
     build_keyboard_and_text,
     get_toggleable_plugins,
+    get_toggleable_jobs,
 )
+from app.scheduler import scheduler
 
 StepCache = StateMemoryStorage()
 
@@ -61,6 +63,10 @@ class BotRunner:
         logger.info("🔌 开始加载插件...")
         plugin_manager.load_local_plugins()
         await plugin_manager.load_plugin_handlers(bot)
+
+        # ==================== 启动定时任务调度器 ====================
+        scheduler.attach_bot(bot)
+        scheduler.start()
 
         # ==================== 设置机器人命令（在插件加载后） ====================
         await event.set_bot_commands(bot, plugin_manager)
@@ -142,14 +148,22 @@ class BotRunner:
                     return
 
                 plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
-                if not plugin_list:
-                    await bot.reply_to(message, "当前没有支持开关的插件。")
+                job_list = await get_toggleable_jobs(plugin_manager.middleware)
+                items = []
+
+                if not plugin_list and not job_list:
+                    await bot.reply_to(message, "当前没有支持开关的插件或定时任务。")
                     return
 
                 await BotDatabase.ensure_group_row(chat_id)
-                states = [await BotDatabase.get_plugin_enabled(chat_id, name) for name in plugin_list]
+                for name in plugin_list:
+                    enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
+                    items.append({"kind": "plugin", "key": name, "label": name, "enabled": enabled})
+                for job_name, display_name in job_list:
+                    enabled = await BotDatabase.get_scheduled_job_enabled(chat_id, job_name)
+                    items.append({"kind": "job", "key": job_name, "label": display_name, "enabled": enabled})
 
-                text, kb = build_keyboard_and_text(plugin_list, states)
+                text, kb = build_keyboard_and_text(items)
                 await bot.reply_to(message, text, reply_markup=kb)
             except Exception as e:
                 logger.error(f"/plugin_settings 处理失败: {e}")
@@ -170,18 +184,38 @@ class BotRunner:
                     await bot.answer_callback_query(call.id, "无权限")
                     return
 
-                plugin_name_clicked = call.data.split(':', 1)[1]
+                parts = call.data.split(':', 2)
+                if len(parts) < 3:
+                    await bot.answer_callback_query(call.id, "无效操作")
+                    return
+                target_kind = parts[1]
+                target_key = parts[2]
 
-                current = await BotDatabase.get_plugin_enabled(chat_id, plugin_name_clicked)
-                new_state = not current
-                ok = await BotDatabase.set_plugin_enabled(chat_id, plugin_name_clicked, new_state)
+                if target_kind == "plugin":
+                    current = await BotDatabase.get_plugin_enabled(chat_id, target_key)
+                    new_state = not current
+                    ok = await BotDatabase.set_plugin_enabled(chat_id, target_key, new_state)
+                elif target_kind == "job":
+                    current = await BotDatabase.get_scheduled_job_enabled(chat_id, target_key)
+                    new_state = not current
+                    ok = await BotDatabase.set_scheduled_job_enabled(chat_id, target_key, new_state)
+                else:
+                    await bot.answer_callback_query(call.id, "无效操作")
+                    return
                 if not ok:
                     await bot.answer_callback_query(call.id, "更新失败")
                     return
 
                 plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
-                states = [await BotDatabase.get_plugin_enabled(chat_id, name) for name in plugin_list]
-                text, kb = build_keyboard_and_text(plugin_list, states)
+                job_list = await get_toggleable_jobs(plugin_manager.middleware)
+                items = []
+                for name in plugin_list:
+                    enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
+                    items.append({"kind": "plugin", "key": name, "label": name, "enabled": enabled})
+                for job_name, display_name in job_list:
+                    enabled = await BotDatabase.get_scheduled_job_enabled(chat_id, job_name)
+                    items.append({"kind": "job", "key": job_name, "label": display_name, "enabled": enabled})
+                text, kb = build_keyboard_and_text(items)
 
                 await bot.edit_message_text(
                     text=text,

@@ -30,6 +30,7 @@ __command_help__ = {
              "/stats 1y - 1年统计\n"
 }
 __toggleable__ = True
+__scheduled_jobs__ = []
 
 
 def _get_tz():
@@ -148,6 +149,30 @@ async def _query_stats(group_id: int, start_time: datetime.datetime, end_time: d
         return [], 0
 
 
+async def _query_top_speaker(group_id: int, start_time: datetime.datetime, end_time: datetime.datetime):
+    conn = BotDatabase.conn
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT user_id,
+                   MAX(display_name) AS display_name,
+                   SUM(count) AS total
+            FROM speech_stats
+            WHERE group_id = $1 AND hour BETWEEN $2 AND $3
+            GROUP BY user_id
+            ORDER BY total DESC, display_name ASC
+            LIMIT 1
+            """,
+            group_id,
+            start_time,
+            end_time,
+        )
+        return row
+    except asyncpg.PostgresError as e:
+        logger.error(f"[Stats][Postgres Error]: {e}")
+        return None
+
+
 async def handle_stats_command(bot, message: types.Message):
     if message.chat.type not in ('group', 'supergroup'):
         await bot.reply_to(message, "该统计仅支持群组使用。")
@@ -195,6 +220,34 @@ async def handle_stats_message(bot, message: types.Message):
     await _increment_speech_count(message.chat.id, message.from_user.id, hour, display_name)
 
 
+async def handle_dragon_king_schedule(bot):
+    job_name = f"{__plugin_name__}.dragon_king"
+    rows = await BotDatabase.get_enabled_scheduled_groups(job_name)
+    if not rows:
+        return
+
+    for row in rows:
+        group_id = row['group_id']
+        tz_name = row.get('timezone') or 'Asia/Shanghai'
+        try:
+            tz = pytz.timezone(tz_name)
+        except Exception:
+            tz = _get_tz()
+        now = datetime.datetime.now(tz)
+        start = now - datetime.timedelta(hours=24)
+        top_row = await _query_top_speaker(group_id, start, now)
+        if not top_row:
+            continue
+        display_name = top_row['display_name']
+        total = int(top_row['total'] or 0)
+        if total <= 0:
+            continue
+        try:
+            await bot.send_message(group_id, f"恭喜{display_name}获得龙王标志")
+        except Exception as e:
+            logger.error(f"[Stats] 发送龙王消息失败 group={group_id}: {e}")
+
+
 # ==================== 插件注册 ====================
 async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
@@ -220,6 +273,15 @@ async def register_handlers(bot, middleware, plugin_name):
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+
+    middleware.register_cron_job(
+        plugin_name=plugin_name,
+        job_id="dragon_king",
+        cron_expr="0 4 * * *",
+        timezone="Asia/Shanghai",
+        callback=handle_dragon_king_schedule,
+        display_name="龙王标志",
+    )
 
 
 def get_plugin_info() -> dict:
