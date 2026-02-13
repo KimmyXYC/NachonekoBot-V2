@@ -87,16 +87,16 @@ class AsyncPostgresDB:
                     CREATE TABLE IF NOT EXISTS speech_stats (
                         group_id BIGINT NOT NULL,
                         user_id BIGINT NOT NULL,
-                        day DATE NOT NULL,
+                        hour TIMESTAMPTZ NOT NULL,
                         count INTEGER NOT NULL DEFAULT 0,
                         display_name TEXT NOT NULL,
-                        PRIMARY KEY (group_id, user_id, day)
+                        PRIMARY KEY (group_id, user_id, hour)
                     )
                 ''')
 
                 await connection.execute('''
-                    CREATE INDEX IF NOT EXISTS idx_speech_stats_group_day
-                    ON speech_stats (group_id, day)
+                    CREATE INDEX IF NOT EXISTS idx_speech_stats_group_hour
+                    ON speech_stats (group_id, hour)
                 ''')
 
             logger.success("Database tables checked and created if needed")

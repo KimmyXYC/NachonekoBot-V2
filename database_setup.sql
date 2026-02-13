@@ -26,23 +26,23 @@ CREATE TABLE IF NOT EXISTS xiatou (
 );
 
 -- Create speech_stats table
--- This table stores group/user speech counts by day
+-- This table stores group/user speech counts by hour
 CREATE TABLE IF NOT EXISTS speech_stats (
     group_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
-    day DATE NOT NULL,
+    hour TIMESTAMPTZ NOT NULL,
     count INTEGER NOT NULL DEFAULT 0,
     display_name TEXT NOT NULL,
-    PRIMARY KEY (group_id, user_id, day)
+    PRIMARY KEY (group_id, user_id, hour)
 );
 
-CREATE INDEX IF NOT EXISTS idx_speech_stats_group_day
-ON speech_stats (group_id, day);
+CREATE INDEX IF NOT EXISTS idx_speech_stats_group_hour
+ON speech_stats (group_id, hour);
 
 -- Add indexes for performance (if needed)
 -- CREATE INDEX IF NOT EXISTS idx_remake_user_id ON remake(user_id);
 -- CREATE INDEX IF NOT EXISTS idx_xiatou_time ON xiatou(time);
--- CREATE INDEX IF NOT EXISTS idx_speech_stats_group_day ON speech_stats(group_id, day);
+-- CREATE INDEX IF NOT EXISTS idx_speech_stats_group_hour ON speech_stats(group_id, hour);
 
 -- Grant permissions (uncomment and modify as needed)
 -- GRANT ALL PRIVILEGES ON TABLE remake TO your_user;
@@ -60,10 +60,10 @@ COMMENT ON TABLE xiatou IS 'Stores xiatou time and count information';
 COMMENT ON COLUMN xiatou.time IS 'Timestamp in UNIX format';
 COMMENT ON COLUMN xiatou.count IS 'Count of xiatou events';
 
-COMMENT ON TABLE speech_stats IS 'Stores group/user speech counts by day';
+COMMENT ON TABLE speech_stats IS 'Stores group/user speech counts by hour';
 COMMENT ON COLUMN speech_stats.group_id IS 'Telegram group ID';
 COMMENT ON COLUMN speech_stats.user_id IS 'Telegram user ID';
-COMMENT ON COLUMN speech_stats.day IS 'Stat date in local timezone';
+COMMENT ON COLUMN speech_stats.hour IS 'Stat hour (bucketed) in local timezone';
 COMMENT ON COLUMN speech_stats.count IS 'Count of messages';
 COMMENT ON COLUMN speech_stats.display_name IS 'Last known display name';
 
