@@ -46,7 +46,7 @@ def _get_display_name(user: types.User) -> str:
 def _parse_stats_args(text: str):
     parts = (text or "").split()
     if len(parts) <= 1:
-        return 1, "d", 1, "今日活跃度排行"
+        return 1, "d", "今日活跃度排行"
 
     arg = parts[1].strip().lower()
     m = re.match(r"^(\d+)([dhwmy])$", arg)
@@ -162,13 +162,14 @@ async def handle_stats_command(bot, message: types.Message):
     start_time, end_time = _get_time_range(n, unit)
     rows, total = await _query_stats(message.chat.id, start_time, end_time)
 
+    range_text = f"{start_time:%Y-%m-%d %H:%M} ~ {end_time:%Y-%m-%d %H:%M}"
     if not rows:
-        await bot.reply_to(message, f"{title}\n统计区间: {start_time} ~ {end_time}\n\n暂无统计数据")
+        await bot.reply_to(message, f"{title}\n统计区间: {range_text}\n\n暂无统计数据")
         return
 
     lines = [
         title,
-        f"统计区间: {start_time} ~ {end_time}",
+        f"统计区间: {range_text}",
         ""
     ]
 
