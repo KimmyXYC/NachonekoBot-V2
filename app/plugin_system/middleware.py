@@ -36,12 +36,13 @@ class PluginMiddleware:
         }
         self._execution_stats = {}  # 统计信息
         # 可切换开关的插件集合（由插件管理器在加载时标记）
-        self.toggleable_plugins = set()
+        # plugin_name -> display_name
+        self.toggleable_plugins: Dict[str, str] = {}
         # 可切换的定时任务（job_name -> display_name）
         self.scheduled_jobs: Dict[str, str] = {}
 
-    def mark_toggleable(self, plugin_name: str):
-        self.toggleable_plugins.add(plugin_name)
+    def mark_toggleable(self, plugin_name: str, display_name: str = None):
+        self.toggleable_plugins[plugin_name] = display_name or plugin_name
 
     def is_toggleable(self, plugin_name: str) -> bool:
         return plugin_name in self.toggleable_plugins
@@ -68,6 +69,9 @@ class PluginMiddleware:
 
     def get_toggleable_jobs(self):
         return list(self.scheduled_jobs.items())
+
+    def get_toggleable_plugins(self):
+        return list(self.toggleable_plugins.items())
 
     def register_command_handler(
             self,

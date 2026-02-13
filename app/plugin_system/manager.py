@@ -275,7 +275,8 @@ class PluginManager:
                 try:
                     if getattr(module, '__toggleable__', False):
                         await BotDatabase.ensure_plugin_column(plugin.name)
-                        self.middleware.mark_toggleable(plugin.name)
+                        display_name = getattr(module, '__display_name__', None)
+                        self.middleware.mark_toggleable(plugin.name, display_name)
                         logger.info(f"🔧 插件 {plugin.name} 已注册为可开关，并确保 settings 列存在")
                 except Exception as e:
                     logger.error(f"初始化插件开关列失败: {plugin.name}: {e}")

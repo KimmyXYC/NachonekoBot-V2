@@ -65,10 +65,11 @@ def build_keyboard_and_text(items: List[Dict[str, object]]) -> Tuple[str, types.
     return "\n".join(text_lines), kb
 
 
-async def get_toggleable_plugins(middleware) -> List[str]:
+async def get_toggleable_plugins(middleware) -> List[Tuple[str, str]]:
     """从中间件获取可切换插件列表。"""
-    names = sorted(getattr(middleware, 'toggleable_plugins', set()))
-    return names
+    plugins = list(getattr(middleware, 'toggleable_plugins', {}).items())
+    plugins.sort(key=lambda item: item[0])
+    return plugins
 
 
 async def get_toggleable_jobs(middleware) -> List[Tuple[str, str]]:

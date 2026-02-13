@@ -156,9 +156,9 @@ class BotRunner:
                     return
 
                 await BotDatabase.ensure_group_row(chat_id)
-                for name in plugin_list:
+                for name, display_name in plugin_list:
                     enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
-                    items.append({"kind": "plugin", "key": name, "label": name, "enabled": enabled})
+                    items.append({"kind": "plugin", "key": name, "label": display_name, "enabled": enabled})
                 for job_name, display_name in job_list:
                     enabled = await BotDatabase.get_scheduled_job_enabled(chat_id, job_name)
                     items.append({"kind": "job", "key": job_name, "label": display_name, "enabled": enabled})
@@ -209,9 +209,9 @@ class BotRunner:
                 plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
                 job_list = await get_toggleable_jobs(plugin_manager.middleware)
                 items = []
-                for name in plugin_list:
+                for name, display_name in plugin_list:
                     enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
-                    items.append({"kind": "plugin", "key": name, "label": name, "enabled": enabled})
+                    items.append({"kind": "plugin", "key": name, "label": display_name, "enabled": enabled})
                 for job_name, display_name in job_list:
                     enabled = await BotDatabase.get_scheduled_job_enabled(chat_id, job_name)
                     items.append({"kind": "job", "key": job_name, "label": display_name, "enabled": enabled})
