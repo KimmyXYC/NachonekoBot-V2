@@ -10,6 +10,7 @@ from loguru import logger
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "xibao"
+__display_name__ = "生成喜报图片"
 __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "喜报/悲报/通报/警报生成器"

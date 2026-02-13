@@ -19,6 +19,7 @@ from utils.yaml import BotConfig
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "long_image_cutter"
+__display_name__ = "长图裁切器"
 __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "长图自动裁切为多个 19.5:9，并带 3:19.5 重叠；切片高度以 19.5:9 为标准可微调，保证所有切片大小一致（仅对以文件形式发送的图片生效）"

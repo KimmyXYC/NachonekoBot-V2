@@ -14,6 +14,7 @@ from utils.postgres import BotDatabase
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "stats"
+__display_name__ = "发言统计记录器"
 __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "群聊发言统计排行（支持日/周/月/年与自定义时间范围）"
