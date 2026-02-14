@@ -21,27 +21,27 @@ __description__ = "下头检测系统（仅对配置用户生效）"
 __commands__ = []  # 这个插件通过过滤器和配置触发，不是命令
 
 # 隐藏功能：/inb 与 inline inb（用于统计）
-__command_help__ = {
-    "inb": "Inline: @NachoNekoX_bot inb"
-}
+__command_help__ = {"inb": "Inline: @NachoNekoX_bot inb"}
 
 
 # ==================== 核心功能 ====================
 def get_today_midnight_ts_utc8() -> int:
-    tz = pytz.timezone('Asia/Shanghai')  # UTC+8
+    tz = pytz.timezone("Asia/Shanghai")  # UTC+8
     now = datetime.datetime.now(tz)
     midnight = datetime.datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz)
     return int(midnight.timestamp())
 
 
-async def _sum_xiatou_since_midnight(start_midnight_ts_utc8: int, end_midnight_ts_utc8: int) -> int:
+async def _sum_xiatou_since_midnight(
+    start_midnight_ts_utc8: int, end_midnight_ts_utc8: int
+) -> int:
     """统计 xiatou 表在 [start_midnight, end_midnight]（按 UTC+8 当天0点ts）范围内的 count 之和。"""
     conn = BotDatabase.conn
     try:
         val = await conn.fetchval(
             "SELECT COALESCE(SUM(count), 0) FROM xiatou WHERE time BETWEEN $1 AND $2",
             start_midnight_ts_utc8,
-            end_midnight_ts_utc8
+            end_midnight_ts_utc8,
         )
         return int(val or 0)
     except Exception as e:
@@ -57,8 +57,12 @@ async def query_inb_text() -> str:
     sum_1 = await _sum_xiatou_since_midnight(today_midnight, today_midnight)
     sum_7 = await _sum_xiatou_since_midnight(today_midnight - 6 * day, today_midnight)
     sum_30 = await _sum_xiatou_since_midnight(today_midnight - 29 * day, today_midnight)
-    sum_180 = await _sum_xiatou_since_midnight(today_midnight - 179 * day, today_midnight)
-    sum_365 = await _sum_xiatou_since_midnight(today_midnight - 364 * day, today_midnight)
+    sum_180 = await _sum_xiatou_since_midnight(
+        today_midnight - 179 * day, today_midnight
+    )
+    sum_365 = await _sum_xiatou_since_midnight(
+        today_midnight - 364 * day, today_midnight
+    )
 
     return (
         f"inb 虾头次数统计\n"
@@ -75,26 +79,22 @@ async def increment_today_count_pg() -> int:
     conn = BotDatabase.conn
     try:
         result = await conn.execute(
-            "UPDATE xiatou SET count = count + 1 WHERE time = $1",
-            ts
+            "UPDATE xiatou SET count = count + 1 WHERE time = $1", ts
         )
-        if result == 'UPDATE 0':
+        if result == "UPDATE 0":
             await conn.execute(
                 "INSERT INTO xiatou (time, count) VALUES ($1, 1) ON CONFLICT (time) DO NOTHING",
-                ts
+                ts,
             )
-        row = await conn.fetchrow(
-            "SELECT count FROM xiatou WHERE time = $1",
-            ts
-        )
-        return row['count'] if row else 0
+        row = await conn.fetchrow("SELECT count FROM xiatou WHERE time = $1", ts)
+        return row["count"] if row else 0
     except asyncpg.PostgresError as e:
         logger.error(f"[XiaTou][Postgres Error]: {e}")
         return 0
 
 
 async def handle_xiatou(bot, message):
-    if message.content_type == 'text':
+    if message.content_type == "text":
         text_content = message.text
     else:
         text_content = message.caption
@@ -106,7 +106,10 @@ async def handle_xiatou(bot, message):
         count = await increment_today_count_pg()
         logger.info(f"[XiaTou][{message.chat.id}]: {text_content}")
         logger.success(f"[XiaTou][{message.chat.id}]: Regular Match Success")
-        await bot.reply_to(message, f"#下头\ninb 老师，这是你今天第 {count} 次下头\n\n本次结果由正则判断")
+        await bot.reply_to(
+            message,
+            f"#下头\ninb 老师，这是你今天第 {count} 次下头\n\n本次结果由正则判断",
+        )
         return
     else:
         pattern = r".*(?:脚|足|舔|嘴里|性|冲|导|萝莉|美少女|自慰|打胶).*"
@@ -114,15 +117,14 @@ async def handle_xiatou(bot, message):
             url = f"{BotConfig['xiatou']['openai_api']}/v1/chat/completions"
             headers = {
                 "Authorization": f"Bearer {BotConfig['xiatou']['openai_api_key']}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
             data = {
                 "model": BotConfig["xiatou"]["openai_api_model"],
                 "messages": [
                     {
                         "role": "system",
-                        "content":
-                        '''
+                        "content": """
 下面我将给你一些句子，请判断是否让人感到"下头"（即引发恶心、不适或厌恶）。仅当句子涉及以下四类内容时回答 **true**，否则回答 **false**：
 
 **触发true的核心类型：**
@@ -159,24 +161,30 @@ async def handle_xiatou(bot, message):
 - `有水珠在里边导致的接触不良` → 技术问题描述
 
 严格只输出 **true** 或 **false**。
-                        '''
+                        """,
                     },
-                    {
-                        "role": "user",
-                        "content": message.text
-                    }
+                    {"role": "user", "content": message.text},
                 ],
                 "temperature": 0.7,
-                "max_tokens": 10
+                "max_tokens": 10,
             }
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+            async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as session:
                 async with session.post(url, headers=headers, json=data) as response:
                     response_json = await response.json()
-            if "choices" in response_json and response_json["choices"][0]["message"]["content"].strip().lower() == "true":
+            if (
+                "choices" in response_json
+                and response_json["choices"][0]["message"]["content"].strip().lower()
+                == "true"
+            ):
                 count = await increment_today_count_pg()
                 logger.info(f"[XiaTou][{message.chat.id}]: {text_content}")
                 logger.success(f"[XiaTou][{message.chat.id}]: AI Match Success")
-                await bot.reply_to(message, f"#下头\ninb 老师，这是你今天第 {count} 次下头\n\n本次结果由 AI 判断")
+                await bot.reply_to(
+                    message,
+                    f"#下头\ninb 老师，这是你今天第 {count} 次下头\n\n本次结果由 AI 判断",
+                )
                 return
     return
 
@@ -193,15 +201,17 @@ async def handle_inb_inline_query(bot, inline_query: types.InlineQuery):
     tokens = query.split()
 
     # 仅在 middleware 过滤后进来；此处再做一次兜底
-    if not tokens or tokens[0].lower() != 'inb' or len(tokens) != 1:
+    if not tokens or tokens[0].lower() != "inb" or len(tokens) != 1:
         usage = "用法：inb"
         result = types.InlineQueryResultArticle(
             id="inb_usage",
             title="下头次数统计 (inb)",
             description="用法：inb",
-            input_message_content=types.InputTextMessageContent(usage)
+            input_message_content=types.InputTextMessageContent(usage),
         )
-        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        await bot.answer_inline_query(
+            inline_query.id, [result], cache_time=1, is_personal=True
+        )
         return
 
     text = await query_inb_text()
@@ -209,9 +219,11 @@ async def handle_inb_inline_query(bot, inline_query: types.InlineQuery):
         id="inb_stats",
         title="下头次数统计",
         description="发送统计结果",
-        input_message_content=types.InputTextMessageContent(text)
+        input_message_content=types.InputTextMessageContent(text),
     )
-    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+    await bot.answer_inline_query(
+        inline_query.id, [result], cache_time=1, is_personal=True
+    )
 
 
 # ==================== 插件注册 ====================
@@ -223,7 +235,9 @@ async def register_handlers(bot, middleware, plugin_name):
 
     async def xiatou_handler(bot, message: types.Message):
         """处理下头检测消息"""
-        logger.debug(f"[XiaTou][{message.from_user.id}]: {message.text if message.content_type == 'text' else message.caption}")
+        logger.debug(
+            f"[XiaTou][{message.from_user.id}]: {message.text if message.content_type == 'text' else message.caption}"
+        )
         await handle_xiatou(bot, message)
 
     # 定义自定义过滤器函数
@@ -244,18 +258,18 @@ async def register_handlers(bot, middleware, plugin_name):
         handler_name="xiatou_detector",
         priority=50,
         stop_propagation=False,  # 不阻止其他处理器
-        content_types=['text', 'photo', 'video', 'document'],
-        func=xiatou_filter
+        content_types=["text", "photo", "video", "document"],
+        func=xiatou_filter,
     )
 
     # 隐藏命令 /inb（不加入 __commands__，避免出现在 /help 或 bot command list 中）
     middleware.register_command_handler(
-        commands=['inb'],
+        commands=["inb"],
         callback=handle_inb_command,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
     # Inline: @NachoNekoX_bot inb
@@ -264,10 +278,16 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('inb')
+        func=lambda q: (
+            bool(getattr(q, "query", None))
+            and q.query.strip().lower().startswith("inb")
+        ),
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 下头检测系统（含隐藏命令 /inb 与 Inline inb）")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 下头检测系统（含隐藏命令 /inb 与 Inline inb）"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -281,6 +301,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

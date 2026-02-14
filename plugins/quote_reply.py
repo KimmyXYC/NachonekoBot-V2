@@ -12,6 +12,7 @@
 - 无附加语句:  "[发送者](uri) 动作了 [对象](uri)！"
 - 有附加语句:  "[发送者](uri) 动作 [对象](uri) 附加语句！"
 """
+
 import re
 import aiohttp
 from typing import Optional, Tuple
@@ -33,7 +34,7 @@ __toggleable__ = True  # 支持在群组中开关
 # ==================== 工具函数 ====================
 def _is_ascii(s: str) -> bool:
     try:
-        s.encode('ascii')
+        s.encode("ascii")
         return True
     except Exception:
         return False
@@ -63,13 +64,17 @@ async def _get_name_by_username(username: str) -> str:
         return ""
 
     # og:title
-    m = re.search(r'<meta\s+property="og:title"\s+content="([^"]*)"', html, re.IGNORECASE)
+    m = re.search(
+        r'<meta\s+property="og:title"\s+content="([^"]*)"', html, re.IGNORECASE
+    )
     name = m.group(1) if m else ""
 
     # <title>...</title>
     m1 = re.search(r"<title>", html, re.IGNORECASE)
     m2 = re.search(r"</title>", html, re.IGNORECASE)
-    page_title = html[m1.end():m2.start()] if (m1 and m2 and m1.end() <= m2.start()) else ""
+    page_title = (
+        html[m1.end() : m2.start()] if (m1 and m2 and m1.end() <= m2.start()) else ""
+    )
 
     if name and page_title and name == page_title:
         # 用户不存在
@@ -85,11 +90,15 @@ def _sender_identity(message: types.Message) -> Tuple[str, str]:
     """返回 (显示名, URI) 对。优先使用 SenderChat。"""
     if message.sender_chat:
         title = _escape_name(message.sender_chat.title)
-        uri = _build_tme_link(message.sender_chat.username) if getattr(message.sender_chat, 'username', None) else ""
+        uri = (
+            _build_tme_link(message.sender_chat.username)
+            if getattr(message.sender_chat, "username", None)
+            else ""
+        )
         return title, uri
     # 普通用户
-    first = getattr(message.from_user, 'first_name', '') or ''
-    last = getattr(message.from_user, 'last_name', '') or ''
+    first = getattr(message.from_user, "first_name", "") or ""
+    last = getattr(message.from_user, "last_name", "") or ""
     name = _escape_name((first + " " + last).strip() or first or last or "")
     uri = _build_tg_user_link(message.from_user.id)
     return name, uri
@@ -103,37 +112,45 @@ def _replyto_identity(message: types.Message) -> Optional[Tuple[str, str]]:
     if not reply:
         return None
 
-    if getattr(message, 'is_topic_message', False):
+    if getattr(message, "is_topic_message", False):
         # 如果回复的是话题根消息，清空 ReplyToMessage
-        if reply.message_id == getattr(message, 'message_thread_id', None):
+        if reply.message_id == getattr(message, "message_thread_id", None):
             return None
 
     # 优先考虑 SenderChat（频道/匿名管理员）
     if reply.sender_chat:
         title = _escape_name(reply.sender_chat.title)
-        uri = _build_tme_link(reply.sender_chat.username) if getattr(reply.sender_chat, 'username', None) else ""
+        uri = (
+            _build_tme_link(reply.sender_chat.username)
+            if getattr(reply.sender_chat, "username", None)
+            else ""
+        )
         return title, uri
 
     # 一般用户
     # 当被回复的是 Bot 且含 text_mention 实体时，使用实体里的用户
-    if getattr(reply, 'from_user', None):
+    if getattr(reply, "from_user", None):
         # text_mention 解析
         try:
-            entities = getattr(reply, 'entities', []) or []
-            if getattr(reply.from_user, 'is_bot', False) and len(entities) != 0:
+            entities = getattr(reply, "entities", []) or []
+            if getattr(reply.from_user, "is_bot", False) and len(entities) != 0:
                 ent = entities[0]
-                if getattr(ent, 'type', '') == 'text_mention' and getattr(ent, 'user', None):
+                if getattr(ent, "type", "") == "text_mention" and getattr(
+                    ent, "user", None
+                ):
                     u = ent.user
-                    first = getattr(u, 'first_name', '') or ''
-                    last = getattr(u, 'last_name', '') or ''
-                    name = _escape_name((first + " " + last).strip() or first or last or "")
+                    first = getattr(u, "first_name", "") or ""
+                    last = getattr(u, "last_name", "") or ""
+                    name = _escape_name(
+                        (first + " " + last).strip() or first or last or ""
+                    )
                     uri = _build_tg_user_link(u.id)
                     return name, uri
         except Exception:
             pass
 
-        first = getattr(reply.from_user, 'first_name', '') or ''
-        last = getattr(reply.from_user, 'last_name', '') or ''
+        first = getattr(reply.from_user, "first_name", "") or ""
+        last = getattr(reply.from_user, "last_name", "") or ""
         name = _escape_name((first + " " + last).strip() or first or last or "")
         uri = _build_tg_user_link(reply.from_user.id)
         return name, uri
@@ -141,13 +158,15 @@ def _replyto_identity(message: types.Message) -> Optional[Tuple[str, str]]:
     return None
 
 
-async def _find_target_from_text(command_word: str) -> Tuple[Optional[str], Optional[str], str]:
+async def _find_target_from_text(
+    command_word: str,
+) -> Tuple[Optional[str], Optional[str], str]:
     """
     从“动作@username”语法解析对象。如果存在 @username，返回 (显示名, 链接, 动作词去除@部分)。
     若解析失败，返回 (None, None, 原动作词)。
     """
     # 仅切第一处 @
-    parts = command_word.split('@', 1)
+    parts = command_word.split("@", 1)
     if len(parts) == 2 and parts[1]:
         username = parts[1]
         name = await _get_name_by_username(username)
@@ -161,15 +180,15 @@ def _parse_keywords(text: str) -> list:
     先删除第一个 '$'，再去掉首字符（/ 或 \\），再进行 MarkdownV2 转义，最后按空格 SplitN 2。
     """
     # 删除第一个 '$'
-    cleaned = text.replace('$', '', 1)
+    cleaned = text.replace("$", "", 1)
     # 去掉开头的 / 或 \\
-    if cleaned and cleaned[0] in ('/', '\\'):
+    if cleaned and cleaned[0] in ("/", "\\"):
         cleaned = cleaned[1:]
     # 转义后 split
     cleaned = escape_md_v2_text(cleaned)
-    parts = cleaned.split(' ', 2)
+    parts = cleaned.split(" ", 2)
     if len(parts) > 2:
-        return [parts[0], ' '.join(parts[1:])]
+        return [parts[0], " ".join(parts[1:])]
     return parts
 
 
@@ -177,10 +196,10 @@ def _is_trigger(text: str) -> bool:
     """匹配 '/$' 或 '\\$' 开头的消息。"""
     if not text or len(text) < 2:
         return False
-    if text.startswith('/'):
-        return (not _is_ascii(text[:2])) or text.startswith('/$')
-    if text.startswith('\\'):
-        return (not _is_ascii(text[:2])) or text.startswith('\\$')
+    if text.startswith("/"):
+        return (not _is_ascii(text[:2])) or text.startswith("/$")
+    if text.startswith("\\"):
+        return (not _is_ascii(text[:2])) or text.startswith("\\$")
     return False
 
 
@@ -206,11 +225,11 @@ async def _build_reply_text(message: types.Message) -> str:
         reply_name, reply_uri = reply_to
 
     # 反斜杠前缀时交换主客体
-    backslash = text.startswith('\\')
+    backslash = text.startswith("\\")
 
     if reply_to is None:
         # 无引用时，尝试从动作词中解析 @username
-        cmd_word = (keywords[0] or "").lstrip('/')  # 已处理
+        cmd_word = (keywords[0] or "").lstrip("/")  # 已处理
         found_name, found_link, pure_cmd = await _find_target_from_text(cmd_word)
         if found_name:
             reply_name, reply_uri = found_name, found_link
@@ -264,7 +283,7 @@ async def register_handlers(bot, middleware, plugin_name):
         handler_name="quote_handler",
         priority=30,
         stop_propagation=False,
-        chat_types=['group', 'supergroup']
+        chat_types=["group", "supergroup"],
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 监听 '/$' 与 '\\$' 消息")

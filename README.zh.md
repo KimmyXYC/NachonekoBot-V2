@@ -18,7 +18,7 @@ NachonekoBot 是一个多功能的 Telegram 机器人，具有各种实用和有
 
 ### 前提条件
 
-- Python 3.11 或更高版本
+- Python 3.12 或更高版本
 - PostgreSQL 数据库（标准安装需要）
 - Docker 和 Docker Compose（Docker 安装需要）
 

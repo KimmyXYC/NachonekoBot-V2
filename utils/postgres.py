@@ -10,6 +10,7 @@ import re
 
 from utils.yaml import BotConfig
 
+
 class AsyncPostgresDB:
     def __init__(self):
         self.host = BotConfig["database"]["host"]
@@ -32,9 +33,11 @@ class AsyncPostgresDB:
                 password=self.password,
                 database=self.dbname,
                 min_size=1,
-                max_size=5
+                max_size=5,
             )
-            logger.success(f"Successfully connected to PostgreSQL database at {self.host}:{self.port}/{self.dbname}")
+            logger.success(
+                f"Successfully connected to PostgreSQL database at {self.host}:{self.port}/{self.dbname}"
+            )
             # Create tables if they don't exist
             await self.ensure_tables_exist()
             # Ensure plugin setting table exists
@@ -67,25 +70,25 @@ class AsyncPostgresDB:
         try:
             async with self.conn.acquire() as connection:
                 # Create remake table if it doesn't exist
-                await connection.execute('''
+                await connection.execute("""
                     CREATE TABLE IF NOT EXISTS remake (
                         user_id BIGINT PRIMARY KEY,
                         count INTEGER NOT NULL DEFAULT 0,
                         country TEXT NOT NULL,
                         gender TEXT NOT NULL
                     )
-                ''')
+                """)
 
                 # Create xiatou table if it doesn't exist
-                await connection.execute('''
+                await connection.execute("""
                     CREATE TABLE IF NOT EXISTS xiatou (
                         time BIGINT PRIMARY KEY,
                         count INTEGER NOT NULL DEFAULT 0
                     )
-                ''')
+                """)
 
                 # Create speech_stats table if it doesn't exist
-                await connection.execute('''
+                await connection.execute("""
                     CREATE TABLE IF NOT EXISTS speech_stats (
                         group_id BIGINT NOT NULL,
                         user_id BIGINT NOT NULL,
@@ -94,12 +97,12 @@ class AsyncPostgresDB:
                         display_name TEXT NOT NULL,
                         PRIMARY KEY (group_id, user_id, hour)
                     )
-                ''')
+                """)
 
-                await connection.execute('''
+                await connection.execute("""
                     CREATE INDEX IF NOT EXISTS idx_speech_stats_group_hour
                     ON speech_stats (group_id, hour)
-                ''')
+                """)
 
             logger.success("Database tables checked and created if needed")
         except Exception as e:
@@ -113,11 +116,11 @@ class AsyncPostgresDB:
         """
         try:
             async with self.conn.acquire() as connection:
-                await connection.execute('''
+                await connection.execute("""
                     CREATE TABLE IF NOT EXISTS setting (
                         group_id BIGINT PRIMARY KEY
                     )
-                ''')
+                """)
             logger.success("Settings table ensured (setting)")
         except Exception as e:
             logger.error(f"Error ensuring settings table: {e}")
@@ -127,7 +130,7 @@ class AsyncPostgresDB:
         """Ensure the `scheduled_jobs` table exists for per-group cron job settings."""
         try:
             async with self.conn.acquire() as connection:
-                await connection.execute('''
+                await connection.execute("""
                     CREATE TABLE IF NOT EXISTS scheduled_jobs (
                         group_id BIGINT NOT NULL,
                         job_name TEXT NOT NULL,
@@ -137,11 +140,11 @@ class AsyncPostgresDB:
                         payload TEXT,
                         PRIMARY KEY (group_id, job_name)
                     )
-                ''')
-                await connection.execute('''
+                """)
+                await connection.execute("""
                     CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_job_enabled
                     ON scheduled_jobs (job_name, enabled)
-                ''')
+                """)
             logger.success("Scheduled jobs table ensured (scheduled_jobs)")
         except Exception as e:
             logger.error(f"Error ensuring scheduled jobs table: {e}")
@@ -190,10 +193,16 @@ class AsyncPostgresDB:
                     column,
                 )
                 if not exists:
-                    await connection.execute(f"ALTER TABLE setting ADD COLUMN \"{column}\" BOOLEAN NOT NULL DEFAULT TRUE")
-                    logger.info(f"Added settings column for plugin '{plugin_name}' as '{column}' with default TRUE")
+                    await connection.execute(
+                        f'ALTER TABLE setting ADD COLUMN "{column}" BOOLEAN NOT NULL DEFAULT TRUE'
+                    )
+                    logger.info(
+                        f"Added settings column for plugin '{plugin_name}' as '{column}' with default TRUE"
+                    )
                 else:
-                    logger.debug(f"Settings column already exists for plugin '{plugin_name}' as '{column}'")
+                    logger.debug(
+                        f"Settings column already exists for plugin '{plugin_name}' as '{column}'"
+                    )
         except Exception as e:
             logger.error(f"Error ensuring plugin column '{plugin_name}': {e}")
             raise
@@ -218,19 +227,27 @@ class AsyncPostgresDB:
                     column,
                 )
                 if not exists:
-                    logger.warning(f"Settings column '{column}' missing; treating as enabled for plugin '{plugin_name}'")
+                    logger.warning(
+                        f"Settings column '{column}' missing; treating as enabled for plugin '{plugin_name}'"
+                    )
                     return True
-                val = await connection.fetchval(f"SELECT \"{column}\" FROM setting WHERE group_id = $1", int(group_id))
+                val = await connection.fetchval(
+                    f'SELECT "{column}" FROM setting WHERE group_id = $1', int(group_id)
+                )
                 if val is None:
                     # Row exists but column is NULL? Treat as default True.
                     return True
                 return bool(val)
         except Exception as e:
-            logger.error(f"Error getting plugin enabled state for group {group_id}, plugin '{plugin_name}': {e}")
+            logger.error(
+                f"Error getting plugin enabled state for group {group_id}, plugin '{plugin_name}': {e}"
+            )
             # Fail-open to avoid breaking bot functionality
             return True
 
-    async def set_plugin_enabled(self, group_id: int, plugin_name: str, enabled: bool) -> bool:
+    async def set_plugin_enabled(
+        self, group_id: int, plugin_name: str, enabled: bool
+    ) -> bool:
         """Set plugin enabled state for a group. Returns True if success."""
         column = self._sanitize_plugin_column(plugin_name)
         try:
@@ -247,16 +264,22 @@ class AsyncPostgresDB:
                     column,
                 )
                 if not exists:
-                    await connection.execute(f"ALTER TABLE setting ADD COLUMN \"{column}\" BOOLEAN NOT NULL DEFAULT TRUE")
+                    await connection.execute(
+                        f'ALTER TABLE setting ADD COLUMN "{column}" BOOLEAN NOT NULL DEFAULT TRUE'
+                    )
                 await connection.execute(
-                    f"UPDATE setting SET \"{column}\" = $1 WHERE group_id = $2",
+                    f'UPDATE setting SET "{column}" = $1 WHERE group_id = $2',
                     bool(enabled),
                     int(group_id),
                 )
-            logger.info(f"Set plugin '{plugin_name}' ({column}) enabled={enabled} for group {group_id}")
+            logger.info(
+                f"Set plugin '{plugin_name}' ({column}) enabled={enabled} for group {group_id}"
+            )
             return True
         except Exception as e:
-            logger.error(f"Error setting plugin enabled for group {group_id}, plugin '{plugin_name}': {e}")
+            logger.error(
+                f"Error setting plugin enabled for group {group_id}, plugin '{plugin_name}': {e}"
+            )
             return False
 
     # ==================== Scheduled jobs helpers ====================
@@ -297,7 +320,9 @@ class AsyncPostgresDB:
     ) -> bool:
         """Get whether a scheduled job is enabled in the given group. Defaults to False."""
         try:
-            await self.ensure_scheduled_job_row(group_id, job_name, timezone, cron_expr, payload)
+            await self.ensure_scheduled_job_row(
+                group_id, job_name, timezone, cron_expr, payload
+            )
             async with self.conn.acquire() as connection:
                 val = await connection.fetchval(
                     """
@@ -312,7 +337,9 @@ class AsyncPostgresDB:
                     return False
                 return bool(val)
         except Exception as e:
-            logger.error(f"Error getting scheduled job enabled state for group {group_id}, job '{job_name}': {e}")
+            logger.error(
+                f"Error getting scheduled job enabled state for group {group_id}, job '{job_name}': {e}"
+            )
             return False
 
     async def set_scheduled_job_enabled(
@@ -346,10 +373,14 @@ class AsyncPostgresDB:
             query = f"UPDATE scheduled_jobs SET {', '.join(fields)} WHERE group_id = ${idx} AND job_name = ${idx + 1}"
             async with self.conn.acquire() as connection:
                 await connection.execute(query, *params)
-            logger.info(f"Set scheduled job '{job_name}' enabled={enabled} for group {group_id}")
+            logger.info(
+                f"Set scheduled job '{job_name}' enabled={enabled} for group {group_id}"
+            )
             return True
         except Exception as e:
-            logger.error(f"Error setting scheduled job enabled for group {group_id}, job '{job_name}': {e}")
+            logger.error(
+                f"Error setting scheduled job enabled for group {group_id}, job '{job_name}': {e}"
+            )
             return False
 
     async def get_enabled_scheduled_groups(self, job_name: str):
@@ -366,7 +397,9 @@ class AsyncPostgresDB:
                 )
                 return rows
         except Exception as e:
-            logger.error(f"Error getting enabled scheduled groups for job '{job_name}': {e}")
+            logger.error(
+                f"Error getting enabled scheduled groups for job '{job_name}': {e}"
+            )
             return []
 
 

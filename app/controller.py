@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # @Time    : 2023/11/18 上午12:18
 # @File    : controller.py
 # @Software: PyCharm
@@ -33,6 +33,7 @@ class BotRunner:
             api_server = botapi_config.get("api_server", "")
             if api_server:
                 from telebot import apihelper, asyncio_helper
+
                 # 设置自定义 Bot API URL
                 apihelper.API_URL = f"{api_server}/bot{{0}}/{{1}}"
                 apihelper.FILE_URL = f"{api_server}/file/bot{{0}}/{{1}}"
@@ -41,10 +42,12 @@ class BotRunner:
                 asyncio_helper.FILE_URL = apihelper.FILE_URL
                 logger.info(f"🌐 使用自定义 Bot API 服务器: {api_server}")
             else:
-                logger.warning("⚠️ 自定义 Bot API 已启用但未配置 api_server，使用官方服务器")
+                logger.warning(
+                    "⚠️ 自定义 Bot API 已启用但未配置 api_server，使用官方服务器"
+                )
         else:
             logger.info("🌐 使用官方 Bot API 服务器")
-        
+
         self.bot = AsyncTeleBot(BotSetting.token, state_storage=StepCache)
 
     async def run(self):
@@ -53,6 +56,7 @@ class BotRunner:
 
         if BotSetting.proxy_address:
             from telebot import asyncio_helper
+
             asyncio_helper.proxy = BotSetting.proxy_address
             logger.info("🌐 Proxy tunnels are being used!")
 
@@ -72,14 +76,14 @@ class BotRunner:
         await event.set_bot_commands(bot, plugin_manager)
 
         # ==================== 核心命令(保留在这里) ====================
-        @bot.message_handler(commands=['start', 'help'], chat_types=["private"])
+        @bot.message_handler(commands=["start", "help"], chat_types=["private"])
         async def listen_help_command(message: types.Message):
             await event.listen_help_command(bot, message, plugin_manager)
 
         # ==================== 插件管理命令 ====================
         @bot.message_handler(
             func=lambda m: m.from_user.id in BotConfig["admin"]["id"],
-            commands=['plugin']
+            commands=["plugin"],
         )
         async def handle_plugin_command(message: types.Message):
             """插件管理命令"""
@@ -111,7 +115,11 @@ class BotRunner:
             elif action == "enable" and len(args) == 3:
                 plugin_name = args[2]
                 if plugin_manager.enable_plugin(plugin_name):
-                    await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已启用", parse_mode="Markdown")
+                    await bot.reply_to(
+                        message,
+                        f"✅ 插件 `{plugin_name}` 已启用",
+                        parse_mode="Markdown",
+                    )
                     await plugin_manager.reload_all_plugins(bot)
                 else:
                     await bot.reply_to(message, "❌ 启用失败", parse_mode="Markdown")
@@ -119,7 +127,11 @@ class BotRunner:
             elif action == "disable" and len(args) == 3:
                 plugin_name = args[2]
                 if plugin_manager.disable_plugin(plugin_name):
-                    await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已禁用", parse_mode="Markdown")
+                    await bot.reply_to(
+                        message,
+                        f"✅ 插件 `{plugin_name}` 已禁用",
+                        parse_mode="Markdown",
+                    )
                     await plugin_manager.reload_all_plugins(bot)
                 else:
                     await bot.reply_to(message, "❌ 禁用失败", parse_mode="Markdown")
@@ -127,24 +139,34 @@ class BotRunner:
             elif action == "reload":
                 msg = await bot.reply_to(message, "🔄 正在重载插件...")
                 await plugin_manager.reload_all_plugins(bot)
-                await bot.edit_message_text("✅ 插件重载完成", msg.chat.id, msg.message_id)
+                await bot.edit_message_text(
+                    "✅ 插件重载完成", msg.chat.id, msg.message_id
+                )
 
             elif action == "remove" and len(args) == 3:
                 plugin_name = args[2]
                 if plugin_manager.remove_plugin(plugin_name):
-                    await bot.reply_to(message, f"✅ 插件 `{plugin_name}` 已删除", parse_mode="Markdown")
+                    await bot.reply_to(
+                        message,
+                        f"✅ 插件 `{plugin_name}` 已删除",
+                        parse_mode="Markdown",
+                    )
                 else:
                     await bot.reply_to(message, "❌ 删除失败", parse_mode="Markdown")
 
         # ==================== 插件设置面板（核心命令） ====================
-        @bot.message_handler(commands=['plugin_settings'], chat_types=['group', 'supergroup'])
+        @bot.message_handler(
+            commands=["plugin_settings"], chat_types=["group", "supergroup"]
+        )
         async def core_plugin_settings(message: types.Message):
             try:
                 user_id = message.from_user.id
                 chat_id = message.chat.id
 
                 if not await has_change_info_permission(bot, chat_id, user_id):
-                    await bot.reply_to(message, "你没有权限使用该功能（需要“更改群信息”权限）。")
+                    await bot.reply_to(
+                        message, "你没有权限使用该功能（需要“更改群信息”权限）。"
+                    )
                     return
 
                 plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
@@ -158,10 +180,26 @@ class BotRunner:
                 await BotDatabase.ensure_group_row(chat_id)
                 for name, display_name in plugin_list:
                     enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
-                    items.append({"kind": "plugin", "key": name, "label": display_name, "enabled": enabled})
+                    items.append(
+                        {
+                            "kind": "plugin",
+                            "key": name,
+                            "label": display_name,
+                            "enabled": enabled,
+                        }
+                    )
                 for job_name, display_name in job_list:
-                    enabled = await BotDatabase.get_scheduled_job_enabled(chat_id, job_name)
-                    items.append({"kind": "job", "key": job_name, "label": display_name, "enabled": enabled})
+                    enabled = await BotDatabase.get_scheduled_job_enabled(
+                        chat_id, job_name
+                    )
+                    items.append(
+                        {
+                            "kind": "job",
+                            "key": job_name,
+                            "label": display_name,
+                            "enabled": enabled,
+                        }
+                    )
 
                 text, kb = build_keyboard_and_text(items)
                 await bot.reply_to(message, text, reply_markup=kb)
@@ -173,7 +211,9 @@ class BotRunner:
                     pass
 
         # 回调：处理插件开关切换（核心处理，不经中间件）
-        @bot.callback_query_handler(func=lambda c: c.data and c.data.startswith('plg_toggle:'))
+        @bot.callback_query_handler(
+            func=lambda c: c.data and c.data.startswith("plg_toggle:")
+        )
         async def core_handle_toggle_callback(call: types.CallbackQuery):
             try:
                 chat = call.message.chat
@@ -184,7 +224,7 @@ class BotRunner:
                     await bot.answer_callback_query(call.id, "无权限")
                     return
 
-                parts = call.data.split(':', 2)
+                parts = call.data.split(":", 2)
                 if len(parts) < 3:
                     await bot.answer_callback_query(call.id, "无效操作")
                     return
@@ -194,11 +234,17 @@ class BotRunner:
                 if target_kind == "plugin":
                     current = await BotDatabase.get_plugin_enabled(chat_id, target_key)
                     new_state = not current
-                    ok = await BotDatabase.set_plugin_enabled(chat_id, target_key, new_state)
+                    ok = await BotDatabase.set_plugin_enabled(
+                        chat_id, target_key, new_state
+                    )
                 elif target_kind == "job":
-                    current = await BotDatabase.get_scheduled_job_enabled(chat_id, target_key)
+                    current = await BotDatabase.get_scheduled_job_enabled(
+                        chat_id, target_key
+                    )
                     new_state = not current
-                    ok = await BotDatabase.set_scheduled_job_enabled(chat_id, target_key, new_state)
+                    ok = await BotDatabase.set_scheduled_job_enabled(
+                        chat_id, target_key, new_state
+                    )
                 else:
                     await bot.answer_callback_query(call.id, "无效操作")
                     return
@@ -211,17 +257,33 @@ class BotRunner:
                 items = []
                 for name, display_name in plugin_list:
                     enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
-                    items.append({"kind": "plugin", "key": name, "label": display_name, "enabled": enabled})
+                    items.append(
+                        {
+                            "kind": "plugin",
+                            "key": name,
+                            "label": display_name,
+                            "enabled": enabled,
+                        }
+                    )
                 for job_name, display_name in job_list:
-                    enabled = await BotDatabase.get_scheduled_job_enabled(chat_id, job_name)
-                    items.append({"kind": "job", "key": job_name, "label": display_name, "enabled": enabled})
+                    enabled = await BotDatabase.get_scheduled_job_enabled(
+                        chat_id, job_name
+                    )
+                    items.append(
+                        {
+                            "kind": "job",
+                            "key": job_name,
+                            "label": display_name,
+                            "enabled": enabled,
+                        }
+                    )
                 text, kb = build_keyboard_and_text(items)
 
                 await bot.edit_message_text(
                     text=text,
                     chat_id=chat_id,
                     message_id=call.message.message_id,
-                    reply_markup=kb
+                    reply_markup=kb,
                 )
                 await bot.answer_callback_query(call.id, "已更新")
             except Exception as e:
@@ -232,7 +294,7 @@ class BotRunner:
                     pass
 
         # 回调：处理关闭按钮（删除消息）
-        @bot.callback_query_handler(func=lambda c: c.data and c.data == 'plg_close')
+        @bot.callback_query_handler(func=lambda c: c.data and c.data == "plg_close")
         async def core_handle_close_callback(call: types.CallbackQuery):
             try:
                 chat_id = call.message.chat.id
@@ -255,7 +317,7 @@ class BotRunner:
                     pass
 
         # ==================== 中间件分发器 ====================
-        @bot.message_handler(func=lambda m: m.text and m.text.startswith('/'))
+        @bot.message_handler(func=lambda m: m.text and m.text.startswith("/"))
         async def middleware_dispatcher(message: types.Message):
             """统一命令分发器：优先分发命令；若无命中，则继续走普通消息分发，
             以便处理像 '/$' 这类非标准命令前缀的消息（由插件自行解析）。"""
@@ -267,13 +329,27 @@ class BotRunner:
                 # 允许像 quote 这类通过 message handler 解析 '/$' 的插件生效。
                 await plugin_manager.middleware.dispatch_message(bot, message)
 
-        @bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'sticker', 'animation', 'audio', 'voice', 'video_note'])
+        @bot.message_handler(
+            content_types=[
+                "text",
+                "photo",
+                "video",
+                "document",
+                "sticker",
+                "animation",
+                "audio",
+                "voice",
+                "video_note",
+            ]
+        )
         async def message_dispatcher(message: types.Message):
             """统一消息分发器"""
             await plugin_manager.middleware.dispatch_message(bot, message)
 
         # 回调分发器（除核心前缀外，其余交由中间件处理）
-        @bot.callback_query_handler(func=lambda c: not (c.data and c.data.startswith('plg_toggle:')))
+        @bot.callback_query_handler(
+            func=lambda c: not (c.data and c.data.startswith("plg_toggle:"))
+        )
         async def callback_dispatcher(call: types.CallbackQuery):
             executed = await plugin_manager.middleware.dispatch_callback(bot, call)
             if executed > 0:
@@ -286,7 +362,7 @@ class BotRunner:
 
             # 用户仅输入 @Bot（query 为空）时，返回占位图片
             if not query:
-                logger.debug(f"Received empty inline query, returning placeholder image")
+                logger.debug("Received empty inline query, returning placeholder image")
                 placeholder_url = BotConfig.get("inline", {}).get(
                     "empty_placeholder_image",
                     "https://pbs.twimg.com/media/HAckcxubgAARphg?format=jpg&name=4096x4096",
@@ -297,10 +373,14 @@ class BotRunner:
                     thumbnail_url=placeholder_url,
                     caption="inline 命令请查阅 /help",
                 )
-                await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+                await bot.answer_inline_query(
+                    inline_query.id, [result], cache_time=1, is_personal=True
+                )
                 return
 
-            executed = await plugin_manager.middleware.dispatch_inline(bot, inline_query)
+            executed = await plugin_manager.middleware.dispatch_inline(
+                bot, inline_query
+            )
             if executed > 0:
                 logger.info(f"✨ InlineQuery 处理完成，执行了 {executed} 个处理器")
 
@@ -308,9 +388,7 @@ class BotRunner:
         try:
             logger.success("✨ Bot 启动成功,开始轮询...")
             await bot.polling(
-                non_stop=True,
-                allowed_updates=util.update_types,
-                skip_pending=True
+                non_stop=True, allowed_updates=util.update_types, skip_pending=True
             )
         except ApiTelegramException as e:
             logger.opt(exception=e).exception("ApiTelegramException")
@@ -320,7 +398,9 @@ class BotRunner:
 
 # 自定义过滤器（仅保留内部使用的）
 class CommandInChatFilter(SimpleCustomFilter):
-    key = 'command_in_group'
+    key = "command_in_group"
 
     async def check(self, message):
-        return message.chat.type in ['group', 'supergroup'] and message.text.startswith('/')
+        return message.chat.type in ["group", "supergroup"] and message.text.startswith(
+            "/"
+        )

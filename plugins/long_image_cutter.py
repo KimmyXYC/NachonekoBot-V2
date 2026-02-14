@@ -8,6 +8,7 @@
 相邻两张之间保留 3:19.5 的重叠区域（约等于每张高度的 15.38% 作为上下重叠）。
 裁切完成后，按每 9 张打包为一组发送（使用媒体组），不再发送事先提示消息。
 """
+
 import io
 import os
 from typing import List, Tuple
@@ -28,7 +29,9 @@ __toggleable__ = True  # 支持在群组中开关
 
 
 # ==================== 工具函数 ====================
-def calc_slices(w: int, h: int) -> Tuple[int, int, int, List[Tuple[int, int, int, int]]]:
+def calc_slices(
+    w: int, h: int
+) -> Tuple[int, int, int, List[Tuple[int, int, int, int]]]:
     """
     计算裁切窗口并返回所有裁切框坐标列表（等高切片 + 固定重叠比例）。
     - 目标比例：19.5:9（竖屏），基准切片高度 h0 = round(w * 19.5/9)
@@ -73,7 +76,7 @@ def calc_slices(w: int, h: int) -> Tuple[int, int, int, List[Tuple[int, int, int
 
     for n in candidates:
         # 通过近似公式解出理想切片高度（忽略四舍五入影响）
-        denom = (n - (n - 1) * ro)
+        denom = n - (n - 1) * ro
         if denom <= 0:
             continue
         s_float = h / denom
@@ -177,8 +180,12 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
         if use_local_path:
             local_path = file_info.file_path
             if not local_path or not os.path.isfile(local_path):
-                logger.error(f"[LongImageCutter][{message.chat.id}] local file not found: {local_path}")
-                await bot.reply_to(message, "Local Bot API enabled but file path is not accessible.")
+                logger.error(
+                    f"[LongImageCutter][{message.chat.id}] local file not found: {local_path}"
+                )
+                await bot.reply_to(
+                    message, "Local Bot API enabled but file path is not accessible."
+                )
                 return
             with open(local_path, "rb") as f:
                 file_bytes = f.read()
@@ -211,8 +218,10 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
             # 安全阈值：最多 30 片，超过则按最后一片贴底后截断
             MAX_SLICES = 30
             if len(boxes) > MAX_SLICES:
-                logger.warning(f"[LongImageCutter] slices too many: {len(boxes)} > {MAX_SLICES}, truncating")
-                boxes = boxes[:MAX_SLICES - 1] + [
+                logger.warning(
+                    f"[LongImageCutter] slices too many: {len(boxes)} > {MAX_SLICES}, truncating"
+                )
+                boxes = boxes[: MAX_SLICES - 1] + [
                     (0, max(0, h - (boxes[0][3] - boxes[0][1])), w, h)
                 ]
 
@@ -224,7 +233,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
 
             def batch_iter(seq, size):
                 for i in range(0, len(seq), size):
-                    yield i, seq[i:i+size]
+                    yield i, seq[i : i + size]
 
             for start_idx, batch in batch_iter(boxes, BATCH):
                 try:
@@ -234,12 +243,14 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         crop = im.crop((l, t, r, b))
                         bio = image_to_bytes(crop, preferred_fmt=preferred_fmt)
                         caption = f"第 {start_idx + 1}/{total} 张"
-                        await _send_with_retry(lambda: bot.send_photo(
-                            chat_id=message.chat.id,
-                            photo=bio,
-                            caption=caption,
-                            reply_to_message_id=message.message_id,
-                        ))
+                        await _send_with_retry(
+                            lambda: bot.send_photo(
+                                chat_id=message.chat.id,
+                                photo=bio,
+                                caption=caption,
+                                reply_to_message_id=message.message_id,
+                            )
+                        )
                         sent += 1
                         continue
 
@@ -252,18 +263,24 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         if j == 0:
                             end_no = start_idx + len(batch)
                             cap = f"第 {start_idx + 1}-{end_no} / {total} 张"
-                            media.append(tb_types.InputMediaPhoto(media=file_obj, caption=cap))
+                            media.append(
+                                tb_types.InputMediaPhoto(media=file_obj, caption=cap)
+                            )
                         else:
                             media.append(tb_types.InputMediaPhoto(media=file_obj))
 
-                    await _send_with_retry(lambda: bot.send_media_group(
-                        chat_id=message.chat.id,
-                        media=media,
-                        reply_to_message_id=message.message_id,
-                    ))
+                    await _send_with_retry(
+                        lambda: bot.send_media_group(
+                            chat_id=message.chat.id,
+                            media=media,
+                            reply_to_message_id=message.message_id,
+                        )
+                    )
                     sent += len(batch)
                 except Exception as ex:
-                    logger.warning(f"[LongImageCutter] media group failed at {start_idx}: {ex}")
+                    logger.warning(
+                        f"[LongImageCutter] media group failed at {start_idx}: {ex}"
+                    )
 
     except Exception as e:
         logger.error(f"[LongImageCutter][{message.chat.id}] error: {e}")
@@ -292,7 +309,9 @@ async def _send_with_retry(send_coro_factory, max_retries: int = 3):
                 # 尝试解析 "retry after X" 或 "retry_after X"
                 m = re.search(r"retry(?:\s|_)?after\s(\d+)", text, re.IGNORECASE)
                 retry_sec = int(m.group(1)) + 1 if m else 5
-                _lg.warning(f"[Retry] Telegram 429; waiting {retry_sec}s and retrying (attempt {attempt}/{max_retries})")
+                _lg.warning(
+                    f"[Retry] Telegram 429; waiting {retry_sec}s and retrying (attempt {attempt}/{max_retries})"
+                )
                 await sleep(retry_sec)
                 continue
             # 非 429，直接抛出
@@ -309,7 +328,7 @@ async def register_handlers(bot, middleware, plugin_name):
 
     def image_document_filter(message: types.Message) -> bool:
         try:
-            if message.content_type != 'document':
+            if message.content_type != "document":
                 return False
             doc: types.Document = message.document
             if not doc:
@@ -330,7 +349,7 @@ async def register_handlers(bot, middleware, plugin_name):
         handler_name="long_image_cutter",
         priority=50,
         stop_propagation=False,
-        content_types=['document'],
+        content_types=["document"],
         func=image_document_filter,
     )
 

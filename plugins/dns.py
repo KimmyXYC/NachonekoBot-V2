@@ -17,9 +17,7 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "DNS 记录查询"
 __commands__ = ["dns"]
-__command_descriptions__ = {
-    "dns": "查询 DNS 记录"
-}
+__command_descriptions__ = {"dns": "查询 DNS 记录"}
 __command_help__ = {
     "dns": "/dns [Domain] [Record_Type] - 查询 DNS 记录\nInline: @NachoNekoX_bot dns [Domain] [Record_Type]"
 }
@@ -43,13 +41,19 @@ async def handle_dns_command(bot, message: types.Message, record_type):
     domain = command_args[1]
 
     # 向用户发送处理中的消息
-    msg = await bot.reply_to(message, f"正在查询 {domain} 的 {record_type.upper()} 记录...", disable_web_page_preview=True)
+    msg = await bot.reply_to(
+        message,
+        f"正在查询 {domain} 的 {record_type.upper()} 记录...",
+        disable_web_page_preview=True,
+    )
 
     # 进行 DNS 查询
     result = await query_dns_text(domain, record_type)
 
     # 更新消息内容为查询结果
-    await bot.edit_message_text(result, message.chat.id, msg.message_id, parse_mode="HTML")
+    await bot.edit_message_text(
+        result, message.chat.id, msg.message_id, parse_mode="HTML"
+    )
 
 
 async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
@@ -58,15 +62,17 @@ async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
     tokens = query.split()
 
     record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "PTR"]
-    if not tokens or tokens[0].lower() != 'dns':
+    if not tokens or tokens[0].lower() != "dns":
         usage = "用法：dns [Domain] [Record_Type]（Record_Type 可选，默认 A）"
         result = types.InlineQueryResultArticle(
             id="dns_usage",
             title="DNS 查询",
             description="用法：dns [Domain] [Record_Type]",
-            input_message_content=types.InputTextMessageContent(usage)
+            input_message_content=types.InputTextMessageContent(usage),
         )
-        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        await bot.answer_inline_query(
+            inline_query.id, [result], cache_time=1, is_personal=True
+        )
         return
 
     args = tokens[1:]
@@ -82,9 +88,11 @@ async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
                 id="dns_usage",
                 title="DNS 查询",
                 description="Record_Type 无效",
-                input_message_content=types.InputTextMessageContent(usage)
+                input_message_content=types.InputTextMessageContent(usage),
             )
-            await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+            await bot.answer_inline_query(
+                inline_query.id, [result], cache_time=1, is_personal=True
+            )
             return
     else:
         usage = "用法：dns [Domain] [Record_Type]（Record_Type 可选，默认 A）"
@@ -92,9 +100,11 @@ async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
             id="dns_usage",
             title="DNS 查询",
             description="参数不正确",
-            input_message_content=types.InputTextMessageContent(usage)
+            input_message_content=types.InputTextMessageContent(usage),
         )
-        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        await bot.answer_inline_query(
+            inline_query.id, [result], cache_time=1, is_personal=True
+        )
         return
 
     result_text = await query_dns_text(domain, record_type)
@@ -102,9 +112,14 @@ async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
         id=f"dns_{domain}_{record_type}",
         title=f"DNS {domain} {record_type}",
         description="发送查询结果",
-        input_message_content=types.InputTextMessageContent(result_text, parse_mode="HTML")
+        input_message_content=types.InputTextMessageContent(
+            result_text, parse_mode="HTML"
+        ),
     )
-    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+    await bot.answer_inline_query(
+        inline_query.id, [result], cache_time=1, is_personal=True
+    )
+
 
 async def dns_lookup(domain, record_type):
     """
@@ -165,18 +180,19 @@ async def dns_lookup(domain, record_type):
         logger.error(f"查询过程中发生未知错误: {str(e)}")
         return f"<b>发生未知错误</b>: <code>{escape_html(str(e))}</code>"
 
+
 def escape_html(text):
     """
     转义 HTML 特殊字符以便在 HTML 模式中正确显示
     """
     html_escape_table = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
     }
-    return ''.join(html_escape_table.get(c, c) for c in text)
+    return "".join(html_escape_table.get(c, c) for c in text)
 
 
 # ==================== 插件注册 ====================
@@ -197,15 +213,17 @@ async def register_handlers(bot, middleware, plugin_name):
                 return
             await handle_dns_command(bot, message, command_args[2])
         else:
-            await bot.reply_to(message, command_error_msg("dns", "Domain", "Record_Type"))
+            await bot.reply_to(
+                message, command_error_msg("dns", "Domain", "Record_Type")
+            )
 
     middleware.register_command_handler(
-        commands=['dns'],
+        commands=["dns"],
         callback=dns_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
     middleware.register_inline_handler(
@@ -213,10 +231,16 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('dns')
+        func=lambda q: (
+            bool(getattr(q, "query", None))
+            and q.query.strip().lower().startswith("dns")
+        ),
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -230,6 +254,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

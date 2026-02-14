@@ -16,9 +16,7 @@ __version__ = "1.2.0"
 __author__ = "KimmyXYC"
 __description__ = "Whois 域名查询"
 __commands__ = ["whois"]
-__command_descriptions__ = {
-    "whois": "查询 Whois 信息"
-}
+__command_descriptions__ = {"whois": "查询 Whois 信息"}
 __command_help__ = {
     "whois": "/whois [Domain] - 查询 Whois 信息\nInline: @NachoNekoX_bot whois [Domain]"
 }
@@ -42,7 +40,22 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
         return False, "输入不能为空"
 
     # 检查是否包含命令注入常见字符（在转换前检查）
-    dangerous_chars = [';', '&', '|', '$', '`', '(', ')', '<', '>', '\n', '\r', '\\', '"', "'"]
+    dangerous_chars = [
+        ";",
+        "&",
+        "|",
+        "$",
+        "`",
+        "(",
+        ")",
+        "<",
+        ">",
+        "\n",
+        "\r",
+        "\\",
+        '"',
+        "'",
+    ]
     for char in dangerous_chars:
         if char in data:
             return False, f"输入包含危险字符: {char}"
@@ -52,13 +65,13 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
         # 如果包含非ASCII字符，尝试转换为Punycode
         if not data.isascii():
             # 分离可能的端口或路径
-            domain_part = data.split('/')[0].split(':')[0]
+            domain_part = data.split("/")[0].split(":")[0]
 
             # 尝试 IDN 编码
             try:
-                encoded_domain = idna.encode(domain_part).decode('ascii')
+                encoded_domain = idna.encode(domain_part).decode("ascii")
                 # 如果原始输入有额外部分（如端口），保留它们
-                if '/' in data or ':' in data:
+                if "/" in data or ":" in data:
                     # 重建完整字符串（这里我们主要关注域名部分）
                     data = encoded_domain
                 else:
@@ -72,18 +85,23 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
 
     # 现在检查转换后的ASCII字符
     # 只允许字母、数字、点、连字符、冒号（IPv6）、斜杠（CIDR）
-    if not re.match(r'^[a-zA-Z0-9.\-:/]+$', data):
+    if not re.match(r"^[a-zA-Z0-9.\-:/]+$", data):
         return False, "输入包含非法字符，只允许字母、数字、点、连字符、冒号和斜杠"
 
     # 验证域名格式（简单验证）
     # 域名标签不能以连字符开头或结尾，不能连续点
-    if '..' in data or data.startswith('.') or data.startswith('-') or data.endswith('-'):
+    if (
+        ".." in data
+        or data.startswith(".")
+        or data.startswith("-")
+        or data.endswith("-")
+    ):
         return False, "域名格式不正确"
 
     # IPv4 格式验证
-    ipv4_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}$"
     if re.match(ipv4_pattern, data):
-        parts = data.split('.')
+        parts = data.split(".")
         try:
             if all(0 <= int(part) <= 255 for part in parts):
                 return True, data
@@ -93,14 +111,14 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
             return False, "无效的IPv4地址格式"
 
     # IPv6 格式简单验证
-    if ':' in data and not '.' in data:  # 排除IPv4:port的情况
+    if ":" in data and "." not in data:  # 排除IPv4:port的情况
         # 基本的IPv6格式检查
-        if data.count('::') > 1:
+        if data.count("::") > 1:
             return False, "无效的IPv6地址格式"
         return True, data
 
     # 域名长度和格式检查
-    labels = data.split('.')
+    labels = data.split(".")
     for label in labels:
         if len(label) > 63:
             return False, "域名标签不能超过63个字符"
@@ -126,9 +144,13 @@ async def handle_whois_command(bot, message: types.Message):
     :return:
     """
     data = message.text.split()[1]
-    msg = await bot.reply_to(message, f"正在查询 {data} Whois 信息...", disable_web_page_preview=True)
+    msg = await bot.reply_to(
+        message, f"正在查询 {data} Whois 信息...", disable_web_page_preview=True
+    )
     text = await query_whois_text(data)
-    await bot.edit_message_text(text, message.chat.id, msg.message_id, parse_mode="MarkdownV2")
+    await bot.edit_message_text(
+        text, message.chat.id, msg.message_id, parse_mode="MarkdownV2"
+    )
 
 
 async def handle_whois_inline_query(bot, inline_query: types.InlineQuery):
@@ -136,15 +158,17 @@ async def handle_whois_inline_query(bot, inline_query: types.InlineQuery):
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
-    if len(tokens) != 2 or tokens[0].lower() != 'whois':
+    if len(tokens) != 2 or tokens[0].lower() != "whois":
         usage = "用法：whois [Domain]"
         result = types.InlineQueryResultArticle(
             id="whois_usage",
             title="Whois 查询",
             description="用法：whois [Domain]",
-            input_message_content=types.InputTextMessageContent(usage)
+            input_message_content=types.InputTextMessageContent(usage),
         )
-        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        await bot.answer_inline_query(
+            inline_query.id, [result], cache_time=1, is_personal=True
+        )
         return
 
     domain = tokens[1]
@@ -153,9 +177,13 @@ async def handle_whois_inline_query(bot, inline_query: types.InlineQuery):
         id=f"whois_{domain}",
         title=f"Whois：{domain}",
         description="发送查询结果",
-        input_message_content=types.InputTextMessageContent(result_text, parse_mode="MarkdownV2")
+        input_message_content=types.InputTextMessageContent(
+            result_text, parse_mode="MarkdownV2"
+        ),
     )
-    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+    await bot.answer_inline_query(
+        inline_query.id, [result], cache_time=1, is_personal=True
+    )
 
 
 async def whois_check(data):
@@ -172,17 +200,21 @@ async def whois_check(data):
     try:
         # Run whois command asynchronously with validated input
         process = await asyncio.create_subprocess_exec(
-            'whois', validated_data,
+            "whois",
+            validated_data,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
 
         if process.returncode != 0:
-            error_msg = stderr.decode('utf-8', errors='ignore').strip()
-            return False, f"Whois command failed: {error_msg if error_msg else 'Unknown error'}"
+            error_msg = stderr.decode("utf-8", errors="ignore").strip()
+            return (
+                False,
+                f"Whois command failed: {error_msg if error_msg else 'Unknown error'}",
+            )
 
-        result = stdout.decode('utf-8', errors='ignore').strip()
+        result = stdout.decode("utf-8", errors="ignore").strip()
 
         if not result or "No match" in result or "NOT FOUND" in result:
             return False, "No WHOIS data found."
@@ -193,16 +225,16 @@ async def whois_check(data):
         for line in lines:
             stripped = line.strip()
             # 跳过包含 REDACTED 的行
-            if 'REDACTED' in line:
+            if "REDACTED" in line:
                 continue
             # 跳过包含特定提示文本的行
-            if 'Please query the' in line:
+            if "Please query the" in line:
                 continue
             # 跳过空行后面的冒号行（即只有标签没有内容的行）
             # 例如: "Admin Name:" 后面没有任何内容
-            if ':' in stripped:
+            if ":" in stripped:
                 # 分割标签和值
-                parts = stripped.split(':', 1)
+                parts = stripped.split(":", 1)
                 if len(parts) == 2:
                     key = parts[0].strip()
                     value = parts[1].strip()
@@ -245,12 +277,12 @@ async def register_handlers(bot, middleware, plugin_name):
             await bot.reply_to(message, command_error_msg("whois", "Domain"))
 
     middleware.register_command_handler(
-        commands=['whois'],
+        commands=["whois"],
         callback=whois_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
     middleware.register_inline_handler(
@@ -258,10 +290,16 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('whois')
+        func=lambda q: (
+            bool(getattr(q, "query", None))
+            and q.query.strip().lower().startswith("whois")
+        ),
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -275,6 +313,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

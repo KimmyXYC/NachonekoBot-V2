@@ -43,7 +43,12 @@ async def good_news(bot, message: types.Message, news_type):
     text = message.text[2:]
     if text.startswith(" "):
         text = text[1:]
-    if text.startswith("，") or text.startswith("。") or text.startswith(",") or text.startswith("."):
+    if (
+        text.startswith("，")
+        or text.startswith("。")
+        or text.startswith(",")
+        or text.startswith(".")
+    ):
         text = text[1:]
 
     if text == "":
@@ -51,15 +56,15 @@ async def good_news(bot, message: types.Message, news_type):
     draw_text_centered(
         img,
         text=text,
-        font_path='res/font/MiSans-Semibold.ttf',
+        font_path="res/font/MiSans-Semibold.ttf",
         font_size=font_size,
         fill_color=fill_color,
         box_ratio=0.8,
-        line_spacing=8
+        line_spacing=8,
     )
     bio = BytesIO()
-    bio.name = 'image.png'  # Telegram 会根据这个名字判断类型
-    img.save(bio, 'PNG')  # 把 PIL 图像写入内存
+    bio.name = "image.png"  # Telegram 会根据这个名字判断类型
+    img.save(bio, "PNG")  # 把 PIL 图像写入内存
     bio.seek(0)  # 重置指针到开头
 
     # 发送照片
@@ -73,7 +78,7 @@ def draw_text_centered(
     font_size: int,
     fill_color,
     box_ratio: float = 0.8,
-    line_spacing: int = 4
+    line_spacing: int = 4,
 ):
     """
     使用 PIL 在图片正中央绘制自动换行并整体居中的文本，可自定义文字颜色。
@@ -222,10 +227,11 @@ async def register_handlers(bot, middleware, plugin_name):
         handler_name="xibao_filter",
         priority=50,
         stop_propagation=False,
-        starts_with=['喜报', '悲报', '通报', '警报']
+        starts_with=["喜报", "悲报", "通报", "警报"],
     )
 
     logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持喜报/悲报/通报/警报")
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -239,6 +245,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

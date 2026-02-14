@@ -29,7 +29,9 @@ class CronSchedule:
 
         minute_field, hour_field, day_field, month_field, weekday_field = fields
         if day_field != "*" or month_field != "*" or weekday_field != "*":
-            raise ValueError(f"Unsupported cron expr '{cron_expr}': only minute/hour are supported")
+            raise ValueError(
+                f"Unsupported cron expr '{cron_expr}': only minute/hour are supported"
+            )
 
         self.minutes = _parse_cron_field(minute_field, 0, 59)
         self.hours = _parse_cron_field(hour_field, 0, 23)
@@ -52,7 +54,7 @@ def _parse_cron_field(field: str, min_value: int, max_value: int) -> Set[int]:
         return set(range(min_value, max_value + 1))
 
     values: Set[int] = set()
-    for part in field.split(','):
+    for part in field.split(","):
         part = part.strip()
         if not part:
             continue
@@ -64,8 +66,8 @@ def _parse_cron_field(field: str, min_value: int, max_value: int) -> Set[int]:
             values.update(range(min_value, max_value + 1, step))
             continue
 
-        if '-' in part:
-            start_str, end_str = part.split('-', 1)
+        if "-" in part:
+            start_str, end_str = part.split("-", 1)
             start = int(start_str)
             end = int(end_str)
             if start > end:
@@ -93,10 +95,19 @@ class CronScheduler:
     def attach_bot(self, bot):
         self._bot = bot
 
-    def register_cron_job(self, plugin_name: str, job_id: str, cron_expr: str, timezone: str, callback: Callable):
+    def register_cron_job(
+        self,
+        plugin_name: str,
+        job_id: str,
+        cron_expr: str,
+        timezone: str,
+        callback: Callable,
+    ):
         schedule = CronSchedule(cron_expr, timezone)
         key = f"{plugin_name}:{job_id}"
-        job = CronJob(plugin_name=plugin_name, job_id=job_id, schedule=schedule, callback=callback)
+        job = CronJob(
+            plugin_name=plugin_name, job_id=job_id, schedule=schedule, callback=callback
+        )
         job.next_run_utc = schedule.next_run_utc(_utc_now())
         self._jobs[key] = job
         self._wakeup_event.set()
@@ -136,7 +147,10 @@ class CronScheduler:
                 job.next_run_utc = job.schedule.next_run_utc(now_utc)
                 asyncio.create_task(self._run_job(job))
 
-            next_run = min((job.next_run_utc for job in self._jobs.values() if job.next_run_utc), default=None)
+            next_run = min(
+                (job.next_run_utc for job in self._jobs.values() if job.next_run_utc),
+                default=None,
+            )
             if not next_run:
                 await self._wait_for_event(60)
                 continue
@@ -146,7 +160,9 @@ class CronScheduler:
 
     async def _run_job(self, job: CronJob):
         if self._bot is None:
-            logger.warning(f"⏱️ 定时任务 {job.plugin_name}:{job.job_id} 无 bot 实例，跳过执行")
+            logger.warning(
+                f"⏱️ 定时任务 {job.plugin_name}:{job.job_id} 无 bot 实例，跳过执行"
+            )
             return
 
         try:
@@ -175,4 +191,3 @@ def _utc_now() -> datetime.datetime:
 
 
 scheduler = CronScheduler()
-

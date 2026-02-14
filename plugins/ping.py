@@ -17,12 +17,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "Ping 网络连通性测试"
 __commands__ = ["ping"]
-__command_descriptions__ = {
-    "ping": "Ping 测试"
-}
-__command_help__ = {
-    "ping": "/ping [IP/Domain] - Ping 测试"
-}
+__command_descriptions__ = {"ping": "Ping 测试"}
+__command_help__ = {"ping": "/ping [IP/Domain] - Ping 测试"}
 
 
 # ==================== 核心功能 ====================
@@ -40,7 +36,9 @@ def is_valid_hostname(hostname):
         hostname = hostname[:-1]
 
     # 主机名规则: 字母数字和连字符，段落之间用点分隔
-    allowed = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z0-9-]{1,63}(?<!-))*$")
+    allowed = re.compile(
+        r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z0-9-]{1,63}(?<!-))*$"
+    )
     return allowed.match(hostname) is not None
 
 
@@ -95,9 +93,7 @@ async def execute_ping_command(target, count=4, timeout=2):
 
         # 执行命令，使用参数列表方式避免 shell 注入
         process = await asyncio.create_subprocess_exec(
-            *cmd_args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            *cmd_args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
 
         # 获取命令输出
@@ -111,21 +107,21 @@ async def execute_ping_command(target, count=4, timeout=2):
         if platform.system().lower() == "windows":
             # Windows中文版通常使用GBK/GB2312编码
             try:
-                result = stdout.decode('gbk', errors='replace')
+                result = stdout.decode("gbk", errors="replace")
             except UnicodeDecodeError:
                 # 如果GBK解码失败，尝试其他常见编码
-                encodings = ['gb18030', 'gb2312', 'utf-8']
+                encodings = ["gb18030", "gb2312", "utf-8"]
                 for encoding in encodings:
                     try:
-                        result = stdout.decode(encoding, errors='replace')
+                        result = stdout.decode(encoding, errors="replace")
                         break
                     except UnicodeDecodeError:
                         continue
                 else:
                     # 所有尝试都失败，使用replace错误处理模式
-                    result = stdout.decode('utf-8', errors='replace')
+                    result = stdout.decode("utf-8", errors="replace")
         else:  # Linux, macOS, etc.
-            result = stdout.decode('utf-8', errors='replace')
+            result = stdout.decode("utf-8", errors="replace")
 
         return result
 
@@ -143,12 +139,19 @@ async def parse_ping_result(result):
     summary = ""
 
     # 检查是否包含错误信息
-    if "请求找不到主机" in result or "请求超时" in result or "unknown host" in result or "100% packet loss" in result:
+    if (
+        "请求找不到主机" in result
+        or "请求超时" in result
+        or "unknown host" in result
+        or "100% packet loss" in result
+    ):
         return "❌ Ping 失败：目标主机不可达或网络超时"
 
     try:
         # 提取 IP 地址
-        ip_match = re.search(r'Pinging\s+([^\s]+)\s+\[([0-9.]+)]|PING\s+([^\s]+)\s+\(([0-9.]+)\)', result)
+        ip_match = re.search(
+            r"Pinging\s+([^\s]+)\s+\[([0-9.]+)]|PING\s+([^\s]+)\s+\(([0-9.]+)\)", result
+        )
         if ip_match:
             groups = ip_match.groups()
             if groups[0] and groups[1]:  # Windows 格式
@@ -161,18 +164,23 @@ async def parse_ping_result(result):
 
         # 提取往返时间
         if platform.system().lower() == "windows":
-            time_match = re.search(r'最短\s*=\s*(\d+)ms，最长\s*=\s*(\d+)ms，平均\s*=\s*(\d+)ms', result)
+            time_match = re.search(
+                r"最短\s*=\s*(\d+)ms，最长\s*=\s*(\d+)ms，平均\s*=\s*(\d+)ms", result
+            )
             if time_match:
                 min_time, max_time, avg_time = time_match.groups()
                 summary += f"⏱ 延迟: 平均 {avg_time}ms (最小 {min_time}ms, 最大 {max_time}ms)\n"
         else:
-            time_match = re.search(r'min/avg/max/mdev\s*=\s*([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)\s*ms', result)
+            time_match = re.search(
+                r"min/avg/max/mdev\s*=\s*([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)\s*ms",
+                result,
+            )
             if time_match:
                 min_time, avg_time, max_time, mdev = time_match.groups()
                 summary += f"⏱ 延迟: 平均 {avg_time}ms (最小 {min_time}ms, 最大 {max_time}ms)\n"
 
         # 提取丢包率
-        loss_match = re.search(r'(\d+)%\s*(丢失|packet loss)', result)
+        loss_match = re.search(r"(\d+)%\s*(丢失|packet loss)", result)
         if loss_match:
             loss_rate = loss_match.group(1)
             summary += f"📊 丢包率: {loss_rate}%\n"
@@ -205,7 +213,9 @@ async def handle_ping_command(bot, message: types.Message, target=None):
         if len(command_args) >= 2:
             target = command_args[1]
         else:
-            await bot.reply_to(message, "请提供要 ping 的目标地址，例如: /ping example.com")
+            await bot.reply_to(
+                message, "请提供要 ping 的目标地址，例如: /ping example.com"
+            )
             return
 
     # 清理和验证目标地址，防止命令注入
@@ -231,7 +241,7 @@ async def handle_ping_command(bot, message: types.Message, target=None):
         chat_id=processing_msg.chat.id,
         message_id=processing_msg.message_id,
         text=summary,
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -246,15 +256,18 @@ async def register_handlers(bot, middleware, plugin_name):
         await handle_ping_command(bot, message)
 
     middleware.register_command_handler(
-        commands=['ping'],
+        commands=["ping"],
         callback=ping_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -268,6 +281,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

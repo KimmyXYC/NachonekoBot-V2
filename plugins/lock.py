@@ -19,12 +19,12 @@ __commands__ = ["lock", "unlock", "list"]
 __command_descriptions__ = {
     "lock": "锁定群组中的命令",
     "unlock": "解锁群组中的命令",
-    "list": "列出群组中被锁定的命令"
+    "list": "列出群组中被锁定的命令",
 }
 __command_help__ = {
     "lock": "/lock [Command] - 锁定群组中的命令",
     "unlock": "/unlock [Command] - 解锁群组中的命令",
-    "list": "/list - 列出群组中被锁定的命令"
+    "list": "/list - 列出群组中被锁定的命令",
 }
 
 
@@ -37,12 +37,14 @@ async def check_permissions(bot, message: types.Message):
     :return:
     """
     bot_member = await bot.get_chat_member(message.chat.id, BotSetting.bot_id)
-    if not (bot_member.status == 'administrator' and bot_member.can_delete_messages):
+    if not (bot_member.status == "administrator" and bot_member.can_delete_messages):
         await bot.reply_to(message, "请先将机器人设置为管理员并赋予删除消息权限")
         return False
     chat_member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    if not ((chat_member.status == 'administrator' and chat_member.can_delete_messages)
-            or chat_member.status == 'creator'):
+    if not (
+        (chat_member.status == "administrator" and chat_member.can_delete_messages)
+        or chat_member.status == "creator"
+    ):
         await bot.reply_to(message, "您无权使用此功能")
         return False
     return True
@@ -65,7 +67,8 @@ def batch_add_to_locklist(chat_id, cmd):
         else:
             already_exist.append(command)
     BotElara.set(str(chat_id), locklist)
-    return {'added': added, 'already_exist': already_exist}
+    return {"added": added, "already_exist": already_exist}
+
 
 def batch_remove_from_locklist(chat_id, cmd):
     """
@@ -84,7 +87,7 @@ def batch_remove_from_locklist(chat_id, cmd):
         else:
             not_found.append(command)
     BotElara.set(str(chat_id), locklist)
-    return {'removed': removed, 'not_found': not_found}
+    return {"removed": removed, "not_found": not_found}
 
 
 async def handle_lock_command(bot, message: types.Message, cmd: list):
@@ -99,7 +102,12 @@ async def handle_lock_command(bot, message: types.Message, cmd: list):
         return
 
     result = batch_add_to_locklist(message.chat.id, cmd)
-    await bot.reply_to(message, f"批量添加结果: 添加成功 `{result['added']}`，已存在 `{result['already_exist']}`", parse_mode='Markdown')
+    await bot.reply_to(
+        message,
+        f"批量添加结果: 添加成功 `{result['added']}`，已存在 `{result['already_exist']}`",
+        parse_mode="Markdown",
+    )
+
 
 async def handle_unlock_command(bot, message: types.Message, cmd: list):
     """
@@ -113,7 +121,12 @@ async def handle_unlock_command(bot, message: types.Message, cmd: list):
         return
 
     result = batch_remove_from_locklist(message.chat.id, cmd)
-    await bot.reply_to(message, f"批量删除结果: 删除成功 `{result['removed']}`，不存在 `{result['not_found']}`", parse_mode='Markdown')
+    await bot.reply_to(
+        message,
+        f"批量删除结果: 删除成功 `{result['removed']}`，不存在 `{result['not_found']}`",
+        parse_mode="Markdown",
+    )
+
 
 async def handle_list_command(bot, message: types.Message):
     """
@@ -128,7 +141,7 @@ async def handle_list_command(bot, message: types.Message):
     else:
         msg = "以下命令在本群中被锁定:\n"
         msg += "\n".join(f"- `{item}`" for item in result)
-        await bot.reply_to(message, msg, parse_mode='Markdown')
+        await bot.reply_to(message, msg, parse_mode="Markdown")
 
 
 # ==================== 插件注册 ====================
@@ -158,33 +171,36 @@ async def register_handlers(bot, middleware, plugin_name):
         await handle_list_command(bot, message)
 
     middleware.register_command_handler(
-        commands=['lock'],
+        commands=["lock"],
         callback=lock_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['group', 'supergroup']
+        chat_types=["group", "supergroup"],
     )
 
     middleware.register_command_handler(
-        commands=['unlock'],
+        commands=["unlock"],
         callback=unlock_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['group', 'supergroup']
+        chat_types=["group", "supergroup"],
     )
 
     middleware.register_command_handler(
-        commands=['list'],
+        commands=["list"],
         callback=list_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['group', 'supergroup']
+        chat_types=["group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -198,6 +214,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

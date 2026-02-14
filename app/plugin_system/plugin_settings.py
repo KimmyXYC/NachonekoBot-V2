@@ -9,6 +9,7 @@
 - 仅用于控制器中的核心命令与回调，不作为插件通过中间件注册。
 - 提供：权限检查、面板文本与键盘构建、可切换插件列表获取。
 """
+
 from typing import List, Tuple, Dict
 from loguru import logger
 from telebot import types
@@ -21,19 +22,21 @@ async def has_change_info_permission(bot, chat_id: int, user_id: int) -> bool:
         if user_id in BotConfig["admin"]["id"]:
             return True
         member = await bot.get_chat_member(chat_id, user_id)
-        status = getattr(member, 'status', None)
-        if status == 'creator':
+        status = getattr(member, "status", None)
+        if status == "creator":
             return True
-        if status == 'administrator':
+        if status == "administrator":
             # TeleBot ChatMember 对象的权限字段
-            return bool(getattr(member, 'can_change_info', True))
+            return bool(getattr(member, "can_change_info", True))
         return False
     except Exception as e:
         logger.error(f"检查群权限失败 chat={chat_id}, user={user_id}: {e}")
         return False
 
 
-def build_keyboard_and_text(items: List[Dict[str, object]]) -> Tuple[str, types.InlineKeyboardMarkup]:
+def build_keyboard_and_text(
+    items: List[Dict[str, object]],
+) -> Tuple[str, types.InlineKeyboardMarkup]:
     """根据项目列表与状态构造文本与 InlineKeyboard。"""
     text_lines = ["🔧 插件/定时任务开关状态："]
     kb = types.InlineKeyboardMarkup(row_width=2)
@@ -43,11 +46,10 @@ def build_keyboard_and_text(items: List[Dict[str, object]]) -> Tuple[str, types.
         label = str(item.get("label"))
         kind = str(item.get("kind"))
         key = str(item.get("key"))
-        mark = '✅' if enabled else '❌'
+        mark = "✅" if enabled else "❌"
         text_lines.append(f"• {mark} {label}")
         btn = types.InlineKeyboardButton(
-            text=f"{mark}{label}",
-            callback_data=f"plg_toggle:{kind}:{key}"
+            text=f"{mark}{label}", callback_data=f"plg_toggle:{kind}:{key}"
         )
         buttons.append(btn)
     # 两列排布，使用 add() 方法添加按钮
@@ -57,23 +59,20 @@ def build_keyboard_and_text(items: List[Dict[str, object]]) -> Tuple[str, types.
         else:
             kb.add(buttons[i])
     # 添加关闭按钮（单独一行）
-    close_btn = types.InlineKeyboardButton(
-        text="❌ 关闭",
-        callback_data="plg_close"
-    )
+    close_btn = types.InlineKeyboardButton(text="❌ 关闭", callback_data="plg_close")
     kb.add(close_btn)
     return "\n".join(text_lines), kb
 
 
 async def get_toggleable_plugins(middleware) -> List[Tuple[str, str]]:
     """从中间件获取可切换插件列表。"""
-    plugins = list(getattr(middleware, 'toggleable_plugins', {}).items())
+    plugins = list(getattr(middleware, "toggleable_plugins", {}).items())
     plugins.sort(key=lambda item: item[0])
     return plugins
 
 
 async def get_toggleable_jobs(middleware) -> List[Tuple[str, str]]:
     """从中间件获取可切换定时任务列表。"""
-    jobs = list(getattr(middleware, 'scheduled_jobs', {}).items())
+    jobs = list(getattr(middleware, "scheduled_jobs", {}).items())
     jobs.sort(key=lambda item: item[0])
     return jobs

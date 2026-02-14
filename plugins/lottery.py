@@ -17,9 +17,7 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "抽奖系统"
 __commands__ = ["lottery"]
-__command_descriptions__ = {
-    "lottery": "抽奖"
-}
+__command_descriptions__ = {"lottery": "抽奖"}
 __command_help__ = {
     "lottery": "/lottery [Winners]/[Participants] [Keyword] [Title] - 抽奖"
 }
@@ -31,7 +29,6 @@ __command_help__ = {
 _lotteries: Dict[int, dict] = {}
 # chat_id -> asyncio.Lock
 _locks: Dict[int, asyncio.Lock] = {}
-
 
 
 create_text = (
@@ -49,7 +46,7 @@ join_text = (
 )
 
 end_text = (
-    "<b>{}</b> 已开奖，中奖用户：\n\n" "{}\n\n" "请私聊发起者领奖，感谢其他用户的参与。"
+    "<b>{}</b> 已开奖，中奖用户：\n\n{}\n\n请私聊发起者领奖，感谢其他用户的参与。"
 )
 
 end_empty_text = "<b>{}</b> 已开奖，没有中奖用户"
@@ -121,7 +118,9 @@ async def _lottery_end(bot, chat_id: int):
     try:
         result_msg = await bot.send_message(chat_id, win_text, parse_mode="HTML")
         try:
-            await bot.pin_chat_message(chat_id, result_msg.message_id, disable_notification=True)
+            await bot.pin_chat_message(
+                chat_id, result_msg.message_id, disable_notification=True
+            )
         except Exception as e:
             logger.debug(f"Pin lottery result message failed: {e}")
     except Exception as e:
@@ -131,7 +130,9 @@ async def _lottery_end(bot, chat_id: int):
     _lotteries.pop(chat_id, None)
 
 
-async def _create_lottery(bot, chat_id: int, num: int, win: int, title: str, keyword: str):
+async def _create_lottery(
+    bot, chat_id: int, num: int, win: int, title: str, keyword: str
+):
     if chat_id in _lotteries and _lotteries[chat_id].get("start"):
         raise FileExistsError
 
@@ -146,12 +147,16 @@ async def _create_lottery(bot, chat_id: int, num: int, win: int, title: str, key
     }
 
     try:
-        msg = await bot.send_message(chat_id, create_text.format(title, win, num, keyword), parse_mode="HTML")
+        msg = await bot.send_message(
+            chat_id, create_text.format(title, win, num, keyword), parse_mode="HTML"
+        )
         # 记录创建消息的 message_id，便于开奖后取消置顶
         _lotteries[chat_id]["pin_message_id"] = msg.message_id
         # 自动置顶抽奖创建消息（无提醒置顶）
         try:
-            await bot.pin_chat_message(chat_id, msg.message_id, disable_notification=True)
+            await bot.pin_chat_message(
+                chat_id, msg.message_id, disable_notification=True
+            )
         except Exception as e:
             logger.debug(f"Pin lottery create message failed: {e}")
     except Exception as e:
@@ -236,7 +241,9 @@ async def process_lottery_message(bot, message: types.Message):
                 parse_mode="HTML",
             )
             # 15 秒后删除提示
-            asyncio.create_task(_delete_message_later(bot, chat_id, reply_msg.message_id, 15))
+            asyncio.create_task(
+                _delete_message_later(bot, chat_id, reply_msg.message_id, 15)
+            )
         except Exception as e:
             logger.debug(f"Reply join message failed: {e}")
 
@@ -258,7 +265,11 @@ async def handle_lottery_command(bot, message: types.Message):
 
     parts = message.text.split()
     if len(parts) == 1:
-        await bot.reply_to(message, "请输入 奖品数、人数等参数 或者 强制开奖\n\n例如 `/lottery 1/10 参加 测试`", parse_mode="Markdown")
+        await bot.reply_to(
+            message,
+            "请输入 奖品数、人数等参数 或者 强制开奖\n\n例如 `/lottery 1/10 参加 测试`",
+            parse_mode="Markdown",
+        )
         return
 
     # 强制开奖
@@ -321,12 +332,12 @@ async def register_handlers(bot, middleware, plugin_name):
         await handle_lottery_command(bot, message)
 
     middleware.register_command_handler(
-        commands=['lottery'],
+        commands=["lottery"],
         callback=lottery_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['group', 'supergroup']
+        chat_types=["group", "supergroup"],
     )
 
     # 抽奖参与处理器 - 使用中间件
@@ -339,12 +350,15 @@ async def register_handlers(bot, middleware, plugin_name):
         handler_name="lottery_join",
         priority=50,
         stop_propagation=False,
-        content_types=['text'],
-        chat_types=['group', 'supergroup'],
-        func=should_pass_lottery_filter
+        content_types=["text"],
+        chat_types=["group", "supergroup"],
+        func=should_pass_lottery_filter,
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -358,6 +372,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

@@ -17,12 +17,12 @@ __commands__ = ["calldoctor", "callmtf", "callpolice"]
 __command_descriptions__ = {
     "calldoctor": "呼叫医生",
     "callmtf": "呼叫 MTF",
-    "callpolice": "呼叫警察"
+    "callpolice": "呼叫警察",
 }
 __command_help__ = {
     "calldoctor": "/calldoctor - 呼叫医生\nInline: @NachoNekoX_bot calldoctor",
     "callmtf": "/callmtf - 呼叫 MTF\nInline: @NachoNekoX_bot callmtf",
-    "callpolice": "/callpolice - 呼叫警察\nInline: @NachoNekoX_bot callpolice"
+    "callpolice": "/callpolice - 呼叫警察\nInline: @NachoNekoX_bot callpolice",
 }
 
 
@@ -85,19 +85,16 @@ async def handle_call_inline_query(bot, inline_query: types.InlineQuery):
 
     cmd = tokens[0].lower()
     if cmd not in supported or len(tokens) != 1:
-        text = (
-            "用法：\n"
-            "- calldoctor\n"
-            "- callmtf\n"
-            "- callpolice"
-        )
+        text = "用法：\n- calldoctor\n- callmtf\n- callpolice"
         result = types.InlineQueryResultArticle(
             id="callanyone_usage",
             title="呼叫 (callanyone)",
             description="用法：calldoctor / callmtf / callpolice",
-            input_message_content=types.InputTextMessageContent(text)
+            input_message_content=types.InputTextMessageContent(text),
         )
-        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        await bot.answer_inline_query(
+            inline_query.id, [result], cache_time=1, is_personal=True
+        )
         return
 
     anyone_msg = query_call_text(cmd)
@@ -110,9 +107,11 @@ async def handle_call_inline_query(bot, inline_query: types.InlineQuery):
         id=f"callanyone_{cmd}",
         title=titles.get(cmd, cmd),
         description="发送呼叫结果",
-        input_message_content=types.InputTextMessageContent(anyone_msg)
+        input_message_content=types.InputTextMessageContent(anyone_msg),
     )
-    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+    await bot.answer_inline_query(
+        inline_query.id, [result], cache_time=1, is_personal=True
+    )
 
 
 # ==================== 插件注册 ====================
@@ -129,12 +128,12 @@ async def register_handlers(bot, middleware, plugin_name):
         await handle_call_command(bot, message)
 
     middleware.register_command_handler(
-        commands=['calldoctor', 'callmtf', 'callpolice'],
+        commands=["calldoctor", "callmtf", "callpolice"],
         callback=call_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
     middleware.register_inline_handler(
@@ -142,11 +141,19 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        func=lambda q: bool(getattr(q, 'query', None))
-        and (q.query.strip().lower().split()[:1] and q.query.strip().lower().split()[0] in ('calldoctor', 'callmtf', 'callpolice'))
+        func=lambda q: (
+            bool(getattr(q, "query", None))
+            and (
+                q.query.strip().lower().split()[:1]
+                and q.query.strip().lower().split()[0]
+                in ("calldoctor", "callmtf", "callpolice")
+            )
+        ),
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
 
 
 # ==================== 插件信息 ====================
@@ -161,6 +168,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

@@ -6,7 +6,6 @@
 from datetime import datetime, UTC, timezone, timedelta
 import asyncio
 import aiohttp
-import time
 from telebot import types
 from loguru import logger
 from binance.spot import Spot
@@ -15,10 +14,13 @@ import xmltodict
 
 try:
     from curl_cffi.requests import AsyncSession
+
     CURL_CFFI_AVAILABLE = True
 except ImportError:
     CURL_CFFI_AVAILABLE = False
-    logger.warning("curl_cffi 未安装，Mastercard 和 Visa 汇率查询可能失败。请运行: pip install curl_cffi")
+    logger.warning(
+        "curl_cffi 未安装，Mastercard 和 Visa 汇率查询可能失败。请运行: pip install curl_cffi"
+    )
 
 
 # ==================== 插件元数据 ====================
@@ -27,12 +29,10 @@ __version__ = "1.2.0"
 __author__ = "KimmyXYC"
 __description__ = "货币转换工具（支持法币多汇率源+加密货币）"
 __commands__ = ["bc"]
-__command_descriptions__ = {
-    "bc": "货币转换（支持法币多汇率源+加密货币）"
-}
+__command_descriptions__ = {"bc": "货币转换（支持法币多汇率源+加密货币）"}
 __command_help__ = {
     "bc": "/bc [Amount] [Currency_From] [Currency_To] - 货币转换（法币支持欧盟/银联/Mastercard/Visa多汇率源）\n"
-          "Inline: @NachoNekoX_bot bc [Amount] [Currency_From] [Currency_To]"
+    "Inline: @NachoNekoX_bot bc [Amount] [Currency_From] [Currency_To]"
 }
 
 
@@ -62,18 +62,22 @@ def get_exchange_rate_date() -> datetime:
     # 如果当前时间早于11点，使用前一天的日期
     if now_utc8.hour < 11:
         rate_date = now_utc8 - timedelta(days=1)
-        logger.debug("当前UTC+8时间: {} ({}:{}), 使用前一天汇率日期: {}",
-                    now_utc8.strftime('%Y-%m-%d %H:%M:%S'),
-                    now_utc8.hour,
-                    now_utc8.minute,
-                    rate_date.strftime('%Y-%m-%d'))
+        logger.debug(
+            "当前UTC+8时间: {} ({}:{}), 使用前一天汇率日期: {}",
+            now_utc8.strftime("%Y-%m-%d %H:%M:%S"),
+            now_utc8.hour,
+            now_utc8.minute,
+            rate_date.strftime("%Y-%m-%d"),
+        )
     else:
         rate_date = now_utc8
-        logger.debug("当前UTC+8时间: {} ({}:{}), 使用当天汇率日期: {}",
-                    now_utc8.strftime('%Y-%m-%d %H:%M:%S'),
-                    now_utc8.hour,
-                    now_utc8.minute,
-                    rate_date.strftime('%Y-%m-%d'))
+        logger.debug(
+            "当前UTC+8时间: {} ({}:{}), 使用当天汇率日期: {}",
+            now_utc8.strftime("%Y-%m-%d %H:%M:%S"),
+            now_utc8.hour,
+            now_utc8.minute,
+            rate_date.strftime("%Y-%m-%d"),
+        )
 
     return rate_date
 
@@ -98,7 +102,7 @@ async def generate_headers() -> dict:
         "accept": "application/json, text/plain, */*",
         "accept-language": "en-US,en;q=0.9",
         "sec-ch-ua": client_hints_ua,
-        "sec-ch-ua-platform": "Windows"
+        "sec-ch-ua-platform": "Windows",
     }
 
     logger.debug("生成请求头，Chrome版本: {}", chrome_version)
@@ -106,24 +110,26 @@ async def generate_headers() -> dict:
 
 
 async def init() -> list:
-    """ 初始化货币数据 """
+    """初始化货币数据"""
     async with aiohttp.ClientSession() as session:
         async with session.get(API) as response:
             result = await response.read()
             currencies = []
             data = {}
             rate_data = xmltodict.parse(result)
-            rate_data = rate_data['gesmes:Envelope']['Cube']['Cube']['Cube']
+            rate_data = rate_data["gesmes:Envelope"]["Cube"]["Cube"]["Cube"]
             for i in rate_data:
-                currencies.append(i['@currency'])
-                data[i['@currency']] = float(i['@rate'])
-            data['EUR'] = 1.0
-            currencies.append('EUR')
+                currencies.append(i["@currency"])
+                data[i["@currency"]] = float(i["@rate"])
+            data["EUR"] = 1.0
+            currencies.append("EUR")
             currencies.sort()
     return [currencies, data]
 
 
-async def fetch_eu_rate(amount: float, currency_from: str, currency_to: str, eu_data: dict) -> dict:
+async def fetch_eu_rate(
+    amount: float, currency_from: str, currency_to: str, eu_data: dict
+) -> dict:
     """
     获取欧盟汇率
     """
@@ -134,18 +140,25 @@ async def fetch_eu_rate(amount: float, currency_from: str, currency_to: str, eu_
                 "success": False,
                 "rate": None,
                 "converted_amount": None,
-                "error": f"不支持的交易对: {currency_from} -> {currency_to}"
+                "error": f"不支持的交易对: {currency_from} -> {currency_to}",
             }
 
         rate = eu_data[currency_to] / eu_data[currency_from]
         converted_amount = amount * rate
-        logger.debug("欧盟汇率转换: {} {} -> {} {}, 汇率: {}", amount, currency_from, converted_amount, currency_to, rate)
+        logger.debug(
+            "欧盟汇率转换: {} {} -> {} {}, 汇率: {}",
+            amount,
+            currency_from,
+            converted_amount,
+            currency_to,
+            rate,
+        )
 
         return {
             "success": True,
             "rate": rate,
             "converted_amount": converted_amount,
-            "error": None
+            "error": None,
         }
 
     except Exception as e:
@@ -154,35 +167,46 @@ async def fetch_eu_rate(amount: float, currency_from: str, currency_to: str, eu_
             "success": False,
             "rate": None,
             "converted_amount": None,
-            "error": "欧盟汇率获取失败"
+            "error": "欧盟汇率获取失败",
         }
 
 
-async def fetch_unionpay_rate(amount: float, currency_from: str, currency_to: str) -> dict:
+async def fetch_unionpay_rate(
+    amount: float, currency_from: str, currency_to: str
+) -> dict:
     """
     获取银联汇率
     """
     try:
         rate_date = get_exchange_rate_date()
-        unionpay_api = f"https://m.unionpayintl.com/jfimg/{rate_date.strftime('%Y%m%d')}.json"
+        unionpay_api = (
+            f"https://m.unionpayintl.com/jfimg/{rate_date.strftime('%Y%m%d')}.json"
+        )
         logger.debug("请求银联汇率 API: {}", unionpay_api)
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(unionpay_api, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            async with session.get(
+                unionpay_api, timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
                 if response.status != 200:
-                    logger.error("银联API{}响应状态码: {}", unionpay_api, response.status)
+                    logger.error(
+                        "银联API{}响应状态码: {}", unionpay_api, response.status
+                    )
                     return {
                         "success": False,
                         "rate": None,
                         "converted_amount": None,
-                        "error": "银联汇率获取失败"
+                        "error": "银联汇率获取失败",
                     }
                 data = await response.json()
 
         exchange_rates = data.get("exchangeRateJson", [])
         rate = None
         for rate_data in exchange_rates:
-            if rate_data["transCur"] == currency_from and rate_data["baseCur"] == currency_to:
+            if (
+                rate_data["transCur"] == currency_from
+                and rate_data["baseCur"] == currency_to
+            ):
                 rate = rate_data["rateData"]
                 break
 
@@ -192,17 +216,24 @@ async def fetch_unionpay_rate(amount: float, currency_from: str, currency_to: st
                 "success": False,
                 "rate": None,
                 "converted_amount": None,
-                "error": f"不支持的交易对: {currency_from} -> {currency_to}"
+                "error": f"不支持的交易对: {currency_from} -> {currency_to}",
             }
 
         converted_amount = amount * rate
-        logger.debug("银联汇率转换: {} {} -> {} {}, 汇率: {}", amount, currency_from, converted_amount, currency_to, rate)
+        logger.debug(
+            "银联汇率转换: {} {} -> {} {}, 汇率: {}",
+            amount,
+            currency_from,
+            converted_amount,
+            currency_to,
+            rate,
+        )
 
         return {
             "success": True,
             "rate": rate,
             "converted_amount": converted_amount,
-            "error": None
+            "error": None,
         }
 
     except Exception as e:
@@ -211,11 +242,13 @@ async def fetch_unionpay_rate(amount: float, currency_from: str, currency_to: st
             "success": False,
             "rate": None,
             "converted_amount": None,
-            "error": "银联汇率获取失败"
+            "error": "银联汇率获取失败",
         }
 
 
-async def fetch_mastercard_rate(amount: float, currency_from: str, currency_to: str) -> dict:
+async def fetch_mastercard_rate(
+    amount: float, currency_from: str, currency_to: str
+) -> dict:
     """
     获取Mastercard汇率
     使用 curl_cffi 模拟 Chrome 浏览器的 TLS 指纹以绕过 Akamai CDN 检测
@@ -227,17 +260,17 @@ async def fetch_mastercard_rate(amount: float, currency_from: str, currency_to: 
                 "success": False,
                 "rate": None,
                 "converted_amount": None,
-                "error": "curl_cffi 未安装"
+                "error": "curl_cffi 未安装",
             }
 
         api_endpoint = "https://www.mastercard.com/marketingservices/public/mccom-services/currency-conversions/conversion-rates"
         headers = await generate_headers()
         params = {
-            "exchange_date": datetime.now().strftime('%Y-%m-%d'),
+            "exchange_date": datetime.now().strftime("%Y-%m-%d"),
             "transaction_currency": currency_from,
             "cardholder_billing_currency": currency_to,
             "bank_fee": 0,
-            "transaction_amount": amount
+            "transaction_amount": amount,
         }
 
         logger.debug("请求Mastercard汇率 API: {}, params: {}", api_endpoint, params)
@@ -254,7 +287,7 @@ async def fetch_mastercard_rate(amount: float, currency_from: str, currency_to: 
                 headers=headers,
                 params=params,
                 timeout=10,
-                impersonate=impersonate_version  # 关键：模拟对应版本的 Chrome TLS 指纹
+                impersonate=impersonate_version,  # 关键：模拟对应版本的 Chrome TLS 指纹
             )
 
             if response.status_code != 200:
@@ -263,7 +296,7 @@ async def fetch_mastercard_rate(amount: float, currency_from: str, currency_to: 
                     "success": False,
                     "rate": None,
                     "converted_amount": None,
-                    "error": f"Mastercard汇率获取失败 (HTTP {response.status_code})"
+                    "error": f"Mastercard汇率获取失败 (HTTP {response.status_code})",
                 }
 
             result = response.json()
@@ -279,16 +312,23 @@ async def fetch_mastercard_rate(amount: float, currency_from: str, currency_to: 
                 "success": False,
                 "rate": None,
                 "converted_amount": None,
-                "error": "Mastercard汇率获取失败"
+                "error": "Mastercard汇率获取失败",
             }
 
-        logger.debug("Mastercard汇率转换: {} {} -> {} {}, 汇率: {}", amount, currency_from, converted_amount, currency_to, conversion_rate)
+        logger.debug(
+            "Mastercard汇率转换: {} {} -> {} {}, 汇率: {}",
+            amount,
+            currency_from,
+            converted_amount,
+            currency_to,
+            conversion_rate,
+        )
 
         return {
             "success": True,
             "rate": float(conversion_rate),
             "converted_amount": float(converted_amount),
-            "error": None
+            "error": None,
         }
 
     except Exception as e:
@@ -297,7 +337,7 @@ async def fetch_mastercard_rate(amount: float, currency_from: str, currency_to: 
             "success": False,
             "rate": None,
             "converted_amount": None,
-            "error": "Mastercard汇率获取失败"
+            "error": "Mastercard汇率获取失败",
         }
 
 
@@ -314,14 +354,14 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
                 "success": False,
                 "rate": None,
                 "converted_amount": None,
-                "error": "curl_cffi 未安装"
+                "error": "curl_cffi 未安装",
             }
 
         api_endpoint = "https://usa.visa.com/cmsapi/fx/rates"
         headers = await generate_headers()
 
         # 格式化日期为 MM/DD/YYYY
-        date_str = datetime.now().strftime('%m/%d/%Y')
+        date_str = datetime.now().strftime("%m/%d/%Y")
 
         # 注意: Visa API 的货币参数是反向的
         params = {
@@ -330,7 +370,7 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
             "utcConvertedDate": date_str,
             "exchangedate": date_str,
             "fromCurr": currency_to,  # 反向：目标货币
-            "toCurr": currency_from   # 反向：来源货币
+            "toCurr": currency_from,  # 反向：来源货币
         }
 
         logger.debug("请求Visa汇率 API: {}, params: {}", api_endpoint, params)
@@ -347,7 +387,7 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
                 headers=headers,
                 params=params,
                 timeout=10,
-                impersonate=impersonate_version  # 关键：模拟对应版本的 Chrome TLS 指纹
+                impersonate=impersonate_version,  # 关键：模拟对应版本的 Chrome TLS 指纹
             )
 
             if response.status_code != 200:
@@ -356,7 +396,7 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
                     "success": False,
                     "rate": None,
                     "converted_amount": None,
-                    "error": f"Visa汇率获取失败 (HTTP {response.status_code})"
+                    "error": f"Visa汇率获取失败 (HTTP {response.status_code})",
                 }
 
             result = response.json().get("originalValues")
@@ -371,16 +411,23 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
                 "success": False,
                 "rate": None,
                 "converted_amount": None,
-                "error": "Visa汇率获取失败"
+                "error": "Visa汇率获取失败",
             }
 
-        logger.debug("Visa汇率转换: {} {} -> {} {}, 汇率: {}", amount, currency_from, converted_amount, currency_to, conversion_rate)
+        logger.debug(
+            "Visa汇率转换: {} {} -> {} {}, 汇率: {}",
+            amount,
+            currency_from,
+            converted_amount,
+            currency_to,
+            conversion_rate,
+        )
 
         return {
             "success": True,
             "rate": float(conversion_rate),
             "converted_amount": float(converted_amount),
-            "error": None
+            "error": None,
         }
 
     except Exception as e:
@@ -389,7 +436,7 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
             "success": False,
             "rate": None,
             "converted_amount": None,
-            "error": "Visa汇率获取失败"
+            "error": "Visa汇率获取失败",
         }
 
 
@@ -403,10 +450,10 @@ def _normalize_bc_tokens(tokens: list[str]) -> list[str]:
         return []
 
     first = tokens[0]
-    if first.startswith('/'):
-        first = first[1:].split('@')[0]
+    if first.startswith("/"):
+        first = first[1:].split("@")[0]
 
-    if first.lower() == 'bc':
+    if first.lower() == "bc":
         return tokens[1:]
 
     return tokens
@@ -421,7 +468,7 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
         currencies, data = await init()
         binanceclient = Spot()
         nowtimestamp = binanceclient.time()
-        nowtime = datetime.fromtimestamp(float(nowtimestamp['serverTime']) / 1000, UTC)
+        nowtime = datetime.fromtimestamp(float(nowtimestamp["serverTime"]) / 1000, UTC)
     except Exception as e:
         return f"初始化失败: {str(e)}"
 
@@ -432,9 +479,9 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
             eth_price_data = binanceclient.ticker_price("ETHUSDT")
 
             response_text = (
-                f'{nowtime.strftime("%Y-%m-%d %H:%M:%S")} UTC\n'
-                f'1 BTC = {float(btc_price_data["price"]):.2f} USDT\n'
-                f'1 ETH = {float(eth_price_data["price"]):.2f} USDT'
+                f"{nowtime.strftime('%Y-%m-%d %H:%M:%S')} UTC\n"
+                f"1 BTC = {float(btc_price_data['price']):.2f} USDT\n"
+                f"1 ETH = {float(eth_price_data['price']):.2f} USDT"
             )
             return response_text
         except Exception as e:
@@ -465,10 +512,13 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
         fetch_eu_rate(number, _from, _to, data),
         fetch_unionpay_rate(number, _from, _to),
         fetch_mastercard_rate(number, _from, _to),
-        fetch_visa_rate(number, _from, _to)
+        fetch_visa_rate(number, _from, _to),
     )
 
-    if any(r.get("success") for r in (eu_result, unionpay_result, mastercard_result, visa_result)):
+    if any(
+        r.get("success")
+        for r in (eu_result, unionpay_result, mastercard_result, visa_result)
+    ):
         response_lines = []
 
         if eu_result["success"]:
@@ -511,7 +561,7 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
             usd_number = number * data["USD"] / data[_from]
             try:
                 price_data = binanceclient.ticker_price(f"{_to}USDT")
-                crypto_amount = 1 / float(price_data['price']) * usd_number
+                crypto_amount = 1 / float(price_data["price"]) * usd_number
 
                 return (
                     f"{number} {_from} = {crypto_amount:.8f} {_to}\n"
@@ -526,7 +576,7 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
     if currencies.count(_to) != 0:
         try:
             price_data = binanceclient.ticker_price(f"{_from}USDT")
-            usd_price = float(price_data['price'])
+            usd_price = float(price_data["price"])
             fiat_amount = usd_price * number * data[_to] / data["USD"]
 
             return (
@@ -542,13 +592,13 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
     try:
         try:
             price_data = binanceclient.ticker_price(f"{_from}{_to}")
-            result = float(price_data['price']) * number
+            result = float(price_data["price"]) * number
             return f"{number} {_from} = {result} {_to}"
         except ClientError:
             # 尝试反向交易对
             try:
                 price_data = binanceclient.ticker_price(f"{_to}{_from}")
-                result = number / float(price_data['price'])
+                result = number / float(price_data["price"])
                 return f"{number} {_from} = {result} {_to}"
             except ClientError:
                 return f"找不到交易对 {_from}{_to} 或 {_to}{_from}"
@@ -562,33 +612,31 @@ async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
     tokens = query.split()
 
     # 仅在 middleware 过滤后进来；此处再做一次兜底
-    if not tokens or tokens[0].lower() != 'bc':
-        text = (
-            "使用方法: bc <数量> <币种1> <币种2>\n"
-            "例如: bc 100 USD EUR"
-        )
+    if not tokens or tokens[0].lower() != "bc":
+        text = "使用方法: bc <数量> <币种1> <币种2>\n例如: bc 100 USD EUR"
         result = types.InlineQueryResultArticle(
             id="bc_usage",
             title="货币转换 (bc)",
             description="用法：bc [Amount] [Currency_From] [Currency_To]",
-            input_message_content=types.InputTextMessageContent(text)
+            input_message_content=types.InputTextMessageContent(text),
         )
-        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        await bot.answer_inline_query(
+            inline_query.id, [result], cache_time=1, is_personal=True
+        )
         return
 
     args = _normalize_bc_tokens(tokens)
     if len(args) not in (0, 3):
-        text = (
-            "使用方法: bc <数量> <币种1> <币种2>\n"
-            "例如: bc 100 USD EUR"
-        )
+        text = "使用方法: bc <数量> <币种1> <币种2>\n例如: bc 100 USD EUR"
         result = types.InlineQueryResultArticle(
             id="bc_usage",
             title="货币转换 (bc)",
             description="用法：bc [Amount] [Currency_From] [Currency_To]",
-            input_message_content=types.InputTextMessageContent(text)
+            input_message_content=types.InputTextMessageContent(text),
         )
-        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        await bot.answer_inline_query(
+            inline_query.id, [result], cache_time=1, is_personal=True
+        )
         return
 
     result_text = await query_bc_text(tokens)
@@ -602,10 +650,11 @@ async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
         id=result_id,
         title=title,
         description="发送转换结果",
-        input_message_content=types.InputTextMessageContent(result_text)
+        input_message_content=types.InputTextMessageContent(result_text),
     )
-    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
-
+    await bot.answer_inline_query(
+        inline_query.id, [result], cache_time=1, is_personal=True
+    )
 
 
 async def handle_bc_command(bot, message: types.Message) -> None:
@@ -658,12 +707,12 @@ async def register_handlers(bot, middleware, plugin_name):
     global bot_instance
     bot_instance = bot
     middleware.register_command_handler(
-        commands=['bc'],
+        commands=["bc"],
         callback=handle_bc_command,
         plugin_name=plugin_name,
         priority=50,  # 优先级
         stop_propagation=True,  # 阻止后续处理器
-        chat_types=['private', 'group', 'supergroup']  # 过滤器
+        chat_types=["private", "group", "supergroup"],  # 过滤器
     )
 
     middleware.register_inline_handler(
@@ -671,10 +720,15 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('bc')
+        func=lambda q: (
+            bool(getattr(q, "query", None)) and q.query.strip().lower().startswith("bc")
+        ),
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -688,6 +742,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

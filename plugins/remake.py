@@ -18,22 +18,19 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "转生系统"
 __commands__ = ["remake", "remake_data"]
-__command_descriptions__ = {
-    "remake": "转生",
-    "remake_data": "查看转生数据"
-}
+__command_descriptions__ = {"remake": "转生", "remake_data": "查看转生数据"}
 __command_help__ = {
     "remake": "/remake - 转生",
-    "remake_data": "/remake_data - 查看转生数据"
+    "remake_data": "/remake_data - 查看转生数据",
 }
 
 
 # ==================== 核心功能 ====================
 def get_csv_data_list():
-    df = pd.read_csv('res/csv/data.csv', encoding='utf-8')
+    df = pd.read_csv("res/csv/data.csv", encoding="utf-8")
 
-    country_list = df['Country'].tolist()
-    weight_list = df['Weight'].tolist()
+    country_list = df["Country"].tolist()
+    weight_list = df["Weight"].tolist()
 
     return country_list, weight_list
 
@@ -41,41 +38,67 @@ def get_csv_data_list():
 async def handle_remake_command(bot, message):
     rd_data, rd_weights = get_csv_data_list()
     country_choice = np.random.choice(rd_data, p=np.array(rd_weights) / sum(rd_weights))
-    sex_choice = random.choice(["男孩子", "女孩子", "MtF", "FtM", "MtC", "萝莉", "正太", "武装直升机", "沃尔玛购物袋",
-                                "星巴克", "太监", "无性别", "扶她", "死胎"])
-    await bot.reply_to(message, f"转生成功！您现在是 {country_choice} 的 {sex_choice} 了。")
+    sex_choice = random.choice(
+        [
+            "男孩子",
+            "女孩子",
+            "MtF",
+            "FtM",
+            "MtC",
+            "萝莉",
+            "正太",
+            "武装直升机",
+            "沃尔玛购物袋",
+            "星巴克",
+            "太监",
+            "无性别",
+            "扶她",
+            "死胎",
+        ]
+    )
+    await bot.reply_to(
+        message, f"转生成功！您现在是 {country_choice} 的 {sex_choice} 了。"
+    )
     conn = BotDatabase.conn
     try:
         result = await conn.execute(
-            '''UPDATE remake 
+            """UPDATE remake 
                     SET count = count + 1,
                         country = $2,
                         gender = $3
-               WHERE user_id = $1''',
-            message.from_user.id, country_choice, sex_choice
+               WHERE user_id = $1""",
+            message.from_user.id,
+            country_choice,
+            sex_choice,
         )
-        if result == 'UPDATE 0':
+        if result == "UPDATE 0":
             await conn.execute(
-                '''INSERT INTO remake (user_id, count, country, gender)
+                """INSERT INTO remake (user_id, count, country, gender)
                    VALUES ($1, 1, $2, $3) 
-                   ON CONFLICT (user_id) DO NOTHING''',
-                message.from_user.id, country_choice, sex_choice
+                   ON CONFLICT (user_id) DO NOTHING""",
+                message.from_user.id,
+                country_choice,
+                sex_choice,
             )
     except Exception as e:
         logger.error(f"Database error: {e}")
+
 
 async def handle_remake_data_command(bot, message):
     conn = BotDatabase.conn
     try:
         result = await conn.fetch(
-            '''SELECT user_id, count, country, gender 
+            """SELECT user_id, count, country, gender 
                FROM remake 
-               WHERE user_id = $1''',
-            message.from_user.id
+               WHERE user_id = $1""",
+            message.from_user.id,
         )
         if result:
             user_data = result[0]
-            await bot.reply_to(message, f"您现在是 {user_data['country']} 的 {user_data['gender']}，已转生 {user_data['count']} 次。")
+            await bot.reply_to(
+                message,
+                f"您现在是 {user_data['country']} 的 {user_data['gender']}，已转生 {user_data['count']} 次。",
+            )
         else:
             await bot.reply_to(message, "您还没有 remake 过呢，快 /remake 吧")
     except Exception as e:
@@ -97,24 +120,27 @@ async def register_handlers(bot, middleware, plugin_name):
         await handle_remake_data_command(bot, message)
 
     middleware.register_command_handler(
-        commands=['remake'],
+        commands=["remake"],
         callback=remake_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
     middleware.register_command_handler(
-        commands=['remake_data'],
+        commands=["remake_data"],
         callback=remake_data_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -128,6 +154,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

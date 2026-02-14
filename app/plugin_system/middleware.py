@@ -6,6 +6,7 @@
 """
 插件中间件系统 - 支持多 Handler 执行
 """
+
 from typing import List, Callable, Dict, Any
 from dataclasses import dataclass, field
 from loguru import logger
@@ -17,6 +18,7 @@ from utils.postgres import BotDatabase
 @dataclass
 class HandlerMetadata:
     """Handler 元数据"""
+
     name: str  # handler 名称
     plugin: str  # 所属插件
     callback: Callable  # 回调函数
@@ -30,10 +32,10 @@ class PluginMiddleware:
 
     def __init__(self):
         self.handlers: Dict[str, List[HandlerMetadata]] = {
-            'command': [],  # 命令 handlers
-            'message': [],  # 消息 handlers
-            'callback': [],  # 回调 handlers
-            'inline': [],  # inline_query handlers
+            "command": [],  # 命令 handlers
+            "message": [],  # 消息 handlers
+            "callback": [],  # 回调 handlers
+            "inline": [],  # inline_query handlers
         }
         self._execution_stats = {}  # 统计信息
         # 可切换开关的插件集合（由插件管理器在加载时标记）
@@ -49,17 +51,18 @@ class PluginMiddleware:
         return plugin_name in self.toggleable_plugins
 
     def register_cron_job(
-            self,
-            plugin_name: str,
-            job_id: str,
-            cron_expr: str,
-            timezone: str,
-            callback: Callable,
-            display_name: str = None,
-            toggleable: bool = True,
+        self,
+        plugin_name: str,
+        job_id: str,
+        cron_expr: str,
+        timezone: str,
+        callback: Callable,
+        display_name: str = None,
+        toggleable: bool = True,
     ) -> str:
         job_name = f"{plugin_name}.{job_id}"
         from app.scheduler import scheduler
+
         scheduler.register_cron_job(plugin_name, job_id, cron_expr, timezone, callback)
         if toggleable:
             self.scheduled_jobs[job_name] = display_name or job_name
@@ -75,13 +78,13 @@ class PluginMiddleware:
         return list(self.toggleable_plugins.items())
 
     def register_command_handler(
-            self,
-            commands: List[str],
-            callback: Callable,
-            plugin_name: str,
-            priority: int = 50,
-            stop_propagation: bool = False,
-            **filters
+        self,
+        commands: List[str],
+        callback: Callable,
+        plugin_name: str,
+        priority: int = 50,
+        stop_propagation: bool = False,
+        **filters,
     ):
         """
         注册命令处理器
@@ -100,22 +103,22 @@ class PluginMiddleware:
                 callback=callback,
                 priority=priority,
                 stop_propagation=stop_propagation,
-                filters=filters
+                filters=filters,
             )
-            self.handlers['command'].append(handler)
+            self.handlers["command"].append(handler)
             logger.debug(f"注册命令 /{cmd} -> {plugin_name} (优先级: {priority})")
 
         # 按优先级排序
-        self.handlers['command'].sort(key=lambda h: h.priority, reverse=True)
+        self.handlers["command"].sort(key=lambda h: h.priority, reverse=True)
 
     def register_message_handler(
-            self,
-            callback: Callable,
-            plugin_name: str,
-            handler_name: str = None,
-            priority: int = 50,
-            stop_propagation: bool = False,
-            **filters
+        self,
+        callback: Callable,
+        plugin_name: str,
+        handler_name: str = None,
+        priority: int = 50,
+        stop_propagation: bool = False,
+        **filters,
     ):
         """注册通用消息处理器"""
         handler = HandlerMetadata(
@@ -124,10 +127,10 @@ class PluginMiddleware:
             callback=callback,
             priority=priority,
             stop_propagation=stop_propagation,
-            filters=filters
+            filters=filters,
         )
-        self.handlers['message'].append(handler)
-        self.handlers['message'].sort(key=lambda h: h.priority, reverse=True)
+        self.handlers["message"].append(handler)
+        self.handlers["message"].sort(key=lambda h: h.priority, reverse=True)
 
     async def dispatch_command(self, bot, message: types.Message):
         """
@@ -135,15 +138,18 @@ class PluginMiddleware:
 
         :return: 执行的 handler 数量
         """
-        if not message.text or not message.text.startswith('/'):
+        if not message.text or not message.text.startswith("/"):
             return 0
 
         # 提取命令
         raw_command = message.text.split()[0][1:]
-        if '@' in raw_command:
-            command_part, mentioned_bot = raw_command.split('@', 1)
+        if "@" in raw_command:
+            command_part, mentioned_bot = raw_command.split("@", 1)
             if BotSetting.bot_username:
-                if BotSetting.bot_username and mentioned_bot.lower() != BotSetting.bot_username.lower():
+                if (
+                    BotSetting.bot_username
+                    and mentioned_bot.lower() != BotSetting.bot_username.lower()
+                ):
                     return 0
             command = command_part.lower()
         else:
@@ -151,7 +157,8 @@ class PluginMiddleware:
 
         # 查找所有匹配的 handlers
         matched_handlers = [
-            h for h in self.handlers['command']
+            h
+            for h in self.handlers["command"]
             if h.name == command and self._check_filters(h, message)
         ]
 
@@ -164,10 +171,16 @@ class PluginMiddleware:
         for handler in matched_handlers:
             try:
                 # 插件开关检查（仅群组）
-                if message.chat.type in ('group', 'supergroup') and self.is_toggleable(handler.plugin):
-                    enabled = await BotDatabase.get_plugin_enabled(message.chat.id, handler.plugin)
+                if message.chat.type in ("group", "supergroup") and self.is_toggleable(
+                    handler.plugin
+                ):
+                    enabled = await BotDatabase.get_plugin_enabled(
+                        message.chat.id, handler.plugin
+                    )
                     if not enabled:
-                        logger.info(f"⏭️ 跳过插件 {handler.plugin}（群 {message.chat.id} 已关闭）")
+                        logger.info(
+                            f"⏭️ 跳过插件 {handler.plugin}（群 {message.chat.id} 已关闭）"
+                        )
                         continue
                 logger.debug(f"  → 执行 {handler.plugin}.{handler.name}")
                 await handler.callback(bot, message)
@@ -183,25 +196,34 @@ class PluginMiddleware:
                     break
 
             except Exception as e:
-                logger.error(f"❌ Handler {handler.plugin}.{handler.name} 执行失败: {e}")
+                logger.error(
+                    f"❌ Handler {handler.plugin}.{handler.name} 执行失败: {e}"
+                )
 
         return executed_count
 
     async def dispatch_message(self, bot, message: types.Message):
         """分发普通消息"""
         matched_handlers = [
-            h for h in self.handlers['message']
-            if self._check_filters(h, message)
+            h for h in self.handlers["message"] if self._check_filters(h, message)
         ]
 
         executed_count = 0
         for handler in matched_handlers:
             try:
                 # 插件开关检查（仅群组）
-                if getattr(message, 'chat', None) and message.chat.type in ('group', 'supergroup') and self.is_toggleable(handler.plugin):
-                    enabled = await BotDatabase.get_plugin_enabled(message.chat.id, handler.plugin)
+                if (
+                    getattr(message, "chat", None)
+                    and message.chat.type in ("group", "supergroup")
+                    and self.is_toggleable(handler.plugin)
+                ):
+                    enabled = await BotDatabase.get_plugin_enabled(
+                        message.chat.id, handler.plugin
+                    )
                     if not enabled:
-                        logger.info(f"⏭️ 跳过插件 {handler.plugin}（群 {message.chat.id} 已关闭）")
+                        logger.info(
+                            f"⏭️ 跳过插件 {handler.plugin}（群 {message.chat.id} 已关闭）"
+                        )
                         continue
                 await handler.callback(bot, message)
                 executed_count += 1
@@ -210,18 +232,20 @@ class PluginMiddleware:
                     break
 
             except Exception as e:
-                logger.error(f"❌ Handler {handler.plugin}.{handler.name} 执行失败: {e}")
+                logger.error(
+                    f"❌ Handler {handler.plugin}.{handler.name} 执行失败: {e}"
+                )
 
         return executed_count
 
     def register_callback_handler(
-            self,
-            callback: Callable,
-            plugin_name: str,
-            handler_name: str = None,
-            priority: int = 50,
-            stop_propagation: bool = False,
-            **filters
+        self,
+        callback: Callable,
+        plugin_name: str,
+        handler_name: str = None,
+        priority: int = 50,
+        stop_propagation: bool = False,
+        **filters,
     ):
         """注册回调查询处理器 (CallbackQuery)
         过滤器支持：
@@ -235,19 +259,19 @@ class PluginMiddleware:
             callback=callback,
             priority=priority,
             stop_propagation=stop_propagation,
-            filters=filters
+            filters=filters,
         )
-        self.handlers['callback'].append(handler)
-        self.handlers['callback'].sort(key=lambda h: h.priority, reverse=True)
+        self.handlers["callback"].append(handler)
+        self.handlers["callback"].sort(key=lambda h: h.priority, reverse=True)
 
     def register_inline_handler(
-            self,
-            callback: Callable,
-            plugin_name: str,
-            handler_name: str = None,
-            priority: int = 50,
-            stop_propagation: bool = False,
-            **filters
+        self,
+        callback: Callable,
+        plugin_name: str,
+        handler_name: str = None,
+        priority: int = 50,
+        stop_propagation: bool = False,
+        **filters,
     ):
         """注册 InlineQuery 处理器
 
@@ -260,38 +284,38 @@ class PluginMiddleware:
             callback=callback,
             priority=priority,
             stop_propagation=stop_propagation,
-            filters=filters
+            filters=filters,
         )
-        self.handlers['inline'].append(handler)
-        self.handlers['inline'].sort(key=lambda h: h.priority, reverse=True)
+        self.handlers["inline"].append(handler)
+        self.handlers["inline"].sort(key=lambda h: h.priority, reverse=True)
 
     def _check_filters(self, handler: HandlerMetadata, message: types.Message) -> bool:
         """检查消息是否符合 handler 的过滤条件"""
         filters = handler.filters
 
         # 检查 chat_types
-        if 'chat_types' in filters:
-            if message.chat.type not in filters['chat_types']:
+        if "chat_types" in filters:
+            if message.chat.type not in filters["chat_types"]:
                 return False
 
         # 检查 func 过滤器
-        if 'func' in filters:
+        if "func" in filters:
             try:
-                if not filters['func'](message):
+                if not filters["func"](message):
                     return False
             except Exception:
                 return False
 
         # 检查 content_types
-        if 'content_types' in filters:
-            if message.content_type not in filters['content_types']:
+        if "content_types" in filters:
+            if message.content_type not in filters["content_types"]:
                 return False
 
         # 检查 starts_with 过滤器（用于喜报/悲报等）
-        if 'starts_with' in filters:
+        if "starts_with" in filters:
             if not message.text:
                 return False
-            starts_with_list = filters['starts_with']
+            starts_with_list = filters["starts_with"]
             if not isinstance(starts_with_list, (list, tuple)):
                 starts_with_list = [starts_with_list]
             if not message.text.startswith(tuple(starts_with_list)):
@@ -299,31 +323,33 @@ class PluginMiddleware:
 
         return True
 
-    def _check_callback_filters(self, handler: HandlerMetadata, call: types.CallbackQuery) -> bool:
+    def _check_callback_filters(
+        self, handler: HandlerMetadata, call: types.CallbackQuery
+    ) -> bool:
         """检查回调查询是否符合 handler 的过滤条件"""
         filters = handler.filters
 
         # chat_types 依据回调所属消息的 chat 类型
-        if 'chat_types' in filters:
-            if not getattr(call, 'message', None):
+        if "chat_types" in filters:
+            if not getattr(call, "message", None):
                 return False
-            chat_type = getattr(call.message.chat, 'type', None)
-            if chat_type not in filters['chat_types']:
+            chat_type = getattr(call.message.chat, "type", None)
+            if chat_type not in filters["chat_types"]:
                 return False
 
         # func 自定义过滤
-        if 'func' in filters:
+        if "func" in filters:
             try:
-                if not filters['func'](call):
+                if not filters["func"](call):
                     return False
             except Exception:
                 return False
 
         # data_startswith 过滤
-        if 'data_startswith' in filters:
-            if not getattr(call, 'data', None):
+        if "data_startswith" in filters:
+            if not getattr(call, "data", None):
                 return False
-            starts = filters['data_startswith']
+            starts = filters["data_startswith"]
             if not isinstance(starts, (list, tuple)):
                 starts = [starts]
             if not any(call.data.startswith(s) for s in starts):
@@ -331,13 +357,15 @@ class PluginMiddleware:
 
         return True
 
-    def _check_inline_filters(self, handler: HandlerMetadata, inline_query: types.InlineQuery) -> bool:
+    def _check_inline_filters(
+        self, handler: HandlerMetadata, inline_query: types.InlineQuery
+    ) -> bool:
         """检查 inline query 是否符合 handler 的过滤条件"""
         filters = handler.filters
 
-        if 'func' in filters:
+        if "func" in filters:
             try:
-                if not filters['func'](inline_query):
+                if not filters["func"](inline_query):
                     return False
             except Exception:
                 return False
@@ -347,7 +375,8 @@ class PluginMiddleware:
     async def dispatch_inline(self, bot, inline_query: types.InlineQuery) -> int:
         """分发 InlineQuery 到匹配的 handlers，返回执行数量"""
         matched_handlers = [
-            h for h in self.handlers['inline']
+            h
+            for h in self.handlers["inline"]
             if self._check_inline_filters(h, inline_query)
         ]
 
@@ -366,14 +395,17 @@ class PluginMiddleware:
                 if handler.stop_propagation:
                     break
             except Exception as e:
-                logger.error(f"❌ Inline Handler {handler.plugin}.{handler.name} 执行失败: {e}")
+                logger.error(
+                    f"❌ Inline Handler {handler.plugin}.{handler.name} 执行失败: {e}"
+                )
 
         return executed_count
 
     async def dispatch_callback(self, bot, call: types.CallbackQuery) -> int:
         """分发回调查询到匹配的 handlers，返回执行数量"""
         matched_handlers = [
-            h for h in self.handlers['callback']
+            h
+            for h in self.handlers["callback"]
             if self._check_callback_filters(h, call)
         ]
 
@@ -384,11 +416,19 @@ class PluginMiddleware:
         for handler in matched_handlers:
             try:
                 # 插件开关检查（仅群组）
-                chat = getattr(call, 'message', None) and call.message.chat
-                if chat and getattr(chat, 'type', None) in ('group', 'supergroup') and self.is_toggleable(handler.plugin):
-                    enabled = await BotDatabase.get_plugin_enabled(chat.id, handler.plugin)
+                chat = getattr(call, "message", None) and call.message.chat
+                if (
+                    chat
+                    and getattr(chat, "type", None) in ("group", "supergroup")
+                    and self.is_toggleable(handler.plugin)
+                ):
+                    enabled = await BotDatabase.get_plugin_enabled(
+                        chat.id, handler.plugin
+                    )
                     if not enabled:
-                        logger.info(f"⏭️ 跳过插件 {handler.plugin}（群 {chat.id} 已关闭）")
+                        logger.info(
+                            f"⏭️ 跳过插件 {handler.plugin}（群 {chat.id} 已关闭）"
+                        )
                         continue
 
                 await handler.callback(bot, call)
@@ -398,7 +438,9 @@ class PluginMiddleware:
                     break
 
             except Exception as e:
-                logger.error(f"❌ Callback Handler {handler.plugin}.{handler.name} 执行失败: {e}")
+                logger.error(
+                    f"❌ Callback Handler {handler.plugin}.{handler.name} 执行失败: {e}"
+                )
 
         return executed_count
 
@@ -411,8 +453,7 @@ class PluginMiddleware:
         if plugin_name:
             for handler_type in self.handlers:
                 self.handlers[handler_type] = [
-                    h for h in self.handlers[handler_type]
-                    if h.plugin != plugin_name
+                    h for h in self.handlers[handler_type] if h.plugin != plugin_name
                 ]
         else:
             for handler_type in self.handlers:

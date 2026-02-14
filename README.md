@@ -171,7 +171,7 @@ The following data is persisted:
 #### Prerequisites
 
 - Linux system with systemd
-- Python 3.11 or higher
+- Python 3.12 or higher
 - PostgreSQL database
 - PDM package manager
 

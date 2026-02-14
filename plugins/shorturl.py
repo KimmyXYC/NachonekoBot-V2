@@ -19,12 +19,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "短链接生成工具"
 __commands__ = ["short"]
-__command_descriptions__ = {
-    "short": "生成短链接"
-}
-__command_help__ = {
-    "short": "/short [URL] - 生成短链接"
-}
+__command_descriptions__ = {"short": "生成短链接"}
+__command_help__ = {"short": "/short [URL] - 生成短链接"}
 
 
 # ==================== 核心功能 ====================
@@ -54,13 +50,15 @@ async def handle_short_command(bot, message: types.Message, url):
     else:
         if not (url.startswith("https://") or url.startswith("http://")):
             url = "https://" + url
-        params = {'url': url}
+        params = {"url": url}
         try:
             timeout = aiohttp.ClientTimeout(total=5)
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.post(server, json=params) as response:
                     if response.status != 200:
-                        logger.error(f"[Short URL][{message.chat.id}]: Can't Get Short URL: {response.status}")
+                        logger.error(
+                            f"[Short URL][{message.chat.id}]: Can't Get Short URL: {response.status}"
+                        )
                         await bot.edit_message_text(
                             f"生成失败, 请检查后端地址是否有效: `{response.status}`",
                             message.chat.id,
@@ -69,12 +67,12 @@ async def handle_short_command(bot, message: types.Message, url):
                             parse_mode="Markdown",
                         )
                         return
-                    if 'application/json' in response.headers['content-type']:
+                    if "application/json" in response.headers["content-type"]:
                         json_data = await response.json()
                     else:
                         json_data = json.loads(await response.text())
             if json_data["status"] == 200:
-                _url = server + json_data['key']
+                _url = server + json_data["key"]
                 await bot.edit_message_text(
                     f"短链接: `{_url}`",
                     message.chat.id,
@@ -83,7 +81,9 @@ async def handle_short_command(bot, message: types.Message, url):
                     parse_mode="Markdown",
                 )
             else:
-                logger.error(f"[Short URL][{message.chat.id}]: Can't Get Short URL: {json_data}")
+                logger.error(
+                    f"[Short URL][{message.chat.id}]: Can't Get Short URL: {json_data}"
+                )
                 await bot.edit_message_text(
                     f"生成失败, 请检查 URL 是否有效: `{json_data}`",
                     message.chat.id,
@@ -118,15 +118,18 @@ async def register_handlers(bot, middleware, plugin_name):
             await bot.reply_to(message, command_error_msg("short", "URL"))
 
     middleware.register_command_handler(
-        commands=['short'],
+        commands=["short"],
         callback=short_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -140,6 +143,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

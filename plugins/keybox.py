@@ -28,12 +28,8 @@ __author__ = "KimmyXYC"
 __description__ = "Keybox 检查工具"
 __commands__ = ["check"]
 __hidden_commands__ = ["ban_keybox", "unban_keybox"]  # 管理员隐藏命令，不显示在帮助中
-__command_descriptions__ = {
-    "check": "检查 keybox.xml 文件"
-}
-__command_help__ = {
-    "check": "/check - 检查 keybox.xml 文件"
-}
+__command_descriptions__ = {"check": "检查 keybox.xml 文件"}
+__command_help__ = {"check": "/check - 检查 keybox.xml 文件"}
 
 
 # ==================== 核心功能 ====================
@@ -45,7 +41,7 @@ async def handle_keybox_check(bot, message: types.Message, document: types.Docum
     :param document: Document instance containing the Keybox file
     :return: None
     """
-    if document.mime_type != 'application/xml' and document.mime_type != 'text/xml':
+    if document.mime_type != "application/xml" and document.mime_type != "text/xml":
         return
     if document.file_size > 20 * 1024:
         await bot.reply_to(message, "File size is too large")
@@ -64,12 +60,10 @@ async def load_from_url():
     headers = {
         "Cache-Control": "max-age=0, no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
-        "Expires": "0"
+        "Expires": "0",
     }
 
-    params = {
-        "ts": int(time.time())
-    }
+    params = {"ts": int(time.time())}
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers, params=params) as response:
@@ -89,14 +83,14 @@ def get_device_ids_and_algorithms(xml_file):
     root = tree.getroot()
 
     results = []
-    for keybox in root.findall('Keybox'):
-        device_id = keybox.get('DeviceID')
+    for keybox in root.findall("Keybox"):
+        device_id = keybox.get("DeviceID")
 
-        for key in keybox.findall('Key'):
-            algorithm = key.get('algorithm')
+        for key in keybox.findall("Key"):
+            algorithm = key.get("algorithm")
             device_info = {
-                'DeviceID': device_id if device_id else 'Unknown',
-                'Algorithm': algorithm if algorithm else 'Unknown'
+                "DeviceID": device_id if device_id else "Unknown",
+                "Algorithm": algorithm if algorithm else "Unknown",
             }
             results.append(device_info)
     return results
@@ -112,13 +106,13 @@ def parse_number_of_certificates(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
 
-    number_of_certificates = root.find('.//NumberOfCertificates')
+    number_of_certificates = root.find(".//NumberOfCertificates")
 
     if number_of_certificates is not None:
         count = int(number_of_certificates.text.strip())
         return count
     else:
-        raise Exception('No NumberOfCertificates found.')
+        raise Exception("No NumberOfCertificates found.")
 
 
 def parse_certificates(xml_file, pem_number):
@@ -151,7 +145,7 @@ def parse_private_key(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
 
-    private_key = root.find('.//PrivateKey')
+    private_key = root.find(".//PrivateKey")
 
     if private_key is not None:
         return private_key.text.strip()
@@ -165,10 +159,9 @@ def load_public_key_from_file(file_path):
     :param file_path: Path to the PEM file containing the public key.
     :return: The public key object.
     """
-    with open(file_path, 'rb') as key_file:
+    with open(file_path, "rb") as key_file:
         public_key = serialization.load_pem_public_key(
-            key_file.read(),
-            backend=default_backend()
+            key_file.read(), backend=default_backend()
         )
     return public_key
 
@@ -182,10 +175,10 @@ def compare_keys(public_key1, public_key2):
     """
     return public_key1.public_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
     ) == public_key2.public_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
     )
 
 
@@ -207,8 +200,12 @@ async def keybox_check(bot, message, document):
     if use_local_path:
         temp_path = file_info.file_path
         if not temp_path or not os.path.isfile(temp_path):
-            logger.error(f"[Keybox Check][{message.chat.id}]: local file not found: {temp_path}")
-            await bot.reply_to(message, "Local Bot API enabled but file path is not accessible.")
+            logger.error(
+                f"[Keybox Check][{message.chat.id}]: local file not found: {temp_path}"
+            )
+            await bot.reply_to(
+                message, "Local Bot API enabled but file path is not accessible."
+            )
             return
     else:
         downloaded_file = await bot.download_file(file_info.file_path)
@@ -235,15 +232,12 @@ async def keybox_check(bot, message, document):
                 pass
     try:
         certificate = x509.load_pem_x509_certificate(
-            pem_certificates[0].encode(),
-            default_backend()
+            pem_certificates[0].encode(), default_backend()
         )
         try:
-            private_key = re.sub(re.compile(r'^\s+', re.MULTILINE), '', private_key)
+            private_key = re.sub(re.compile(r"^\s+", re.MULTILINE), "", private_key)
             private_key = serialization.load_pem_private_key(
-                private_key.encode(),
-                password=None,
-                backend=default_backend()
+                private_key.encode(), password=None, backend=default_backend()
             )
             check_private_key = True
         except Exception:
@@ -254,7 +248,7 @@ async def keybox_check(bot, message, document):
         return
 
     # Banned Keybox Check List
-    banned_sn = BotElara.get('banned_sn',[])
+    banned_sn = BotElara.get("banned_sn", [])
 
     # Keybox Information
     reply = f"📱 *Device ID:* `{keybox_info[0]['DeviceID']}`"
@@ -296,8 +290,12 @@ async def keybox_check(bot, message, document):
     # Keychain Authentication
     flag = True
     for i in range(pem_number - 1):
-        son_certificate = x509.load_pem_x509_certificate(pem_certificates[i].encode(), default_backend())
-        father_certificate = x509.load_pem_x509_certificate(pem_certificates[i + 1].encode(), default_backend())
+        son_certificate = x509.load_pem_x509_certificate(
+            pem_certificates[i].encode(), default_backend()
+        )
+        father_certificate = x509.load_pem_x509_certificate(
+            pem_certificates[i + 1].encode(), default_backend()
+        )
 
         if son_certificate.issuer != father_certificate.subject:
             flag = False
@@ -307,23 +305,33 @@ async def keybox_check(bot, message, document):
         tbs_certificate = son_certificate.tbs_certificate_bytes
         public_key = father_certificate.public_key()
         try:
-            if signature_algorithm in ['sha256WithRSAEncryption', 'sha1WithRSAEncryption', 'sha384WithRSAEncryption',
-                                       'sha512WithRSAEncryption']:
+            if signature_algorithm in [
+                "sha256WithRSAEncryption",
+                "sha1WithRSAEncryption",
+                "sha384WithRSAEncryption",
+                "sha512WithRSAEncryption",
+            ]:
                 hash_algorithm = {
-                    'sha256WithRSAEncryption': hashes.SHA256(),
-                    'sha1WithRSAEncryption': hashes.SHA1(),
-                    'sha384WithRSAEncryption': hashes.SHA384(),
-                    'sha512WithRSAEncryption': hashes.SHA512()
+                    "sha256WithRSAEncryption": hashes.SHA256(),
+                    "sha1WithRSAEncryption": hashes.SHA1(),
+                    "sha384WithRSAEncryption": hashes.SHA384(),
+                    "sha512WithRSAEncryption": hashes.SHA512(),
                 }[signature_algorithm]
                 padding_algorithm = padding.PKCS1v15()
-                public_key.verify(signature, tbs_certificate, padding_algorithm, hash_algorithm)
-            elif signature_algorithm in ['ecdsa-with-SHA256', 'ecdsa-with-SHA1', 'ecdsa-with-SHA384',
-                                         'ecdsa-with-SHA512']:
+                public_key.verify(
+                    signature, tbs_certificate, padding_algorithm, hash_algorithm
+                )
+            elif signature_algorithm in [
+                "ecdsa-with-SHA256",
+                "ecdsa-with-SHA1",
+                "ecdsa-with-SHA384",
+                "ecdsa-with-SHA512",
+            ]:
                 hash_algorithm = {
-                    'ecdsa-with-SHA256': hashes.SHA256(),
-                    'ecdsa-with-SHA1': hashes.SHA1(),
-                    'ecdsa-with-SHA384': hashes.SHA384(),
-                    'ecdsa-with-SHA512': hashes.SHA512()
+                    "ecdsa-with-SHA256": hashes.SHA256(),
+                    "ecdsa-with-SHA1": hashes.SHA1(),
+                    "ecdsa-with-SHA384": hashes.SHA384(),
+                    "ecdsa-with-SHA512": hashes.SHA512(),
                 }[signature_algorithm]
                 padding_algorithm = ec.ECDSA(hash_algorithm)
                 public_key.verify(signature, tbs_certificate, padding_algorithm)
@@ -338,7 +346,9 @@ async def keybox_check(bot, message, document):
         reply += "\n❌ Invalid keychain"
 
     # Root Certificate Validation
-    root_certificate = x509.load_pem_x509_certificate(pem_certificates[-1].encode(), default_backend())
+    root_certificate = x509.load_pem_x509_certificate(
+        pem_certificates[-1].encode(), default_backend()
+    )
     root_public_key = root_certificate.public_key()
     google_public_key = load_public_key_from_file("res/pem/google.pem")
     aosp_ec_public_key = load_public_key_from_file("res/pem/aosp_ec.pem")
@@ -364,17 +374,19 @@ async def keybox_check(bot, message, document):
         status_json = await load_from_url()
     except Exception:
         logger.error("Failed to fetch Google's revoked keybox list")
-        with open("res/json/status.json", 'r', encoding='utf-8') as file:
+        with open("res/json/status.json", "r", encoding="utf-8") as file:
             status_json = json.load(file)
             reply += "\n⚠️ Using local revoked keybox list"
 
     status = None
     for i in range(pem_number):
-        certificate = x509.load_pem_x509_certificate(pem_certificates[i].encode(), default_backend())
+        certificate = x509.load_pem_x509_certificate(
+            pem_certificates[i].encode(), default_backend()
+        )
         serial_number = certificate.serial_number
         serial_number_string = hex(serial_number)[2:].lower()
-        if status_json['entries'].get(serial_number_string, None):
-            status = status_json['entries'][serial_number_string]
+        if status_json["entries"].get(serial_number_string, None):
+            status = status_json["entries"][serial_number_string]
             break
         if banned_sn and serial_number_string in banned_sn:
             reply += "\n❌ Serial number found in banned keybox list"
@@ -385,7 +397,7 @@ async def keybox_check(bot, message, document):
         reply += f"\n❌ Serial number found in Google's revoked keybox list\n🔍 *Reason:* `{status['reason']}`"
     reply += f"\n⏱ *Check Time (UTC):* {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     reply = markdown_to_telegram_html(reply)
-    await bot.reply_to(message, reply, parse_mode='HTML')
+    await bot.reply_to(message, reply, parse_mode="HTML")
 
 
 async def ban_keybox(bot, message, sn):
@@ -396,12 +408,12 @@ async def ban_keybox(bot, message, sn):
     :param sn: Serial number of the keybox to ban
     :return: None
     """
-    banned_sn = BotElara.get('banned_sn', [])
+    banned_sn = BotElara.get("banned_sn", [])
     if sn in banned_sn:
         await bot.reply_to(message, "This keybox has been banned.")
     else:
         banned_sn.append(sn)
-        BotElara.set('banned_sn', banned_sn)
+        BotElara.set("banned_sn", banned_sn)
         await bot.reply_to(message, "Banned successfully.")
 
 
@@ -413,13 +425,13 @@ async def unban_keybox(bot, message, sn):
     :param sn: Serial number of the keybox to unban
     :return: None
     """
-    banned_sn = BotElara.get('banned_sn')
+    banned_sn = BotElara.get("banned_sn")
     if banned_sn is None:
         await bot.reply_to(message, "No keybox has been banned.")
     else:
         if sn in banned_sn:
             banned_sn.remove(sn)
-            BotElara.set('banned_sn', banned_sn)
+            BotElara.set("banned_sn", banned_sn)
             await bot.reply_to(message, "Unbanned successfully.")
         else:
             await bot.reply_to(message, "This keybox has not been banned.")
@@ -441,12 +453,12 @@ async def register_handlers(bot, middleware, plugin_name):
         await handle_keybox_check(bot, message, document)
 
     middleware.register_command_handler(
-        commands=['check'],
+        commands=["check"],
         callback=check_command_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
     # 文件处理器 - 直接处理上传的文件
@@ -461,8 +473,8 @@ async def register_handlers(bot, middleware, plugin_name):
         handler_name="keybox_checker_document_handler",
         priority=50,
         stop_propagation=False,  # 不阻止其他处理器
-        content_types=['document'],
-        chat_types=['private']
+        content_types=["document"],
+        chat_types=["private"],
     )
 
     # ban_keybox 命令处理器
@@ -472,15 +484,18 @@ async def register_handlers(bot, middleware, plugin_name):
             sn = command_args[1].lower()
             await ban_keybox(bot, message, sn)
         else:
-            await bot.reply_to(message, "Usage: /ban_keybox <serial_number>\nExample: /ban_keybox 1a2b3c4d5e6f")
+            await bot.reply_to(
+                message,
+                "Usage: /ban_keybox <serial_number>\nExample: /ban_keybox 1a2b3c4d5e6f",
+            )
 
     middleware.register_command_handler(
-        commands=['ban_keybox'],
+        commands=["ban_keybox"],
         callback=ban_keybox_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
     # unban_keybox 命令处理器
@@ -490,18 +505,24 @@ async def register_handlers(bot, middleware, plugin_name):
             sn = command_args[1].lower()
             await unban_keybox(bot, message, sn)
         else:
-            await bot.reply_to(message, "Usage: /unban_keybox <serial_number>\nExample: /unban_keybox 1a2b3c4d5e6f")
+            await bot.reply_to(
+                message,
+                "Usage: /unban_keybox <serial_number>\nExample: /unban_keybox 1a2b3c4d5e6f",
+            )
 
     middleware.register_command_handler(
-        commands=['unban_keybox'],
+        commands=["unban_keybox"],
         callback=unban_keybox_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)} (隐藏: {', '.join(__hidden_commands__)})")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)} (隐藏: {', '.join(__hidden_commands__)})"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -515,6 +536,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

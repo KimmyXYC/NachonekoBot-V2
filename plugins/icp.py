@@ -16,9 +16,7 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "ICP 备案查询"
 __commands__ = ["icp"]
-__command_descriptions__ = {
-    "icp": "查询域名 ICP 备案信息"
-}
+__command_descriptions__ = {"icp": "查询域名 ICP 备案信息"}
 __command_help__ = {
     "icp": "/icp [Domain] - 查询域名 ICP 备案信息\nInline: @NachoNekoX_bot icp [Domain]"
 }
@@ -55,9 +53,13 @@ async def handle_icp_command(bot, message: types.Message):
     :return:
     """
     domain = message.text.split()[1]
-    msg = await bot.reply_to(message, f"正在查询域名 {domain} 备案信息...", disable_web_page_preview=True)
+    msg = await bot.reply_to(
+        message, f"正在查询域名 {domain} 备案信息...", disable_web_page_preview=True
+    )
     text = await query_icp_text(domain)
-    await bot.edit_message_text(text, message.chat.id, msg.message_id, parse_mode="HTML")
+    await bot.edit_message_text(
+        text, message.chat.id, msg.message_id, parse_mode="HTML"
+    )
 
 
 async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
@@ -65,15 +67,17 @@ async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
-    if len(tokens) != 2 or tokens[0].lower() != 'icp':
+    if len(tokens) != 2 or tokens[0].lower() != "icp":
         usage = "用法：icp [Domain]"
         result = types.InlineQueryResultArticle(
             id="icp_usage",
             title="ICP 备案查询",
             description="用法：icp [Domain]",
-            input_message_content=types.InputTextMessageContent(usage)
+            input_message_content=types.InputTextMessageContent(usage),
         )
-        await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+        await bot.answer_inline_query(
+            inline_query.id, [result], cache_time=1, is_personal=True
+        )
         return
 
     domain = tokens[1]
@@ -82,9 +86,13 @@ async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
         id=f"icp_{domain}",
         title=f"ICP：{domain}",
         description="发送查询结果",
-        input_message_content=types.InputTextMessageContent(result_text, parse_mode="HTML")
+        input_message_content=types.InputTextMessageContent(
+            result_text, parse_mode="HTML"
+        ),
     )
-    await bot.answer_inline_query(inline_query.id, [result], cache_time=1, is_personal=True)
+    await bot.answer_inline_query(
+        inline_query.id, [result], cache_time=1, is_personal=True
+    )
 
 
 async def icp_record_check(domain, retries=5):
@@ -110,7 +118,9 @@ async def icp_record_check(domain, retries=5):
                         else:
                             return False, data["msg"]
                     else:
-                        logger.warning(f"Attempt {attempt + 1} failed with status {response.status}")
+                        logger.warning(
+                            f"Attempt {attempt + 1} failed with status {response.status}"
+                        )
             except Exception as e:
                 logger.error(f"Attempt {attempt + 1} failed with exception: {e}")
 
@@ -132,12 +142,12 @@ async def register_handlers(bot, middleware, plugin_name):
             await bot.reply_to(message, command_error_msg("icp", "Domain"))
 
     middleware.register_command_handler(
-        commands=['icp'],
+        commands=["icp"],
         callback=icp_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
     middleware.register_inline_handler(
@@ -145,10 +155,16 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        func=lambda q: bool(getattr(q, 'query', None)) and q.query.strip().lower().startswith('icp')
+        func=lambda q: (
+            bool(getattr(q, "query", None))
+            and q.query.strip().lower().startswith("icp")
+        ),
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -162,6 +178,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

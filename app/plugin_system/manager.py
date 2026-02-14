@@ -25,6 +25,7 @@ class PluginManager:
 
         # 导入中间件
         from .middleware import middleware
+
         self.middleware = middleware
 
         plugins_path.mkdir(exist_ok=True)
@@ -78,11 +79,15 @@ class PluginManager:
                     tree = ast.parse(source, filename=str(file_path))
                     for node in tree.body:
                         if isinstance(node, ast.Assign):
-                            target_names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+                            target_names = [
+                                t.id for t in node.targets if isinstance(t, ast.Name)
+                            ]
                             if "__version__" in target_names:
                                 value = node.value
                                 v = None
-                                if hasattr(ast, "Constant") and isinstance(value, ast.Constant):
+                                if hasattr(ast, "Constant") and isinstance(
+                                    value, ast.Constant
+                                ):
                                     v = value.value
                                 elif isinstance(value, ast.Num):
                                     v = value.n
@@ -101,7 +106,10 @@ class PluginManager:
                                     old_version = self.version_map.get(plugin_name)
                                     if old_version != parsed_version:
                                         self.version_map[plugin_name] = parsed_version
-                                        updates[plugin_name] = (old_version, parsed_version)
+                                        updates[plugin_name] = (
+                                            old_version,
+                                            parsed_version,
+                                        )
                                 break
                 except Exception as e:
                     logger.error(f"同步插件 {plugin_name} 版本失败: {e}")
@@ -142,11 +150,17 @@ class PluginManager:
                         tree = ast.parse(source, filename=str(file_path))
                         for node in tree.body:
                             if isinstance(node, ast.Assign):
-                                target_names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+                                target_names = [
+                                    t.id
+                                    for t in node.targets
+                                    if isinstance(t, ast.Name)
+                                ]
                                 if "__version__" in target_names:
                                     value = node.value
                                     v = None
-                                    if hasattr(ast, "Constant") and isinstance(value, ast.Constant):
+                                    if hasattr(ast, "Constant") and isinstance(
+                                        value, ast.Constant
+                                    ):
                                         v = value.value
                                     elif isinstance(value, ast.Num):
                                         v = value.n
@@ -170,12 +184,16 @@ class PluginManager:
                         # 首次记录版本
                         self.version_map[plugin_name] = parsed_version
                         updated_versions = True
-                        logger.debug(f"📝 插件 {plugin_name} 首次记录版本: {parsed_version}")
+                        logger.debug(
+                            f"📝 插件 {plugin_name} 首次记录版本: {parsed_version}"
+                        )
                     elif cached_version != parsed_version:
                         # 检测到版本更新
                         self.version_map[plugin_name] = parsed_version
                         updated_versions = True
-                        logger.info(f"🔄 插件 {plugin_name} 版本更新: {cached_version} -> {parsed_version}")
+                        logger.info(
+                            f"🔄 插件 {plugin_name} 版本更新: {cached_version} -> {parsed_version}"
+                        )
                     final_version = parsed_version
                 elif cached_version is not None:
                     # 源码中没有版本但缓存中有，使用缓存版本
@@ -265,30 +283,39 @@ class PluginManager:
                                 self.set_local_version(plugin.name, ver)
                                 plugin.version = ver
                                 if cached_ver is None:
-                                    logger.debug(f"📝 插件 {plugin.name} 记录版本: {ver}")
+                                    logger.debug(
+                                        f"📝 插件 {plugin.name} 记录版本: {ver}"
+                                    )
                                 else:
-                                    logger.info(f"🔄 插件 {plugin.name} 版本同步: {cached_ver} -> {ver}")
+                                    logger.info(
+                                        f"🔄 插件 {plugin.name} 版本同步: {cached_ver} -> {ver}"
+                                    )
                 except Exception as e:
                     logger.debug(f"版本检测失败 {plugin.name}: {e}")
 
                 # 若插件支持开关，确保 setting 表中存在对应列，并标记为可切换
                 try:
-                    if getattr(module, '__toggleable__', False):
+                    if getattr(module, "__toggleable__", False):
                         await BotDatabase.ensure_plugin_column(plugin.name)
-                        display_name = getattr(module, '__display_name__', None)
+                        display_name = getattr(module, "__display_name__", None)
                         self.middleware.mark_toggleable(plugin.name, display_name)
-                        logger.info(f"🔧 插件 {plugin.name} 已注册为可开关，并确保 settings 列存在")
+                        logger.info(
+                            f"🔧 插件 {plugin.name} 已注册为可开关，并确保 settings 列存在"
+                        )
                 except Exception as e:
                     logger.error(f"初始化插件开关列失败: {plugin.name}: {e}")
 
                 # 新方式：通过中间件注册
-                if hasattr(module, 'register_handlers'):
+                if hasattr(module, "register_handlers"):
                     # 检查函数签名，支持新旧两种方式
                     import inspect
+
                     sig = inspect.signature(module.register_handlers)
                     if len(sig.parameters) == 3:
                         # 新方式：register_handlers(bot, middleware, plugin_name)
-                        await module.register_handlers(bot, self.middleware, plugin.name)
+                        await module.register_handlers(
+                            bot, self.middleware, plugin.name
+                        )
                     else:
                         # 旧方式：register_handlers(bot)
                         await module.register_handlers(bot)
@@ -296,17 +323,17 @@ class PluginManager:
                     logger.success(f"✅ 插件 {plugin.name} 加载成功")
 
                 # 支持插件声明定时任务
-                if hasattr(module, '__scheduled_jobs__'):
+                if hasattr(module, "__scheduled_jobs__"):
                     try:
-                        jobs = getattr(module, '__scheduled_jobs__') or []
+                        jobs = getattr(module, "__scheduled_jobs__") or []
                         for job in jobs:
-                            job_id = job.get('job_id')
-                            callback = job.get('callback')
+                            job_id = job.get("job_id")
+                            callback = job.get("callback")
                             if not job_id or callback is None:
                                 continue
-                            cron_expr = job.get('cron', '0 4 * * *')
-                            timezone = job.get('timezone', 'Asia/Shanghai')
-                            display_name = job.get('display_name')
+                            cron_expr = job.get("cron", "0 4 * * *")
+                            timezone = job.get("timezone", "Asia/Shanghai")
+                            display_name = job.get("display_name")
                             self.middleware.register_cron_job(
                                 plugin.name,
                                 job_id,
@@ -316,7 +343,9 @@ class PluginManager:
                                 display_name=display_name,
                             )
                         if jobs:
-                            logger.info(f"⏱️ 插件 {plugin.name} 已注册 {len(jobs)} 个定时任务")
+                            logger.info(
+                                f"⏱️ 插件 {plugin.name} 已注册 {len(jobs)} 个定时任务"
+                            )
                     except Exception as e:
                         logger.error(f"注册插件定时任务失败: {plugin.name}: {e}")
 
@@ -348,44 +377,46 @@ class PluginManager:
         返回: List of dicts with 'command', 'description', 'help_text'
         """
         commands_info = []
-        
+
         for plugin in self.plugins:
             if not plugin.status:
                 continue
-            
+
             try:
                 module_name = f"plugins.{plugin.name}"
                 if module_name not in sys.modules:
                     continue
-                    
+
                 module = sys.modules[module_name]
-                
+
                 # 获取插件的命令列表
-                if hasattr(module, '__commands__'):
+                if hasattr(module, "__commands__"):
                     plugin_commands = module.__commands__
-                    
+
                     # 获取命令描述映射
                     command_descriptions = {}
                     command_help_texts = {}
-                    
-                    if hasattr(module, '__command_descriptions__'):
+
+                    if hasattr(module, "__command_descriptions__"):
                         command_descriptions = module.__command_descriptions__
-                    
-                    if hasattr(module, '__command_help__'):
+
+                    if hasattr(module, "__command_help__"):
                         command_help_texts = module.__command_help__
-                    
+
                     # 为每个命令添加信息
                     for cmd in plugin_commands:
-                        commands_info.append({
-                            'command': cmd,
-                            'description': command_descriptions.get(cmd, ''),
-                            'help_text': command_help_texts.get(cmd, ''),
-                            'plugin': plugin.name
-                        })
-                        
+                        commands_info.append(
+                            {
+                                "command": cmd,
+                                "description": command_descriptions.get(cmd, ""),
+                                "help_text": command_help_texts.get(cmd, ""),
+                                "plugin": plugin.name,
+                            }
+                        )
+
             except Exception as e:
                 logger.error(f"收集插件 {plugin.name} 命令信息时出错: {e}")
-        
+
         return commands_info
 
     def get_inline_commands_info(self) -> List[dict]:
@@ -409,21 +440,23 @@ class PluginManager:
 
             try:
                 module = sys.modules[module_name]
-                help_map = getattr(module, '__command_help__', None)
+                help_map = getattr(module, "__command_help__", None)
                 if not isinstance(help_map, dict):
                     continue
 
                 for cmd, help_text in help_map.items():
                     if not isinstance(help_text, str):
                         continue
-                    if 'Inline:' not in help_text:
+                    if "Inline:" not in help_text:
                         continue
 
-                    inline_info.append({
-                        'command': str(cmd),
-                        'help_text': help_text,
-                        'plugin': plugin.name
-                    })
+                    inline_info.append(
+                        {
+                            "command": str(cmd),
+                            "help_text": help_text,
+                            "plugin": plugin.name,
+                        }
+                    )
             except Exception as e:
                 logger.error(f"收集插件 {plugin.name} Inline 命令信息时出错: {e}")
 

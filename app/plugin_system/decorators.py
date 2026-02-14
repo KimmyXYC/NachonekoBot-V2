@@ -129,16 +129,18 @@ class PluginManager:
                 module = sys.modules[module_name]
 
                 # 调用插件的注册函数(如果存在)
-                if hasattr(module, 'register_handlers'):
+                if hasattr(module, "register_handlers"):
                     await module.register_handlers(bot)
                     loaded_count += 1
                     logger.success(f"✅ 插件 {plugin.name} 加载成功")
-                elif hasattr(module, 'setup'):
+                elif hasattr(module, "setup"):
                     await module.setup(bot)
                     loaded_count += 1
                     logger.success(f"✅ 插件 {plugin.name} 加载成功")
                 else:
-                    logger.warning(f"⚠️  插件 {plugin.name} 缺少 register_handlers 或 setup 函数")
+                    logger.warning(
+                        f"⚠️  插件 {plugin.name} 缺少 register_handlers 或 setup 函数"
+                    )
 
             except Exception as e:
                 failed_count += 1

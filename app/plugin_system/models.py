@@ -14,6 +14,7 @@ plugins_path = Path("plugins")
 
 class PluginMetadata(BaseModel):
     """插件元数据"""
+
     name: str
     version: str
     author: str = "Unknown"
@@ -25,6 +26,7 @@ class PluginMetadata(BaseModel):
 
 class LocalPlugin(BaseModel):
     """本地插件"""
+
     name: str
     status: bool  # 是否启用
     installed: bool = False
@@ -43,6 +45,7 @@ class LocalPlugin(BaseModel):
     def load_status(self) -> bool:
         """插件是否已加载到内存"""
         import sys
+
         return f"plugins.{self.name}" in sys.modules
 
     def remove(self):

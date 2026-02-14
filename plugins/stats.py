@@ -19,23 +19,21 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "群聊发言统计排行（支持日/周/月/年与自定义时间范围）"
 __commands__ = ["stats"]
-__command_descriptions__ = {
-    "stats": "查看群聊发言排行榜"
-}
+__command_descriptions__ = {"stats": "查看群聊发言排行榜"}
 __command_help__ = {
     "stats": "/stats - 今日统计\n"
-             "/stats 5h - 5小时统计\n"
-             "/stats 4d - 4日统计\n"
-             "/stats 3w - 3周统计\n"
-             "/stats 2m - 2月统计\n"
-             "/stats 1y - 1年统计\n"
+    "/stats 5h - 5小时统计\n"
+    "/stats 4d - 4日统计\n"
+    "/stats 3w - 3周统计\n"
+    "/stats 2m - 2月统计\n"
+    "/stats 1y - 1年统计\n"
 }
 __toggleable__ = True
 __scheduled_jobs__ = []
 
 
 def _get_tz():
-    return pytz.timezone('Asia/Shanghai')
+    return pytz.timezone("Asia/Shanghai")
 
 
 def _get_display_name(user: types.User) -> str:
@@ -97,7 +95,9 @@ def _get_time_range(n: int, unit: str):
     return start_time, end_time
 
 
-async def _increment_speech_count(group_id: int, user_id: int, hour: datetime.datetime, display_name: str):
+async def _increment_speech_count(
+    group_id: int, user_id: int, hour: datetime.datetime, display_name: str
+):
     conn = BotDatabase.conn
     try:
         await conn.execute(
@@ -110,13 +110,15 @@ async def _increment_speech_count(group_id: int, user_id: int, hour: datetime.da
             group_id,
             user_id,
             hour,
-            display_name
+            display_name,
         )
     except asyncpg.PostgresError as e:
         logger.error(f"[Stats][Postgres Error]: {e}")
 
 
-async def _query_stats(group_id: int, start_time: datetime.datetime, end_time: datetime.datetime):
+async def _query_stats(
+    group_id: int, start_time: datetime.datetime, end_time: datetime.datetime
+):
     conn = BotDatabase.conn
     try:
         rows = await conn.fetch(
@@ -132,7 +134,7 @@ async def _query_stats(group_id: int, start_time: datetime.datetime, end_time: d
             """,
             group_id,
             start_time,
-            end_time
+            end_time,
         )
         total = await conn.fetchval(
             """
@@ -142,7 +144,7 @@ async def _query_stats(group_id: int, start_time: datetime.datetime, end_time: d
             """,
             group_id,
             start_time,
-            end_time
+            end_time,
         )
         return rows, int(total or 0)
     except asyncpg.PostgresError as e:
@@ -150,7 +152,9 @@ async def _query_stats(group_id: int, start_time: datetime.datetime, end_time: d
         return [], 0
 
 
-async def _query_top_speaker(group_id: int, start_time: datetime.datetime, end_time: datetime.datetime):
+async def _query_top_speaker(
+    group_id: int, start_time: datetime.datetime, end_time: datetime.datetime
+):
     conn = BotDatabase.conn
     try:
         row = await conn.fetchrow(
@@ -175,13 +179,16 @@ async def _query_top_speaker(group_id: int, start_time: datetime.datetime, end_t
 
 
 async def handle_stats_command(bot, message: types.Message):
-    if message.chat.type not in ('group', 'supergroup'):
+    if message.chat.type not in ("group", "supergroup"):
         await bot.reply_to(message, "该统计仅支持群组使用。")
         return
 
     parsed = _parse_stats_args(message.text)
     if not parsed:
-        await bot.reply_to(message, "用法：/stats [Nh|Nd|Nw|Nm|Ny] 例如 /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y")
+        await bot.reply_to(
+            message,
+            "用法：/stats [Nh|Nd|Nw|Nm|Ny] 例如 /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y",
+        )
         return
 
     n, unit, title = parsed
@@ -193,15 +200,11 @@ async def handle_stats_command(bot, message: types.Message):
         await bot.reply_to(message, f"{title}\n统计区间: {range_text}\n\n暂无统计数据")
         return
 
-    lines = [
-        title,
-        f"统计区间: {range_text}",
-        ""
-    ]
+    lines = [title, f"统计区间: {range_text}", ""]
 
     for idx, row in enumerate(rows, start=1):
-        name = row['display_name']
-        count = row['total']
+        name = row["display_name"]
+        count = row["total"]
         lines.append(f"{idx}. {name} - {count}")
 
     lines.extend(["", f"总计发言: {total}"])
@@ -209,16 +212,21 @@ async def handle_stats_command(bot, message: types.Message):
 
 
 async def handle_stats_message(bot, message: types.Message):
-    if not getattr(message, 'chat', None) or message.chat.type not in ('group', 'supergroup'):
+    if not getattr(message, "chat", None) or message.chat.type not in (
+        "group",
+        "supergroup",
+    ):
         return
-    if not getattr(message, 'from_user', None) or message.from_user.is_bot:
+    if not getattr(message, "from_user", None) or message.from_user.is_bot:
         return
 
     tz = _get_tz()
     msg_time = datetime.datetime.fromtimestamp(message.date, tz=tz)
     hour = msg_time.replace(minute=0, second=0, microsecond=0)
     display_name = _get_display_name(message.from_user)
-    await _increment_speech_count(message.chat.id, message.from_user.id, hour, display_name)
+    await _increment_speech_count(
+        message.chat.id, message.from_user.id, hour, display_name
+    )
 
 
 async def handle_dragon_king_schedule(bot):
@@ -228,8 +236,8 @@ async def handle_dragon_king_schedule(bot):
         return
 
     for row in rows:
-        group_id = row['group_id']
-        tz_name = row.get('timezone') or 'Asia/Shanghai'
+        group_id = row["group_id"]
+        tz_name = row.get("timezone") or "Asia/Shanghai"
         try:
             tz = pytz.timezone(tz_name)
         except Exception:
@@ -239,8 +247,8 @@ async def handle_dragon_king_schedule(bot):
         top_row = await _query_top_speaker(group_id, start, now)
         if not top_row:
             continue
-        display_name = top_row['display_name']
-        total = int(top_row['total'] or 0)
+        display_name = top_row["display_name"]
+        total = int(top_row["total"] or 0)
         if total <= 0:
             continue
         try:
@@ -261,19 +269,21 @@ async def register_handlers(bot, middleware, plugin_name):
         handler_name="speech_stats_recorder",
         priority=1,
         stop_propagation=False,
-        chat_types=['group', 'supergroup']
+        chat_types=["group", "supergroup"],
     )
 
     middleware.register_command_handler(
-        commands=['stats'],
+        commands=["stats"],
         callback=handle_stats_command,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['group', 'supergroup', 'private']
+        chat_types=["group", "supergroup", "private"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
 
     middleware.register_cron_job(
         plugin_name=plugin_name,

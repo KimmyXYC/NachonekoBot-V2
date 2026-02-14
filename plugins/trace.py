@@ -17,12 +17,8 @@ __version__ = "2.0.0"
 __author__ = "KimmyXYC"
 __description__ = "路由追踪工具 (使用 nexttrace)"
 __commands__ = ["trace"]
-__command_descriptions__ = {
-    "trace": "追踪路由"
-}
-__command_help__ = {
-    "trace": "/trace [IP/Domain] [协议类型(T/U)] [端口] - 追踪路由"
-}
+__command_descriptions__ = {"trace": "追踪路由"}
+__command_help__ = {"trace": "/trace [IP/Domain] [协议类型(T/U)] [端口] - 追踪路由"}
 
 # ==================== 核心功能 ====================
 MAX_TOTAL_TIMEOUT = 180  # 整个跟踪的最大超时时间（秒）
@@ -41,19 +37,23 @@ def validate_target(target: str) -> bool:
     允许：域名、IPv4、IPv6
     """
     # IPv4 地址验证
-    ipv4_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}$"
     # IPv6 地址验证 (简化版)
-    ipv6_pattern = r'^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$'
+    ipv6_pattern = r"^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$"
     # 域名验证 (允许字母、数字、连字符、点)
-    domain_pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
+    domain_pattern = r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$"
 
     # 检查是否包含危险字符
-    dangerous_chars = [';', '&', '|', '$', '`', '(', ')', '<', '>', '\n', '\r', '\\']
+    dangerous_chars = [";", "&", "|", "$", "`", "(", ")", "<", ">", "\n", "\r", "\\"]
     if any(char in target for char in dangerous_chars):
         return False
 
     # 验证格式
-    if re.match(ipv4_pattern, target) or re.match(ipv6_pattern, target) or re.match(domain_pattern, target):
+    if (
+        re.match(ipv4_pattern, target)
+        or re.match(ipv6_pattern, target)
+        or re.match(domain_pattern, target)
+    ):
         return True
 
     return False
@@ -69,10 +69,13 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
     command_args = message.text.split()
 
     if len(command_args) < 2:
-        await bot.reply_to(message, "用法: /trace <目标地址> [T/U] [端口]\n"
-                                    "T = TCP, U = UDP, 不指定则使用 ICMP\n"
-                                    "示例: /trace 1.1.1.1\n"
-                                    "      /trace example.com T 443")
+        await bot.reply_to(
+            message,
+            "用法: /trace <目标地址> [T/U] [端口]\n"
+            "T = TCP, U = UDP, 不指定则使用 ICMP\n"
+            "示例: /trace 1.1.1.1\n"
+            "      /trace example.com T 443",
+        )
         return
 
     target = command_args[1]
@@ -88,10 +91,10 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
     # 解析协议参数
     if len(command_args) >= 3:
         protocol_arg = command_args[2].upper()
-        if protocol_arg in ['T', 'TCP']:
-            protocol = 'T'
-        elif protocol_arg in ['U', 'UDP']:
-            protocol = 'U'
+        if protocol_arg in ["T", "TCP"]:
+            protocol = "T"
+        elif protocol_arg in ["U", "UDP"]:
+            protocol = "U"
         else:
             await bot.reply_to(message, "❌ 无效的协议类型，请使用 T (TCP) 或 U (UDP)")
             return
@@ -113,18 +116,19 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
 
     # 发送初始消息
     protocol_name = "ICMP"
-    if protocol == 'T':
+    if protocol == "T":
         protocol_name = "TCP"
-    elif protocol == 'U':
+    elif protocol == "U":
         protocol_name = "UDP"
 
-    status_message = await bot.reply_to(message, f"⏳ 正在使用 {protocol_name} 跟踪路由到 {target}...")
+    status_message = await bot.reply_to(
+        message, f"⏳ 正在使用 {protocol_name} 跟踪路由到 {target}..."
+    )
 
     try:
         # 执行跟踪路由
         result = await asyncio.wait_for(
-            run_nexttrace(target, protocol, port),
-            timeout=MAX_TOTAL_TIMEOUT
+            run_nexttrace(target, protocol, port), timeout=MAX_TOTAL_TIMEOUT
         )
 
         # 格式化并发送结果
@@ -138,21 +142,19 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
             formatted_result,
             message.chat.id,
             status_message.message_id,
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
 
     except asyncio.TimeoutError:
         await bot.edit_message_text(
             f"❌ 跟踪路由到 {target} 超时，已执行 {MAX_TOTAL_TIMEOUT} 秒",
             message.chat.id,
-            status_message.message_id
+            status_message.message_id,
         )
     except Exception as e:
         logger.error(f"Traceroute error: {str(e)}")
         await bot.edit_message_text(
-            f"❌ 跟踪路由失败: {str(e)}",
-            message.chat.id,
-            status_message.message_id
+            f"❌ 跟踪路由失败: {str(e)}", message.chat.id, status_message.message_id
         )
 
 
@@ -181,17 +183,15 @@ async def run_nexttrace(target: str, protocol: str = None, port: int = None) -> 
         # 使用 asyncio.create_subprocess_exec 安全地执行命令
         # 不使用 shell=True，避免命令注入风险
         process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
 
         # 等待命令执行完成
         stdout, stderr = await process.communicate()
 
         # 解码输出
-        output = stdout.decode('utf-8', errors='ignore')
-        error_output = stderr.decode('utf-8', errors='ignore')
+        output = stdout.decode("utf-8", errors="ignore")
+        error_output = stderr.decode("utf-8", errors="ignore")
 
         if process.returncode != 0:
             logger.error(f"nexttrace 执行失败，返回码: {process.returncode}")
@@ -213,7 +213,7 @@ async def run_nexttrace(target: str, protocol: str = None, port: int = None) -> 
 
 def format_nexttrace_output(target: str, protocol: str, port: int, output: str) -> str:
     """格式化 nexttrace 输出"""
-    header = f"📡 *路由追踪结果*\n\n"
+    header = "📡 *路由追踪结果*\n\n"
     header += f"目标: `{target}`\n"
     header += f"协议: {protocol}"
 
@@ -223,18 +223,18 @@ def format_nexttrace_output(target: str, protocol: str, port: int, output: str) 
     header += "\n\n```\n"
 
     # 清理输出中的 ANSI 转义序列
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    clean_output = ansi_escape.sub('', output)
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    clean_output = ansi_escape.sub("", output)
 
     # 提取 MapTrace URL
     maptrace_url = None
-    url_pattern = r'MapTrace URL:\s*(https?://[^\s]+)'
+    url_pattern = r"MapTrace URL:\s*(https?://[^\s]+)"
     url_match = re.search(url_pattern, clean_output)
 
     if url_match:
         maptrace_url = url_match.group(1)
         # 从输出中移除 MapTrace URL 行，避免重复显示
-        clean_output = re.sub(r'MapTrace URL:.*\n?', '', clean_output)
+        clean_output = re.sub(r"MapTrace URL:.*\n?", "", clean_output)
 
     # 移除末尾多余的空行
     clean_output = clean_output.rstrip()
@@ -259,15 +259,18 @@ async def register_handlers(bot, middleware, plugin_name):
         await handle_trace_command(bot, message)
 
     middleware.register_command_handler(
-        commands=['trace'],
+        commands=["trace"],
         callback=trace_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -281,6 +284,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

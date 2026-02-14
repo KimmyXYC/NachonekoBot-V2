@@ -15,12 +15,8 @@ __version__ = "1.1.0"
 __author__ = "KimmyXYC"
 __description__ = "TCP 端口连通性测试"
 __commands__ = ["tcping"]
-__command_descriptions__ = {
-    "tcping": "TCP Ping 测试"
-}
-__command_help__ = {
-    "tcping": "/tcping [IP/Domain]:[Port] - TCP Ping 测试"
-}
+__command_descriptions__ = {"tcping": "TCP Ping 测试"}
+__command_help__ = {"tcping": "/tcping [IP/Domain]:[Port] - TCP Ping 测试"}
 
 
 def is_valid_hostname(hostname):
@@ -37,7 +33,9 @@ def is_valid_hostname(hostname):
         hostname = hostname[:-1]
 
     # 主机名规则: 字母数字和连字符，段落之间用点分隔
-    allowed = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z0-9-]{1,63}(?<!-))*$")
+    allowed = re.compile(
+        r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z0-9-]{1,63}(?<!-))*$"
+    )
     return allowed.match(hostname) is not None
 
 
@@ -106,17 +104,17 @@ async def execute_tcping_command(target, port, count=4, timeout=3):
         # tcping [-d] [-c] [-C] [-w sec] [-q num] [-x count] ipaddress [port]
         cmd_args = [
             "tcping",
-            "-w", str(int(timeout)),  # 等待时间（秒）
-            "-x", str(count),         # 重复次数
-            target,                   # 目标地址
-            str(port)                 # 端口
+            "-w",
+            str(int(timeout)),  # 等待时间（秒）
+            "-x",
+            str(count),  # 重复次数
+            target,  # 目标地址
+            str(port),  # 端口
         ]
 
         # 执行命令，使用参数列表方式避免 shell 注入
         process = await asyncio.create_subprocess_exec(
-            *cmd_args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            *cmd_args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
 
         # 获取命令输出
@@ -124,10 +122,12 @@ async def execute_tcping_command(target, port, count=4, timeout=3):
 
         if stderr:
             logger.error(f"TCPing error: {stderr.decode('utf-8', errors='replace')}")
-            return f"❌ 执行 tcping 命令出错: {stderr.decode('utf-8', errors='replace')}"
+            return (
+                f"❌ 执行 tcping 命令出错: {stderr.decode('utf-8', errors='replace')}"
+            )
 
         # 解码输出
-        result = stdout.decode('utf-8', errors='replace')
+        result = stdout.decode("utf-8", errors="replace")
 
         return result
 
@@ -149,39 +149,43 @@ async def parse_tcping_result(result):
 
     try:
         # 提取统计信息
-        lines = result.strip().split('\n')
-        
+        lines = result.strip().split("\n")
+
         # 统计成功和失败的连接
         successful = 0
         failed = 0
         times = []
-        
+
         for line in lines:
             # 匹配成功的连接: "port 80 open" 或包含时间信息
-            if 'open' in line.lower() or 'ms' in line.lower():
+            if "open" in line.lower() or "ms" in line.lower():
                 successful += 1
                 # 尝试提取时间
-                time_match = re.search(r'(\d+\.?\d*)\s*ms', line)
+                time_match = re.search(r"(\d+\.?\d*)\s*ms", line)
                 if time_match:
                     times.append(float(time_match.group(1)))
-            elif 'closed' in line.lower() or 'timeout' in line.lower() or 'failed' in line.lower():
+            elif (
+                "closed" in line.lower()
+                or "timeout" in line.lower()
+                or "failed" in line.lower()
+            ):
                 failed += 1
 
         total = successful + failed
-        
+
         if total > 0:
             loss_rate = (failed / total) * 100
-            
+
             if successful > 0:
                 avg_time = sum(times) / len(times) if times else 0
                 min_time = min(times) if times else 0
                 max_time = max(times) if times else 0
-                
+
                 summary += f"⏱ 延迟: 平均 {avg_time:.0f}ms"
                 if times:
                     summary += f" (最小 {min_time:.0f}ms, 最大 {max_time:.0f}ms)"
                 summary += "\n"
-            
+
             summary += f"📊 丢包率: {loss_rate:.0f}%\n"
         else:
             summary = "⚠️ 无法解析 tcping 结果\n"
@@ -217,14 +221,18 @@ async def handle_tcping_command(bot, message: types.Message):
         try:
             port = int(port)
         except ValueError:
-            await bot.reply_to(message, "❌ 无效的端口号。端口号应为1-65535之间的整数。")
+            await bot.reply_to(
+                message, "❌ 无效的端口号。端口号应为1-65535之间的整数。"
+            )
             return
     else:
         target = target_arg
         port = 80  # 默认端口
 
     # 发送处理中消息
-    processing_msg = await bot.reply_to(message, f"⏳ 正在测试 {target}:{port} 的TCP连接，请稍候...")
+    processing_msg = await bot.reply_to(
+        message, f"⏳ 正在测试 {target}:{port} 的TCP连接，请稍候..."
+    )
 
     try:
         # 执行 tcping 命令
@@ -239,14 +247,14 @@ async def handle_tcping_command(bot, message: types.Message):
             chat_id=processing_msg.chat.id,
             message_id=processing_msg.message_id,
             parse_mode="Markdown",
-            disable_web_page_preview=True
+            disable_web_page_preview=True,
         )
     except Exception as e:
         logger.error(f"TCP Ping 执行错误: {e}")
         await bot.edit_message_text(
             f"❌ 执行 tcping 时出错: {str(e)}",
             chat_id=processing_msg.chat.id,
-            message_id=processing_msg.message_id
+            message_id=processing_msg.message_id,
         )
 
 
@@ -261,15 +269,18 @@ async def register_handlers(bot, middleware, plugin_name):
         await handle_tcping_command(bot, message)
 
     middleware.register_command_handler(
-        commands=['tcping'],
+        commands=["tcping"],
         callback=tcping_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -283,6 +294,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None

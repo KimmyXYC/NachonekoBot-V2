@@ -19,12 +19,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "天气查询"
 __commands__ = ["weather"]
-__command_descriptions__ = {
-    "weather": "查询天气信息"
-}
-__command_help__ = {
-    "weather": "/weather [City_Name] - 查询天气信息"
-}
+__command_descriptions__ = {"weather": "查询天气信息"}
+__command_help__ = {"weather": "/weather [City_Name] - 查询天气信息"}
 
 
 # ==================== 核心功能 ====================
@@ -51,9 +47,9 @@ icons = {
 
 
 def timestamp_to_time(timestamp, timeZoneShift):
-    timeArray = datetime.datetime.fromtimestamp(timestamp, datetime.UTC) + datetime.timedelta(
-        seconds=timeZoneShift
-    )
+    timeArray = datetime.datetime.fromtimestamp(
+        timestamp, datetime.UTC
+    ) + datetime.timedelta(seconds=timeZoneShift)
     return timeArray.strftime("%H:%M")
 
 
@@ -82,7 +78,7 @@ def calcWindDirection(windDirection):
 
 def is_chinese(text):
     """检查文本是否包含中文字符"""
-    pattern = re.compile(r'[\u4e00-\u9fff]+')
+    pattern = re.compile(r"[\u4e00-\u9fff]+")
     return bool(pattern.search(text))
 
 
@@ -90,35 +86,31 @@ async def translate_chinese_to_english(text):
     """将中文文本翻译为英文（使用微软翻译API）"""
     try:
         # 使用微软翻译API
-        subscription_key = BotConfig['translate']['token']
+        subscription_key = BotConfig["translate"]["token"]
         endpoint = "https://api.cognitive.microsofttranslator.com"
-        location = BotConfig['translate']['location']
-        path = '/translate'
+        location = BotConfig["translate"]["location"]
+        path = "/translate"
         constructed_url = endpoint + path
 
-        params = {
-            'api-version': '3.0',
-            'from': 'zh-Hans',
-            'to': 'en'
-        }
+        params = {"api-version": "3.0", "from": "zh-Hans", "to": "en"}
 
         headers = {
-            'Ocp-Apim-Subscription-Key': subscription_key,
-            'Ocp-Apim-Subscription-Region': location,
-            'Content-type': 'application/json',
-            'X-ClientTraceId': str(uuid.uuid4())
+            "Ocp-Apim-Subscription-Key": subscription_key,
+            "Ocp-Apim-Subscription-Region": location,
+            "Content-type": "application/json",
+            "X-ClientTraceId": str(uuid.uuid4()),
         }
 
-        body = [{
-            'text': text
-        }]
+        body = [{"text": text}]
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(constructed_url, params=params, headers=headers, json=body) as resp:
+            async with session.post(
+                constructed_url, params=params, headers=headers, json=body
+            ) as resp:
                 if resp.status == 200:
                     response = await resp.json()
                     # 提取翻译结果
-                    translated_text = response[0]['translations'][0]['text']
+                    translated_text = response[0]["translations"][0]["text"]
                     return translated_text
                 logger.error(f"微软翻译API返回错误状态码: {resp.status}")
                 return text  # 如果翻译失败，返回原始文本
@@ -138,7 +130,7 @@ async def handle_weather_command(bot, message: types.Message, city: str):
             "appid": "973e8a21e358ee9d30b47528b43a8746",
             "units": "metric",
             "lang": "zh_cn",
-            "q": city
+            "q": city,
         }
 
         async with aiohttp.ClientSession() as session:
@@ -147,8 +139,14 @@ async def handle_weather_command(bot, message: types.Message, city: str):
                 async with session.get(url, params=params) as resp:
                     if resp.status != 200:
                         if resp.status == 404:
-                            return {"status": 404, "message": f"出错了呜呜呜 ~ 无法找到城市「{city}」的天气信息"}
-                        return {"status": resp.status, "message": f"获取天气数据失败，状态码: {resp.status}"}
+                            return {
+                                "status": 404,
+                                "message": f"出错了呜呜呜 ~ 无法找到城市「{city}」的天气信息",
+                            }
+                        return {
+                            "status": resp.status,
+                            "message": f"获取天气数据失败，状态码: {resp.status}",
+                        }
                     return {"status": 200, "data": await resp.json()}
 
             # 创建获取天气图片的异步任务
@@ -166,19 +164,20 @@ async def handle_weather_command(bot, message: types.Message, city: str):
                     return None
 
             # 并行执行获取天气数据和天气图片的任务
-            weather_result, img_data = await asyncio.gather(get_weather_data(), get_weather_image())
+            weather_result, img_data = await asyncio.gather(
+                get_weather_data(), get_weather_image()
+            )
 
             # 处理天气数据结果
             if weather_result["status"] != 200:
                 await bot.send_message(
-                    chat_id=message.chat.id,
-                    text=weather_result["message"]
+                    chat_id=message.chat.id, text=weather_result["message"]
                 )
                 return
 
             # 处理天气数据
             data = weather_result["data"]
-            cityName = f'{data["name"]}, {data["sys"]["country"]}'
+            cityName = f"{data['name']}, {data['sys']['country']}"
             timeZoneShift = data["timezone"]
             pressure = data["main"]["pressure"]
             humidity = data["main"]["humidity"]
@@ -199,31 +198,23 @@ async def handle_weather_command(bot, message: types.Message, city: str):
             try:
                 if img_data:
                     await bot.send_photo(
-                        chat_id=message.chat.id,
-                        photo=img_data,
-                        caption=res
+                        chat_id=message.chat.id, photo=img_data, caption=res
                     )
                 else:
                     # 如果没有图片，则发送纯文本
-                    await bot.send_message(
-                        chat_id=message.chat.id,
-                        text=res
-                    )
+                    await bot.send_message(chat_id=message.chat.id, text=res)
             except Exception as send_error:
                 # 如果发送图片和文本失败，但我们有图片，尝试只发送图片
                 if img_data:
                     try:
-                        await bot.send_photo(
-                            chat_id=message.chat.id,
-                            photo=img_data
-                        )
+                        await bot.send_photo(chat_id=message.chat.id, photo=img_data)
                     except Exception:
                         # 如果所有尝试都失败，打印错误但不中断程序
                         logger.error(f"发送天气信息完全失败: {str(send_error)}")
     except Exception as e:
         await bot.send_message(
             chat_id=message.chat.id,
-            text=f"出错了呜呜呜 ~ 无法获取天气信息。错误信息: {str(e)}"
+            text=f"出错了呜呜呜 ~ 无法获取天气信息。错误信息: {str(e)}",
         )
 
 
@@ -243,15 +234,18 @@ async def register_handlers(bot, middleware, plugin_name):
             await handle_weather_command(bot, message, city)
 
     middleware.register_command_handler(
-        commands=['weather'],
+        commands=["weather"],
         callback=weather_handler,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
-        chat_types=['private', 'group', 'supergroup']
+        chat_types=["private", "group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
+    )
+
 
 # ==================== 插件信息 ====================
 def get_plugin_info() -> dict:
@@ -265,6 +259,7 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
+
 
 # 保持全局 bot 引用
 bot_instance = None
