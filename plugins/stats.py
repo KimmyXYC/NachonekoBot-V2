@@ -244,7 +244,7 @@ async def handle_dragon_king_schedule(bot):
         if total <= 0:
             continue
         try:
-            await bot.send_message(group_id, f"恭喜{display_name}获得🐉龙王标志")
+            await bot.send_message(group_id, f"恭喜 {display_name} 获得本群🐉龙王标志")
         except Exception as e:
             logger.error(f"[Stats] 发送龙王消息失败 group={group_id}: {e}")
 
