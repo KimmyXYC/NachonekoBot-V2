@@ -10,6 +10,7 @@ from typing import List, Callable, Dict, Any
 from dataclasses import dataclass, field
 from loguru import logger
 from telebot import types
+from setting.telegrambot import BotSetting
 from utils.postgres import BotDatabase
 
 
@@ -138,7 +139,15 @@ class PluginMiddleware:
             return 0
 
         # 提取命令
-        command = message.text.split()[0][1:].split('@')[0].lower()
+        raw_command = message.text.split()[0][1:]
+        if '@' in raw_command:
+            command_part, mentioned_bot = raw_command.split('@', 1)
+            if BotSetting.bot_username:
+                if BotSetting.bot_username and mentioned_bot.lower() != BotSetting.bot_username.lower():
+                    return 0
+            command = command_part.lower()
+        else:
+            command = raw_command.lower()
 
         # 查找所有匹配的 handlers
         matched_handlers = [
