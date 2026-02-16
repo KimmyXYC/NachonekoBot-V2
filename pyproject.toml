@@ -3,7 +3,7 @@ name = "NachonekoBot"
 version = "2.0.0"
 description = "A telegram bot framework for building bots with ease, featuring a modular architecture and support for various plugins."
 authors = [
-    { name = "github", email = "kimmyxyc@nepnep.moe" },
+    { name = "KimmyXYC", email = "kimmyxyc@nepnep.moe" },
 ]
 dependencies = [
     "pyTelegramBotAPI>=4.30.0",
