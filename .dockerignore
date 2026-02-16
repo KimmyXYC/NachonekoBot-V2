@@ -57,6 +57,7 @@ data/
 .env.exp
 
 # Documentation
-README.md
+# Keep README.md so packaging can read project.readme.file during build.
+# You can still ignore other docs if desired.
 README.docker.md
 LICENSE
