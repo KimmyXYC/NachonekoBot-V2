@@ -1,8 +1,6 @@
 # Config
 conf_dir/*.yaml
 conf_dir/*.db
-pdm.lock
-uv.lock
 plugins/version.json
 
 # Byte-compiled / optimized / DLL files
