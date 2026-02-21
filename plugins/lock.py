@@ -57,7 +57,7 @@ def batch_add_to_locklist(chat_id, cmd):
     :param cmd: 命令列表
     :return: 添加结果
     """
-    locklist = BotElara.get(str(chat_id), [])
+    locklist = BotElara.get(str(chat_id), []) or []
     added = []
     already_exist = []
     for command in cmd:
@@ -77,7 +77,7 @@ def batch_remove_from_locklist(chat_id, cmd):
     :param cmd: 命令列表
     :return: 删除结果
     """
-    locklist = BotElara.get(str(chat_id), [])
+    locklist = BotElara.get(str(chat_id), []) or []
     removed = []
     not_found = []
     for command in cmd:
@@ -144,6 +144,24 @@ async def handle_list_command(bot, message: types.Message):
         await bot.reply_to(message, msg, parse_mode="Markdown")
 
 
+def _extract_command_name(text: str) -> str:
+    if not text or not text.startswith("/"):
+        return ""
+    raw_command = text.split()[0][1:]
+    if not raw_command:
+        return ""
+    if "@" in raw_command:
+        raw_command = raw_command.split("@", 1)[0]
+    return raw_command.lower()
+
+
+async def _safe_delete_message(bot, chat_id: int, message_id: int):
+    try:
+        await bot.delete_message(chat_id, message_id)
+    except Exception as e:  # noqa: B902
+        logger.debug(f"删除消息失败 chat_id={chat_id}, message_id={message_id}: {e}")
+
+
 # ==================== 插件注册 ====================
 async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
@@ -152,7 +170,7 @@ async def register_handlers(bot, middleware, plugin_name):
     bot_instance = bot
 
     async def lock_handler(bot, message: types.Message):
-        command_args = message.text.split()
+        command_args = (message.text or "").split()
         if len(command_args) == 1:
             await bot.reply_to(message, command_error_msg("lock", "Command"))
         else:
@@ -160,7 +178,7 @@ async def register_handlers(bot, middleware, plugin_name):
             await handle_lock_command(bot, message, lock_list)
 
     async def unlock_handler(bot, message: types.Message):
-        command_args = message.text.split()
+        command_args = (message.text or "").split()
         if len(command_args) == 1:
             await bot.reply_to(message, command_error_msg("unlock", "Command"))
         else:
@@ -169,6 +187,18 @@ async def register_handlers(bot, middleware, plugin_name):
 
     async def list_handler(bot, message: types.Message):
         await handle_list_command(bot, message)
+
+    async def lock_guard_handler(bot, message: types.Message):
+        command_name = _extract_command_name(message.text or "")
+        if not command_name:
+            return True
+
+        lock_list = BotElara.get(str(message.chat.id), []) or []
+        if command_name not in lock_list:
+            return True
+
+        await _safe_delete_message(bot, message.chat.id, message.message_id)
+        return False
 
     middleware.register_command_handler(
         commands=["lock"],
@@ -194,6 +224,15 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
+        chat_types=["group", "supergroup"],
+    )
+
+    middleware.register_command_handler(
+        commands=["*"],
+        callback=lock_guard_handler,
+        plugin_name=plugin_name,
+        priority=100,
+        stop_propagation=False,
         chat_types=["group", "supergroup"],
     )
 

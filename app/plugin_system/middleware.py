@@ -159,7 +159,7 @@ class PluginMiddleware:
         matched_handlers = [
             h
             for h in self.handlers["command"]
-            if h.name == command and self._check_filters(h, message)
+            if h.name in (command, "*") and self._check_filters(h, message)
         ]
 
         if not matched_handlers:
@@ -183,7 +183,7 @@ class PluginMiddleware:
                         )
                         continue
                 logger.debug(f"  → 执行 {handler.plugin}.{handler.name}")
-                await handler.callback(bot, message)
+                callback_result = await handler.callback(bot, message)
                 executed_count += 1
 
                 # 记录统计
@@ -191,7 +191,7 @@ class PluginMiddleware:
                 self._execution_stats[key] = self._execution_stats.get(key, 0) + 1
 
                 # 检查是否停止传播
-                if handler.stop_propagation:
+                if handler.stop_propagation or callback_result is False:
                     logger.debug(f"  ⛔ {handler.plugin} 阻止了后续处理器")
                     break
 
