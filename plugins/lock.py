@@ -30,6 +30,8 @@ __command_help__ = {
     "list": "/list - 列出群组中被锁定的命令",
 }
 
+NON_LOCKABLE_COMMANDS = {"plugin_settings", "lock", "unlock", "list"}
+
 
 # ==================== 核心功能 ====================
 async def check_permissions(bot, message: types.Message):
@@ -39,10 +41,26 @@ async def check_permissions(bot, message: types.Message):
     :param message: 消息对象
     :return:
     """
+    from_user = message.from_user
+    if not from_user:
+        await bot.reply_to(message, "无法识别消息发送者")
+        return False
+
+    raw_bot_id = BotSetting.bot_id
+    if raw_bot_id is None:
+        await bot.reply_to(message, "机器人配置错误：bot_id 无效")
+        return False
+
+    try:
+        bot_id = int(raw_bot_id)
+    except Exception:
+        await bot.reply_to(message, "机器人配置错误：bot_id 无效")
+        return False
+
     bot_can_delete = await has_group_admin_permission(
         bot,
         message.chat.id,
-        BotSetting.bot_id,
+        bot_id,
         required_permission="can_delete_messages",
         default_when_missing=False,
         allow_bot_admin=False,
@@ -54,7 +72,7 @@ async def check_permissions(bot, message: types.Message):
     user_can_delete = await has_group_admin_permission(
         bot,
         message.chat.id,
-        message.from_user.id,
+        from_user.id,
         required_permission="can_delete_messages",
         default_when_missing=False,
         allow_bot_admin=True,
@@ -65,6 +83,37 @@ async def check_permissions(bot, message: types.Message):
     return True
 
 
+def _normalize_command_name(command: str) -> str:
+    if not command:
+        return ""
+    normalized = command.strip()
+    if not normalized:
+        return ""
+    if normalized[0] in ("/", "\\"):
+        normalized = normalized[1:]
+    if "@" in normalized:
+        normalized = normalized.split("@", 1)[0]
+    return normalized.lower()
+
+
+def _get_sanitized_locklist(chat_id, persist: bool = True):
+    locklist = BotElara.get(str(chat_id), []) or []
+    sanitized = []
+    for command in locklist:
+        normalized = _normalize_command_name(str(command))
+        if (
+            not normalized
+            or normalized in NON_LOCKABLE_COMMANDS
+            or normalized in sanitized
+        ):
+            continue
+        sanitized.append(normalized)
+
+    if persist and sanitized != locklist:
+        BotElara.set(str(chat_id), sanitized)
+    return sanitized
+
+
 def batch_add_to_locklist(chat_id, cmd):
     """
     批量添加命令到锁定列表
@@ -72,17 +121,28 @@ def batch_add_to_locklist(chat_id, cmd):
     :param cmd: 命令列表
     :return: 添加结果
     """
-    locklist = BotElara.get(str(chat_id), []) or []
+    locklist = _get_sanitized_locklist(chat_id)
     added = []
     already_exist = []
+    not_lockable = []
     for command in cmd:
-        if command not in locklist:
-            locklist.append(command)
-            added.append(command)
+        normalized = _normalize_command_name(command)
+        if not normalized:
+            continue
+        if normalized in NON_LOCKABLE_COMMANDS:
+            not_lockable.append(normalized)
+            continue
+        if normalized not in locklist:
+            locklist.append(normalized)
+            added.append(normalized)
         else:
-            already_exist.append(command)
+            already_exist.append(normalized)
     BotElara.set(str(chat_id), locklist)
-    return {"added": added, "already_exist": already_exist}
+    return {
+        "added": added,
+        "already_exist": already_exist,
+        "not_lockable": not_lockable,
+    }
 
 
 def batch_remove_from_locklist(chat_id, cmd):
@@ -92,15 +152,18 @@ def batch_remove_from_locklist(chat_id, cmd):
     :param cmd: 命令列表
     :return: 删除结果
     """
-    locklist = BotElara.get(str(chat_id), []) or []
+    locklist = _get_sanitized_locklist(chat_id)
     removed = []
     not_found = []
     for command in cmd:
-        if command in locklist:
-            locklist.remove(command)
-            removed.append(command)
+        normalized = _normalize_command_name(command)
+        if not normalized:
+            continue
+        if normalized in locklist:
+            locklist.remove(normalized)
+            removed.append(normalized)
         else:
-            not_found.append(command)
+            not_found.append(normalized)
     BotElara.set(str(chat_id), locklist)
     return {"removed": removed, "not_found": not_found}
 
@@ -119,7 +182,9 @@ async def handle_lock_command(bot, message: types.Message, cmd: list):
     result = batch_add_to_locklist(message.chat.id, cmd)
     await bot.reply_to(
         message,
-        f"批量添加结果: 添加成功 `{result['added']}`，已存在 `{result['already_exist']}`",
+        "批量添加结果: "
+        f"添加成功 `{result['added']}`，已存在 `{result['already_exist']}`，"
+        f"不可锁定 `{result['not_lockable']}`",
         parse_mode="Markdown",
     )
 
@@ -150,7 +215,7 @@ async def handle_list_command(bot, message: types.Message):
     :param message: 消息对象
     :return:
     """
-    result = BotElara.get(str(message.chat.id))
+    result = _get_sanitized_locklist(message.chat.id)
     if not result:
         await bot.reply_to(message, "本群未锁定任何命令")
     else:
@@ -167,7 +232,7 @@ def _extract_command_name(text: str) -> str:
         return ""
     if "@" in raw_command:
         raw_command = raw_command.split("@", 1)[0]
-    return raw_command.lower()
+    return _normalize_command_name(raw_command)
 
 
 async def _safe_delete_message_later(
@@ -211,7 +276,10 @@ async def register_handlers(bot, middleware, plugin_name):
         if not command_name:
             return True
 
-        lock_list = BotElara.get(str(message.chat.id), []) or []
+        if command_name in NON_LOCKABLE_COMMANDS:
+            return True
+
+        lock_list = _get_sanitized_locklist(message.chat.id)
         if command_name not in lock_list:
             return True
 
