@@ -4,6 +4,7 @@
 # @File    : lock.py
 # @Software: PyCharm
 import asyncio
+import re
 
 from telebot import types
 from loguru import logger
@@ -31,6 +32,7 @@ __command_help__ = {
 }
 
 NON_LOCKABLE_COMMANDS = {"plugin_settings", "lock", "unlock", "list"}
+VALID_COMMAND_PATTERN = re.compile(r"^[a-z_]+$")
 
 
 # ==================== 核心功能 ====================
@@ -96,6 +98,10 @@ def _normalize_command_name(command: str) -> str:
     return normalized.lower()
 
 
+def _is_valid_command_name(command: str) -> bool:
+    return bool(VALID_COMMAND_PATTERN.fullmatch(command or ""))
+
+
 def _get_sanitized_locklist(chat_id, persist: bool = True):
     locklist = BotElara.get(str(chat_id), []) or []
     sanitized = []
@@ -104,6 +110,7 @@ def _get_sanitized_locklist(chat_id, persist: bool = True):
         if (
             not normalized
             or normalized in NON_LOCKABLE_COMMANDS
+            or not _is_valid_command_name(normalized)
             or normalized in sanitized
         ):
             continue
@@ -125,9 +132,13 @@ def batch_add_to_locklist(chat_id, cmd):
     added = []
     already_exist = []
     not_lockable = []
+    invalid_format = []
     for command in cmd:
         normalized = _normalize_command_name(command)
         if not normalized:
+            continue
+        if not _is_valid_command_name(normalized):
+            invalid_format.append(normalized)
             continue
         if normalized in NON_LOCKABLE_COMMANDS:
             not_lockable.append(normalized)
@@ -142,6 +153,7 @@ def batch_add_to_locklist(chat_id, cmd):
         "added": added,
         "already_exist": already_exist,
         "not_lockable": not_lockable,
+        "invalid_format": invalid_format,
     }
 
 
@@ -155,9 +167,13 @@ def batch_remove_from_locklist(chat_id, cmd):
     locklist = _get_sanitized_locklist(chat_id)
     removed = []
     not_found = []
+    invalid_format = []
     for command in cmd:
         normalized = _normalize_command_name(command)
         if not normalized:
+            continue
+        if not _is_valid_command_name(normalized):
+            invalid_format.append(normalized)
             continue
         if normalized in locklist:
             locklist.remove(normalized)
@@ -165,7 +181,11 @@ def batch_remove_from_locklist(chat_id, cmd):
         else:
             not_found.append(normalized)
     BotElara.set(str(chat_id), locklist)
-    return {"removed": removed, "not_found": not_found}
+    return {
+        "removed": removed,
+        "not_found": not_found,
+        "invalid_format": invalid_format,
+    }
 
 
 async def handle_lock_command(bot, message: types.Message, cmd: list):
@@ -184,7 +204,8 @@ async def handle_lock_command(bot, message: types.Message, cmd: list):
         message,
         "批量添加结果: "
         f"添加成功 `{result['added']}`，已存在 `{result['already_exist']}`，"
-        f"不可锁定 `{result['not_lockable']}`",
+        f"不可锁定 `{result['not_lockable']}`，"
+        f"格式非法 `{result['invalid_format']}`",
         parse_mode="Markdown",
     )
 
@@ -203,7 +224,9 @@ async def handle_unlock_command(bot, message: types.Message, cmd: list):
     result = batch_remove_from_locklist(message.chat.id, cmd)
     await bot.reply_to(
         message,
-        f"批量删除结果: 删除成功 `{result['removed']}`，不存在 `{result['not_found']}`",
+        "批量删除结果: "
+        f"删除成功 `{result['removed']}`，不存在 `{result['not_found']}`，"
+        f"格式非法 `{result['invalid_format']}`",
         parse_mode="Markdown",
     )
 
