@@ -184,6 +184,14 @@ class PluginMiddleware:
                         continue
                 logger.debug(f"  → 执行 {handler.plugin}.{handler.name}")
                 callback_result = await handler.callback(bot, message)
+
+                # callback 返回 True 代表仅检查后放行，不视为命令被消费
+                if callback_result is True:
+                    if handler.stop_propagation:
+                        logger.debug(f"  ⛔ {handler.plugin} 阻止了后续处理器")
+                        break
+                    continue
+
                 executed_count += 1
 
                 # 记录统计
