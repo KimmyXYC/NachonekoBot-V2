@@ -20,6 +20,7 @@ from app.plugin_system.plugin_settings import (
     get_toggleable_plugins,
     get_toggleable_jobs,
 )
+from app.security.permissions import is_bot_admin
 from app.scheduler import scheduler
 
 StepCache = StateMemoryStorage()
@@ -82,7 +83,9 @@ class BotRunner:
 
         # ==================== 插件管理命令 ====================
         @bot.message_handler(
-            func=lambda m: m.from_user.id in BotConfig["admin"]["id"],
+            func=lambda m: (
+                bool(getattr(m, "from_user", None)) and is_bot_admin(m.from_user.id)
+            ),
             commands=["plugin"],
         )
         async def handle_plugin_command(message: types.Message):

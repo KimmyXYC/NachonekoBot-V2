@@ -13,22 +13,20 @@
 from typing import List, Tuple, Dict
 from loguru import logger
 from telebot import types
-from utils.yaml import BotConfig
+from app.security.permissions import has_group_admin_permission
 
 
 async def has_change_info_permission(bot, chat_id: int, user_id: int) -> bool:
     """检查用户是否具备"更改群信息"权限（群主或管理员可更改信息）。"""
     try:
-        if user_id in BotConfig["admin"]["id"]:
-            return True
-        member = await bot.get_chat_member(chat_id, user_id)
-        status = getattr(member, "status", None)
-        if status == "creator":
-            return True
-        if status == "administrator":
-            # TeleBot ChatMember 对象的权限字段
-            return bool(getattr(member, "can_change_info", True))
-        return False
+        return await has_group_admin_permission(
+            bot,
+            chat_id,
+            user_id,
+            required_permission="can_change_info",
+            default_when_missing=True,
+            allow_bot_admin=True,
+        )
     except Exception as e:
         logger.error(f"检查群权限失败 chat={chat_id}, user={user_id}: {e}")
         return False

@@ -8,6 +8,7 @@ import asyncio
 from telebot import types
 from loguru import logger
 from app.utils import command_error_msg
+from app.security.permissions import has_group_admin_permission
 
 from utils.elaradb import BotElara
 from setting.telegrambot import BotSetting
@@ -38,15 +39,27 @@ async def check_permissions(bot, message: types.Message):
     :param message: 消息对象
     :return:
     """
-    bot_member = await bot.get_chat_member(message.chat.id, BotSetting.bot_id)
-    if not (bot_member.status == "administrator" and bot_member.can_delete_messages):
+    bot_can_delete = await has_group_admin_permission(
+        bot,
+        message.chat.id,
+        BotSetting.bot_id,
+        required_permission="can_delete_messages",
+        default_when_missing=False,
+        allow_bot_admin=False,
+    )
+    if not bot_can_delete:
         await bot.reply_to(message, "请先将机器人设置为管理员并赋予删除消息权限")
         return False
-    chat_member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    if not (
-        (chat_member.status == "administrator" and chat_member.can_delete_messages)
-        or chat_member.status == "creator"
-    ):
+
+    user_can_delete = await has_group_admin_permission(
+        bot,
+        message.chat.id,
+        message.from_user.id,
+        required_permission="can_delete_messages",
+        default_when_missing=False,
+        allow_bot_admin=True,
+    )
+    if not user_can_delete:
         await bot.reply_to(message, "您无权使用此功能")
         return False
     return True

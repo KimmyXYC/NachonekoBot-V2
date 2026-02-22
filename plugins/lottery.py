@@ -10,6 +10,7 @@ from typing import Dict, Set
 
 from loguru import logger
 from telebot import types
+from app.security.permissions import has_group_admin_permission
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "lottery"
@@ -67,12 +68,7 @@ async def _delete_message_later(bot, chat_id: int, message_id: int, seconds: int
 
 
 async def _is_admin(bot, chat_id: int, user_id: int) -> bool:
-    try:
-        member = await bot.get_chat_member(chat_id, user_id)
-        return getattr(member, "status", None) in ("creator", "administrator")
-    except Exception as e:
-        logger.debug(f"get_chat_member failed: {e}")
-        return False
+    return await has_group_admin_permission(bot, chat_id, user_id)
 
 
 async def _lottery_end(bot, chat_id: int):

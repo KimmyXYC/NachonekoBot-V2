@@ -8,7 +8,7 @@ import psutil
 import platform
 from telebot import types
 from loguru import logger
-from utils.yaml import BotConfig
+from app.security.permissions import is_bot_admin
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "status"
@@ -70,7 +70,9 @@ async def register_handlers(bot, middleware, plugin_name):
         priority=50,
         stop_propagation=True,
         chat_types=["private", "group", "supergroup"],
-        func=lambda m: m.from_user.id in BotConfig["admin"]["id"],
+        func=lambda m: (
+            bool(getattr(m, "from_user", None)) and is_bot_admin(m.from_user.id)
+        ),
     )
 
     logger.info(
