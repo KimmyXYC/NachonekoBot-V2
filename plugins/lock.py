@@ -3,6 +3,8 @@
 # @Author  : KimmyXYC
 # @File    : lock.py
 # @Software: PyCharm
+import asyncio
+
 from telebot import types
 from loguru import logger
 from app.utils import command_error_msg
@@ -155,8 +157,11 @@ def _extract_command_name(text: str) -> str:
     return raw_command.lower()
 
 
-async def _safe_delete_message(bot, chat_id: int, message_id: int):
+async def _safe_delete_message_later(
+    bot, chat_id: int, message_id: int, delay_seconds: float = 0.5
+):
     try:
+        await asyncio.sleep(delay_seconds)
         await bot.delete_message(chat_id, message_id)
     except Exception as e:  # noqa: B902
         logger.debug(f"删除消息失败 chat_id={chat_id}, message_id={message_id}: {e}")
@@ -197,7 +202,9 @@ async def register_handlers(bot, middleware, plugin_name):
         if command_name not in lock_list:
             return True
 
-        await _safe_delete_message(bot, message.chat.id, message.message_id)
+        asyncio.create_task(
+            _safe_delete_message_later(bot, message.chat.id, message.message_id, 0.5)
+        )
         return False
 
     middleware.register_command_handler(
