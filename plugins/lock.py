@@ -32,7 +32,7 @@ __command_help__ = {
 }
 
 NON_LOCKABLE_COMMANDS = {"plugin_settings", "lock", "unlock", "list"}
-VALID_COMMAND_PATTERN = re.compile(r"^[a-z_]+$")
+VALID_COMMAND_PATTERN = re.compile(r"^[a-z0-9_]+$")
 
 
 # ==================== 核心功能 ====================
