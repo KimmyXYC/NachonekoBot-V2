@@ -6,6 +6,7 @@
 from datetime import datetime, UTC, timezone, timedelta
 import asyncio
 import aiohttp
+from typing import Any, cast
 from telebot import types
 from loguru import logger
 from binance.spot import Spot
@@ -17,6 +18,7 @@ try:
 
     CURL_CFFI_AVAILABLE = True
 except ImportError:
+    AsyncSession = None
     CURL_CFFI_AVAILABLE = False
     logger.warning(
         "curl_cffi 未安装，Mastercard 和 Visa 汇率查询可能失败。请运行: pip install curl_cffi"
@@ -45,6 +47,14 @@ FALLBACK_CHROME_VERSION = "136"
 
 # ==================== 核心功能 ====================
 API = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
+
+
+def get_utc_date_candidates(fmt: str) -> list[str]:
+    now_utc = datetime.now(UTC)
+    return [
+        now_utc.strftime(fmt),
+        (now_utc - timedelta(days=1)).strftime(fmt),
+    ]
 
 
 def get_exchange_rate_date() -> datetime:
@@ -254,7 +264,7 @@ async def fetch_mastercard_rate(
     使用 curl_cffi 模拟 Chrome 浏览器的 TLS 指纹以绕过 Akamai CDN 检测
     """
     try:
-        if not CURL_CFFI_AVAILABLE:
+        if not CURL_CFFI_AVAILABLE or AsyncSession is None:
             logger.error("curl_cffi 未安装，无法请求 Mastercard API")
             return {
                 "success": False,
@@ -265,33 +275,60 @@ async def fetch_mastercard_rate(
 
         api_endpoint = "https://www.mastercard.com/marketingservices/public/mccom-services/currency-conversions/conversion-rates"
         headers = await generate_headers()
-        params = {
-            "exchange_date": datetime.now().strftime("%Y-%m-%d"),
-            "transaction_currency": currency_from,
-            "cardholder_billing_currency": currency_to,
-            "bank_fee": 0,
-            "transaction_amount": amount,
-        }
-
-        logger.debug("请求Mastercard汇率 API: {}, params: {}", api_endpoint, params)
+        date_candidates = get_utc_date_candidates("%Y-%m-%d")
+        now_utc = datetime.now(UTC)
+        now_utc8 = now_utc.astimezone(timezone(timedelta(hours=8)))
+        logger.debug(
+            "Mastercard 日期候选(UTC): {}, 当前UTC: {}, 当前UTC+8: {}",
+            date_candidates,
+            now_utc.strftime("%Y-%m-%d %H:%M:%S"),
+            now_utc8.strftime("%Y-%m-%d %H:%M:%S"),
+        )
 
         # 获取Chrome版本并构建impersonate参数
         chrome_version = await fetch_chrome_version()
         impersonate_version = f"chrome{chrome_version}"
         logger.debug("使用TLS指纹版本: {}", impersonate_version)
 
-        # 使用 curl_cffi 的 AsyncSession 并模拟对应版本的 Chrome
         async with AsyncSession() as session:
-            response = await session.get(
-                api_endpoint,
-                headers=headers,
-                params=params,
-                timeout=10,
-                impersonate=impersonate_version,  # 关键：模拟对应版本的 Chrome TLS 指纹
-            )
+            result = None
+            for idx, exchange_date in enumerate(date_candidates):
+                params = {
+                    "exchange_date": exchange_date,
+                    "transaction_currency": currency_from,
+                    "cardholder_billing_currency": currency_to,
+                    "bank_fee": 0,
+                    "transaction_amount": amount,
+                }
+                logger.debug(
+                    "请求Mastercard汇率 API: {}, params: {}", api_endpoint, params
+                )
 
-            if response.status_code != 200:
-                logger.error("Mastercard API响应状态码: {}", response.status_code)
+                response = await session.get(
+                    api_endpoint,
+                    headers=headers,
+                    params=params,
+                    timeout=10,
+                    impersonate=cast(Any, impersonate_version),
+                )
+
+                if response.status_code == 200:
+                    result = response.json()
+                    break
+
+                logger.error(
+                    "Mastercard API响应状态码: {}, exchange_date: {}, body: {}",
+                    response.status_code,
+                    exchange_date,
+                    response.text[:300],
+                )
+                if response.status_code in (400, 401) and idx == 0:
+                    logger.warning(
+                        "Mastercard 使用UTC当日日期失败，回退到前一天重试: {}",
+                        date_candidates[1],
+                    )
+                    continue
+
                 return {
                     "success": False,
                     "rate": None,
@@ -299,7 +336,13 @@ async def fetch_mastercard_rate(
                     "error": f"Mastercard汇率获取失败 (HTTP {response.status_code})",
                 }
 
-            result = response.json()
+            if result is None:
+                return {
+                    "success": False,
+                    "rate": None,
+                    "converted_amount": None,
+                    "error": "Mastercard汇率获取失败",
+                }
 
         # 从响应中提取数据
         data = result.get("data", {})
@@ -348,7 +391,7 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
     注意: Visa API 的货币参数是反向的（fromCurr=目标货币, toCurr=来源货币）
     """
     try:
-        if not CURL_CFFI_AVAILABLE:
+        if not CURL_CFFI_AVAILABLE or AsyncSession is None:
             logger.error("curl_cffi 未安装，无法请求 Visa API")
             return {
                 "success": False,
@@ -359,39 +402,59 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
 
         api_endpoint = "https://usa.visa.com/cmsapi/fx/rates"
         headers = await generate_headers()
-
-        # 格式化日期为 MM/DD/YYYY
-        date_str = datetime.now().strftime("%m/%d/%Y")
-
-        # 注意: Visa API 的货币参数是反向的
-        params = {
-            "amount": amount,
-            "fee": 0,
-            "utcConvertedDate": date_str,
-            "exchangedate": date_str,
-            "fromCurr": currency_to,  # 反向：目标货币
-            "toCurr": currency_from,  # 反向：来源货币
-        }
-
-        logger.debug("请求Visa汇率 API: {}, params: {}", api_endpoint, params)
+        date_candidates = get_utc_date_candidates("%m/%d/%Y")
+        now_utc = datetime.now(UTC)
+        now_utc8 = now_utc.astimezone(timezone(timedelta(hours=8)))
+        logger.debug(
+            "Visa 日期候选(UTC): {}, 当前UTC: {}, 当前UTC+8: {}",
+            date_candidates,
+            now_utc.strftime("%Y-%m-%d %H:%M:%S"),
+            now_utc8.strftime("%Y-%m-%d %H:%M:%S"),
+        )
 
         # 获取Chrome版本并构建impersonate参数
         chrome_version = await fetch_chrome_version()
         impersonate_version = f"chrome{chrome_version}"
         logger.debug("使用TLS指纹版本: {}", impersonate_version)
 
-        # 使用 curl_cffi 的 AsyncSession 并模拟对应版本的 Chrome
         async with AsyncSession() as session:
-            response = await session.get(
-                api_endpoint,
-                headers=headers,
-                params=params,
-                timeout=10,
-                impersonate=impersonate_version,  # 关键：模拟对应版本的 Chrome TLS 指纹
-            )
+            result = None
+            for idx, date_str in enumerate(date_candidates):
+                params = {
+                    "amount": amount,
+                    "fee": 0,
+                    "utcConvertedDate": date_str,
+                    "exchangedate": date_str,
+                    "fromCurr": currency_to,
+                    "toCurr": currency_from,
+                }
+                logger.debug("请求Visa汇率 API: {}, params: {}", api_endpoint, params)
 
-            if response.status_code != 200:
-                logger.error("Visa API响应状态码: {}", response.status_code)
+                response = await session.get(
+                    api_endpoint,
+                    headers=headers,
+                    params=params,
+                    timeout=10,
+                    impersonate=cast(Any, impersonate_version),
+                )
+
+                if response.status_code == 200:
+                    result = response.json().get("originalValues")
+                    break
+
+                logger.error(
+                    "Visa API响应状态码: {}, exchange_date: {}, body: {}",
+                    response.status_code,
+                    date_str,
+                    response.text[:300],
+                )
+                if response.status_code in (400, 401) and idx == 0:
+                    logger.warning(
+                        "Visa 使用UTC当日日期失败，回退到前一天重试: {}",
+                        date_candidates[1],
+                    )
+                    continue
+
                 return {
                     "success": False,
                     "rate": None,
@@ -399,7 +462,13 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
                     "error": f"Visa汇率获取失败 (HTTP {response.status_code})",
                 }
 
-            result = response.json().get("originalValues")
+            if result is None:
+                return {
+                    "success": False,
+                    "rate": None,
+                    "converted_amount": None,
+                    "error": "Visa汇率获取失败",
+                }
 
         # 从响应中提取数据
         converted_amount = result.get("toAmountWithVisaRate")
@@ -664,7 +733,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     :param message: 消息对象
     :return:
     """
-    command_args = message.text.split()
+    command_args = (message.text or "").split()
     args = _normalize_bc_tokens(command_args)
 
     # 无参数时显示BTC和ETH的价格
