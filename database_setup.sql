@@ -39,6 +39,22 @@ CREATE TABLE IF NOT EXISTS speech_stats (
 CREATE INDEX IF NOT EXISTS idx_speech_stats_group_hour
 ON speech_stats (group_id, hour);
 
+-- Create dragon_king_daily table
+-- This table stores per-group daily dragon king and streak information
+CREATE TABLE IF NOT EXISTS dragon_king_daily (
+    group_id BIGINT NOT NULL,
+    stat_date DATE NOT NULL,
+    user_id BIGINT NOT NULL,
+    display_name TEXT NOT NULL,
+    total INTEGER NOT NULL,
+    streak_days INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (group_id, stat_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dragon_king_daily_group_user_date
+ON dragon_king_daily (group_id, user_id, stat_date DESC);
+
 -- Create scheduled_jobs table
 -- This table stores per-group scheduled job configs
 CREATE TABLE IF NOT EXISTS scheduled_jobs (
@@ -63,6 +79,7 @@ ON scheduled_jobs (job_name, enabled);
 -- GRANT ALL PRIVILEGES ON TABLE remake TO your_user;
 -- GRANT ALL PRIVILEGES ON TABLE xiatou TO your_user;
 -- GRANT ALL PRIVILEGES ON TABLE speech_stats TO your_user;
+-- GRANT ALL PRIVILEGES ON TABLE dragon_king_daily TO your_user;
 -- GRANT ALL PRIVILEGES ON TABLE scheduled_jobs TO your_user;
 
 -- Add comments to tables and columns for documentation
@@ -82,6 +99,15 @@ COMMENT ON COLUMN speech_stats.user_id IS 'Telegram user ID';
 COMMENT ON COLUMN speech_stats.hour IS 'Stat hour (bucketed) in local timezone';
 COMMENT ON COLUMN speech_stats.count IS 'Count of messages';
 COMMENT ON COLUMN speech_stats.display_name IS 'Last known display name';
+
+COMMENT ON TABLE dragon_king_daily IS 'Stores per-group daily dragon king winners and streak days';
+COMMENT ON COLUMN dragon_king_daily.group_id IS 'Telegram group ID';
+COMMENT ON COLUMN dragon_king_daily.stat_date IS 'Stat date of the cycle';
+COMMENT ON COLUMN dragon_king_daily.user_id IS 'Dragon king user ID';
+COMMENT ON COLUMN dragon_king_daily.display_name IS 'Dragon king display name';
+COMMENT ON COLUMN dragon_king_daily.total IS 'Total messages in the cycle';
+COMMENT ON COLUMN dragon_king_daily.streak_days IS 'Consecutive dragon king days';
+COMMENT ON COLUMN dragon_king_daily.created_at IS 'Record created time';
 
 COMMENT ON TABLE scheduled_jobs IS 'Stores per-group scheduled job configs';
 COMMENT ON COLUMN scheduled_jobs.group_id IS 'Telegram group ID';

@@ -31,9 +31,23 @@ __command_help__ = {
 __toggleable__ = True
 __scheduled_jobs__ = []
 
+DAY_CUTOFF_HOUR = 4
+
 
 def _get_tz():
     return pytz.timezone("Asia/Shanghai")
+
+
+def _get_cycle_start(now: datetime.datetime, cutoff_hour: int = DAY_CUTOFF_HOUR):
+    cycle_start = now.replace(
+        hour=cutoff_hour,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    if now < cycle_start:
+        cycle_start -= datetime.timedelta(days=1)
+    return cycle_start
 
 
 def _get_display_name(user: types.User) -> str:
@@ -79,18 +93,24 @@ def _parse_stats_args(text: str):
 def _get_time_range(n: int, unit: str):
     tz = _get_tz()
     now = datetime.datetime.now(tz)
-    end_time = now.replace(minute=0, second=0, microsecond=0)
+    end_time = now.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(
+        hours=1
+    )
 
     if unit == "h":
-        start_time = end_time - datetime.timedelta(hours=n - 1)
+        start_time = end_time - datetime.timedelta(hours=n)
     elif unit == "w":
-        start_time = (end_time - datetime.timedelta(days=n * 7 - 1)).replace(hour=0)
+        cycle_start = _get_cycle_start(now)
+        start_time = cycle_start - datetime.timedelta(days=n * 7 - 1)
     elif unit == "m":
-        start_time = (end_time - datetime.timedelta(days=n * 30 - 1)).replace(hour=0)
+        cycle_start = _get_cycle_start(now)
+        start_time = cycle_start - datetime.timedelta(days=n * 30 - 1)
     elif unit == "y":
-        start_time = (end_time - datetime.timedelta(days=n * 365 - 1)).replace(hour=0)
+        cycle_start = _get_cycle_start(now)
+        start_time = cycle_start - datetime.timedelta(days=n * 365 - 1)
     else:
-        start_time = (end_time - datetime.timedelta(days=n - 1)).replace(hour=0)
+        cycle_start = _get_cycle_start(now)
+        start_time = cycle_start - datetime.timedelta(days=n - 1)
 
     return start_time, end_time
 
@@ -127,7 +147,7 @@ async def _query_stats(
                    MAX(display_name) AS display_name,
                    SUM(count) AS total
             FROM speech_stats
-            WHERE group_id = $1 AND hour BETWEEN $2 AND $3
+            WHERE group_id = $1 AND hour >= $2 AND hour < $3
             GROUP BY user_id
             ORDER BY total DESC, display_name ASC
             LIMIT 20
@@ -140,7 +160,7 @@ async def _query_stats(
             """
             SELECT COALESCE(SUM(count), 0)
             FROM speech_stats
-            WHERE group_id = $1 AND hour BETWEEN $2 AND $3
+            WHERE group_id = $1 AND hour >= $2 AND hour < $3
             """,
             group_id,
             start_time,
@@ -163,7 +183,7 @@ async def _query_top_speaker(
                    MAX(display_name) AS display_name,
                    SUM(count) AS total
             FROM speech_stats
-            WHERE group_id = $1 AND hour BETWEEN $2 AND $3
+            WHERE group_id = $1 AND hour >= $2 AND hour < $3
             GROUP BY user_id
             ORDER BY total DESC, display_name ASC
             LIMIT 1
@@ -176,6 +196,56 @@ async def _query_top_speaker(
     except asyncpg.PostgresError as e:
         logger.error(f"[Stats][Postgres Error]: {e}")
         return None
+
+
+async def _query_dragon_king_daily(group_id: int, stat_date: datetime.date):
+    conn = BotDatabase.conn
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT user_id, display_name, total, streak_days
+            FROM dragon_king_daily
+            WHERE group_id = $1 AND stat_date = $2
+            """,
+            group_id,
+            stat_date,
+        )
+        return row
+    except asyncpg.PostgresError as e:
+        logger.error(f"[Stats][Postgres Error]: {e}")
+        return None
+
+
+async def _upsert_dragon_king_daily(
+    group_id: int,
+    stat_date: datetime.date,
+    user_id: int,
+    display_name: str,
+    total: int,
+    streak_days: int,
+):
+    conn = BotDatabase.conn
+    try:
+        await conn.execute(
+            """
+            INSERT INTO dragon_king_daily (group_id, stat_date, user_id, display_name, total, streak_days)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (group_id, stat_date)
+            DO UPDATE SET
+                user_id = EXCLUDED.user_id,
+                display_name = EXCLUDED.display_name,
+                total = EXCLUDED.total,
+                streak_days = EXCLUDED.streak_days
+            """,
+            group_id,
+            stat_date,
+            user_id,
+            display_name,
+            total,
+            streak_days,
+        )
+    except asyncpg.PostgresError as e:
+        logger.error(f"[Stats][Postgres Error]: {e}")
 
 
 async def handle_stats_command(bot, message: types.Message):
@@ -195,7 +265,8 @@ async def handle_stats_command(bot, message: types.Message):
     start_time, end_time = _get_time_range(n, unit)
     rows, total = await _query_stats(message.chat.id, start_time, end_time)
 
-    range_text = f"{start_time:%Y-%m-%d %H:%M} ~ {end_time:%Y-%m-%d %H:%M}"
+    display_end_time = end_time - datetime.timedelta(hours=1)
+    range_text = f"{start_time:%Y-%m-%d %H:%M} ~ {display_end_time:%Y-%m-%d %H:%M}"
     if not rows:
         await bot.reply_to(message, f"{title}\n统计区间: {range_text}\n\n暂无统计数据")
         return
@@ -243,16 +314,41 @@ async def handle_dragon_king_schedule(bot):
         except Exception:
             tz = _get_tz()
         now = datetime.datetime.now(tz)
-        start = now - datetime.timedelta(hours=24)
-        top_row = await _query_top_speaker(group_id, start, now)
+        cycle_end = _get_cycle_start(now)
+        cycle_start = cycle_end - datetime.timedelta(days=1)
+        stat_date = cycle_start.date()
+
+        top_row = await _query_top_speaker(group_id, cycle_start, cycle_end)
         if not top_row:
             continue
+
         display_name = top_row["display_name"]
+        user_id = int(top_row["user_id"])
         total = int(top_row["total"] or 0)
         if total <= 0:
             continue
+
+        prev_row = await _query_dragon_king_daily(
+            group_id, stat_date - datetime.timedelta(days=1)
+        )
+        streak_days = 1
+        if prev_row and int(prev_row["user_id"]) == user_id:
+            streak_days = int(prev_row["streak_days"] or 0) + 1
+
+        await _upsert_dragon_king_daily(
+            group_id,
+            stat_date,
+            user_id,
+            display_name,
+            total,
+            streak_days,
+        )
+
         try:
-            await bot.send_message(group_id, f"恭喜 {display_name} 获得本群🐉龙王标志")
+            await bot.send_message(
+                group_id,
+                f"恭喜 {display_name} 获得本群🐉龙王标志（已连任{streak_days}天）",
+            )
         except Exception as e:
             logger.error(f"[Stats] 发送龙王消息失败 group={group_id}: {e}")
 
