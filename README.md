@@ -6,10 +6,13 @@
 
 NachonekoBot is a multifunctional Telegram Bot with various useful and interesting features. It's designed to be easy to deploy and configure, with support for both standard Python installation and Docker deployment.
 
+This project can also serve as a generic, plugin-based bot template. It helps developers bootstrap new bots quickly and contributes reusable architecture patterns back to the open-source community.
+
 ## Features
 
 - Multi-language support
 - Modular plugin system
+- Reusable generic template for plugin-based bots
 - PostgreSQL database integration
 - Easy configuration with YAML and TOML files
 - Docker support for simple deployment
@@ -30,11 +33,19 @@ NachonekoBot is a multifunctional Telegram Bot with various useful and interesti
    cd NachonekoBot-V2
    ```
 
-2. Install dependencies using PDM:
-   ```bash
-   pip install pdm
-   pdm install
-   ```
+2. Install dependencies (choose one method):
+
+   - Using PDM:
+     ```bash
+     pip install pdm
+     pdm install
+     ```
+
+   - Using uv:
+     ```bash
+     pip install uv
+     uv sync
+     ```
 
 3. Set up PostgreSQL:
    - Install PostgreSQL if not already installed
@@ -62,9 +73,16 @@ NachonekoBot is a multifunctional Telegram Bot with various useful and interesti
    - `TELEGRAM_BOT_PROXY_ADDRESS`: (Optional) Proxy address for connecting to Telegram API, uncomment if needed
 
 6. Run the bot:
-   ```bash
-   pdm run python main.py
-   ```
+
+   - If you use PDM:
+     ```bash
+     pdm run python main.py
+     ```
+
+   - If you use uv:
+     ```bash
+     uv run python main.py
+     ```
 
 ### Docker Installation
 
@@ -242,6 +260,8 @@ The following data is persisted:
 - Disable at boot: `sudo systemctl disable nachonekobot.service`
 
 ## Contributing
+
+By sharing a reusable bot template and plugin architecture, this project aims to lower the barrier for new bot projects and create practical value for the open-source community.
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 

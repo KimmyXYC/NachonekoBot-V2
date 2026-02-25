@@ -6,10 +6,13 @@
 
 NachonekoBot 是一个多功能的 Telegram 机器人，具有各种实用和有趣的功能。它设计为易于部署和配置，同时支持标准 Python 安装和 Docker 部署。
 
+本项目也可作为一个通用的插件化机器人模板，帮助开发者快速搭建新机器人，并将可复用的架构实践回馈给开源社区。
+
 ## 功能特点
 
 - 多语言支持
 - 模块化插件系统
+- 可复用的通用插件化机器人模板
 - PostgreSQL 数据库集成
 - 使用 YAML 和 TOML 文件进行简单配置
 - 支持 Docker 简化部署
@@ -30,11 +33,19 @@ NachonekoBot 是一个多功能的 Telegram 机器人，具有各种实用和有
    cd NachonekoBot-V2
    ```
 
-2. 使用 PDM 安装依赖：
-   ```bash
-   pip install pdm
-   pdm install
-   ```
+2. 安装依赖（任选一种方式）：
+
+   - 使用 PDM：
+     ```bash
+     pip install pdm
+     pdm install
+     ```
+
+   - 使用 uv：
+     ```bash
+     pip install uv
+     uv sync
+     ```
 
 3. 设置 PostgreSQL：
    - 如果尚未安装，请安装 PostgreSQL
@@ -62,9 +73,16 @@ NachonekoBot 是一个多功能的 Telegram 机器人，具有各种实用和有
    - `TELEGRAM_BOT_PROXY_ADDRESS`：（可选）连接到 Telegram API 的代理地址，如需使用请取消注释
 
 6. 运行机器人：
-   ```bash
-   pdm run python main.py
-   ```
+
+   - 如果使用 PDM：
+     ```bash
+     pdm run python main.py
+     ```
+
+   - 如果使用 uv：
+     ```bash
+     uv run python main.py
+     ```
 
 ### Docker 安装
 
@@ -242,6 +260,8 @@ database:
 - 开机禁用：`sudo systemctl disable nachonekobot.service`
 
 ## 贡献
+
+通过提供可复用的机器人模板和插件化架构，本项目希望降低新项目的启动门槛，并为开源社区持续沉淀可落地的实践价值。
 
 欢迎贡献！请随时提交 Pull Request。
 
