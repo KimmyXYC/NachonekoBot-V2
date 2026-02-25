@@ -20,6 +20,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "群组命令锁定管理"
 __commands__ = ["lock", "unlock", "list"]
+__command_category__ = "admin"
+__command_order__ = {"lock": 310, "unlock": 320, "list": 330}
 __command_descriptions__ = {
     "lock": "锁定群组中的命令",
     "unlock": "解锁群组中的命令",

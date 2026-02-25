@@ -28,6 +28,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "/$ 与 \\$ 开头的动作引用插件"
 __commands__ = ["$"]  # 仅用于展示，实际通过 message handler 拦截
+__command_category__ = "misc"
+__command_order__ = {"$": 900}
 __toggleable__ = True  # 支持在群组中开关
 
 

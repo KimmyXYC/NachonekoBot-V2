@@ -19,6 +19,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "群聊发言统计排行（支持日/周/月/年与自定义时间范围）"
 __commands__ = ["stats"]
+__command_category__ = "utility"
+__command_order__ = {"stats": 520}
 __command_descriptions__ = {"stats": "查看群聊发言排行榜"}
 __command_help__ = {
     "stats": "/stats - 今日统计\n"

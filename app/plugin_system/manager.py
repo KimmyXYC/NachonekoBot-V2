@@ -15,6 +15,18 @@ from .models import LocalPlugin, plugins_path
 from utils.postgres import BotDatabase
 
 
+COMMAND_CATEGORY_PRIORITY = {
+    "core": 0,
+    "network": 10,
+    "query": 20,
+    "tool": 30,
+    "admin": 40,
+    "fun": 50,
+    "utility": 60,
+    "misc": 99,
+}
+
+
 class PluginManager:
     """插件管理器"""
 
@@ -65,7 +77,7 @@ class PluginManager:
         if not plugins_path.exists():
             return updates
 
-        for file in os.listdir(plugins_path):
+        for file in sorted(os.listdir(plugins_path), key=str.lower):
             if file.endswith(".py") or file.endswith(".py.disabled"):
                 plugin_name = file.replace(".py.disabled", "").replace(".py", "")
                 if plugin_name == "__init__":
@@ -130,7 +142,7 @@ class PluginManager:
 
         updated_versions = False
 
-        for file in os.listdir(plugins_path):
+        for file in sorted(os.listdir(plugins_path), key=str.lower):
             if file.endswith(".py") or file.endswith(".py.disabled"):
                 plugin_name = file.replace(".py.disabled", "").replace(".py", "")
                 if plugin_name == "__init__":
@@ -297,7 +309,9 @@ class PluginManager:
                 try:
                     if getattr(module, "__toggleable__", False):
                         await BotDatabase.ensure_plugin_column(plugin.name)
-                        display_name = getattr(module, "__display_name__", None)
+                        display_name = getattr(module, "__display_name__", plugin.name)
+                        if not isinstance(display_name, str):
+                            display_name = plugin.name
                         self.middleware.mark_toggleable(plugin.name, display_name)
                         logger.info(
                             f"🔧 插件 {plugin.name} 已注册为可开关，并确保 settings 列存在"
@@ -396,12 +410,23 @@ class PluginManager:
                     # 获取命令描述映射
                     command_descriptions = {}
                     command_help_texts = {}
+                    command_orders = {}
 
                     if hasattr(module, "__command_descriptions__"):
                         command_descriptions = module.__command_descriptions__
 
                     if hasattr(module, "__command_help__"):
                         command_help_texts = module.__command_help__
+
+                    if hasattr(module, "__command_order__"):
+                        command_orders = module.__command_order__
+
+                    category = getattr(module, "__command_category__", None)
+                    if not category:
+                        category = "misc"
+                    category = str(category).strip().lower()
+                    if category not in COMMAND_CATEGORY_PRIORITY:
+                        category = "misc"
 
                     # 为每个命令添加信息
                     for cmd in plugin_commands:
@@ -411,12 +436,25 @@ class PluginManager:
                                 "description": command_descriptions.get(cmd, ""),
                                 "help_text": command_help_texts.get(cmd, ""),
                                 "plugin": plugin.name,
+                                "category": category,
+                                "category_priority": COMMAND_CATEGORY_PRIORITY[
+                                    category
+                                ],
+                                "command_order": int(command_orders.get(cmd, 0)),
                             }
                         )
 
             except Exception as e:
                 logger.error(f"收集插件 {plugin.name} 命令信息时出错: {e}")
 
+        commands_info.sort(
+            key=lambda item: (
+                item["category_priority"],
+                item["command_order"],
+                item["command"],
+                item["plugin"],
+            )
+        )
         return commands_info
 
     def get_inline_commands_info(self) -> List[dict]:

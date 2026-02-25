@@ -14,6 +14,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "DNS API 查询（使用 MySSL API）"
 __commands__ = ["dnsapi"]
+__command_category__ = "network"
+__command_order__ = {"dnsapi": 45}
 __command_descriptions__ = {
     "dnsapi": "使用 API 查询 DNS 记录"
 }

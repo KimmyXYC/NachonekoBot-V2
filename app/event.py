@@ -6,6 +6,17 @@
 from telebot import types, formatting
 
 
+CATEGORY_TITLES = {
+    "network": "Network",
+    "query": "Query",
+    "tool": "Tools",
+    "admin": "Admin",
+    "fun": "Fun",
+    "utility": "Utility",
+    "misc": "Misc",
+}
+
+
 async def set_bot_commands(bot, plugin_manager):
     """
     动态构建并设置机器人命令
@@ -53,11 +64,20 @@ async def listen_help_command(bot, message: types.Message, plugin_manager):
     # 从插件收集帮助信息
     plugin_commands_info = plugin_manager.get_plugin_commands_info()
 
-    # 添加插件命令的帮助文本
+    # 按类别分组添加插件命令帮助
+    last_category = None
     for cmd_info in plugin_commands_info:
-        if cmd_info["help_text"]:
-            help_lines.append(formatting.mcite(cmd_info["help_text"]))
-            help_lines.append(formatting.mcite(""))  # 添加空行分隔
+        if not cmd_info["help_text"]:
+            continue
+
+        category = cmd_info.get("category", "misc")
+        if category != last_category:
+            title = CATEGORY_TITLES.get(category, category.title())
+            help_lines.append(formatting.mitalic(f"{title}:"))
+            last_category = category
+
+        help_lines.append(formatting.mcite(cmd_info["help_text"]))
+        help_lines.append(formatting.mcite(""))  # 添加空行分隔
 
     # 添加特殊功能说明
     help_lines.append("")

@@ -17,6 +17,8 @@ __version__ = "1.1.0"
 __author__ = "KimmyXYC"
 __description__ = "RDAP 域名、IP和ASN查询"
 __commands__ = ["rdap"]
+__command_category__ = "network"
+__command_order__ = {"rdap": 70}
 __command_descriptions__ = {"rdap": "查询 RDAP 信息"}
 __command_help__ = {
     "rdap": "/rdap [Domain/IP/ASN] - 查询 RDAP 信息\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\n支持格式：域名(example.com)、IP地址(1.1.1.1)、ASN(AS13335或13335)"

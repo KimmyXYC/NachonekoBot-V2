@@ -15,6 +15,8 @@ __version__ = "1.1.0"
 __author__ = "KimmyXYC"
 __description__ = "TCP 端口连通性测试"
 __commands__ = ["tcping"]
+__command_category__ = "network"
+__command_order__ = {"tcping": 20}
 __command_descriptions__ = {"tcping": "TCP Ping 测试"}
 __command_help__ = {"tcping": "/tcping [IP/Domain]:[Port] - TCP Ping 测试"}
 

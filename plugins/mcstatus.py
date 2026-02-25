@@ -14,6 +14,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "Minecraft 服务器状态查询"
 __commands__ = ["mc", "mcje", "mcbe"]
+__command_category__ = "query"
+__command_order__ = {"mc": 140, "mcje": 141, "mcbe": 142}
 __command_descriptions__ = {
     "mc": "查询 Minecraft 服务器状态（自动识别 Java 版/基岩版）",
     "mcje": "查询 Minecraft Java 版服务器状态",

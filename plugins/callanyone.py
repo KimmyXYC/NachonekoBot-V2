@@ -14,6 +14,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "呼叫医生、MTF、警察等趣味功能"
 __commands__ = ["calldoctor", "callmtf", "callpolice"]
+__command_category__ = "fun"
+__command_order__ = {"calldoctor": 430, "callmtf": 431, "callpolice": 432}
 __command_descriptions__ = {
     "calldoctor": "呼叫医生",
     "callmtf": "呼叫 MTF",

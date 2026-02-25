@@ -17,6 +17,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "DNS 记录查询"
 __commands__ = ["dns"]
+__command_category__ = "network"
+__command_order__ = {"dns": 40}
 __command_descriptions__ = {"dns": "查询 DNS 记录"}
 __command_help__ = {
     "dns": "/dns [Domain] [Record_Type] - 查询 DNS 记录\nInline: @NachoNekoX_bot dns [Domain] [Record_Type]"

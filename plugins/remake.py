@@ -18,6 +18,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "转生系统"
 __commands__ = ["remake", "remake_data"]
+__command_category__ = "fun"
+__command_order__ = {"remake": 420, "remake_data": 421}
 __command_descriptions__ = {"remake": "转生", "remake_data": "查看转生数据"}
 __command_help__ = {
     "remake": "/remake - 转生",

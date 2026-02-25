@@ -16,6 +16,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "系统状态查询（仅限管理员）"
 __commands__ = ["status"]
+__command_category__ = "utility"
+__command_order__ = {"status": 510}
 __command_descriptions__ = {"status": "获取机器人状态信息"}
 __command_help__ = {"status": "/status - 获取机器人状态信息"}
 

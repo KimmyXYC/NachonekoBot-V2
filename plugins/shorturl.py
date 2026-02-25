@@ -19,6 +19,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "短链接生成工具"
 __commands__ = ["short"]
+__command_category__ = "tool"
+__command_order__ = {"short": 210}
 __command_descriptions__ = {"short": "生成短链接"}
 __command_help__ = {"short": "/short [URL] - 生成短链接"}
 

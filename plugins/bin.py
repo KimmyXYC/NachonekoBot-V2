@@ -15,6 +15,8 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "BIN 号码查询"
 __commands__ = ["bin"]
+__command_category__ = "query"
+__command_order__ = {"bin": 120}
 __command_descriptions__ = {"bin": "查询银行卡 BIN 信息"}
 __command_help__ = {
     "bin": "/bin [Card_BIN] - 查询银行卡 BIN 信息\nInline: @NachoNekoX_bot bin [Card_BIN]"

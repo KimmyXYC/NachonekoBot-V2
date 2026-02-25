@@ -17,6 +17,8 @@ __version__ = "2.0.0"
 __author__ = "KimmyXYC"
 __description__ = "路由追踪工具 (使用 nexttrace)"
 __commands__ = ["trace"]
+__command_category__ = "network"
+__command_order__ = {"trace": 30}
 __command_descriptions__ = {"trace": "追踪路由"}
 __command_help__ = {"trace": "/trace [IP/Domain] [协议类型(T/U)] [端口] - 追踪路由"}
 

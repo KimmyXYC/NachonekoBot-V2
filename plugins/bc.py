@@ -31,6 +31,8 @@ __version__ = "1.2.0"
 __author__ = "KimmyXYC"
 __description__ = "货币转换工具（支持法币多汇率源+加密货币）"
 __commands__ = ["bc"]
+__command_category__ = "query"
+__command_order__ = {"bc": 130}
 __command_descriptions__ = {"bc": "货币转换（支持法币多汇率源+加密货币）"}
 __command_help__ = {
     "bc": "/bc [Amount] [Currency_From] [Currency_To] - 货币转换（法币支持欧盟/银联/Mastercard/Visa多汇率源）\n"
