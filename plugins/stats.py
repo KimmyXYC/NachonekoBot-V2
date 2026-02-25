@@ -27,6 +27,9 @@ __command_help__ = {
     "/stats 3w - 3周统计\n"
     "/stats 2m - 2月统计\n"
     "/stats 1y - 1年统计\n"
+    "/stats 2026-02-25 - 指定日期统计\n"
+    "/stats 2026/02/25 - 指定日期统计\n"
+    "/stats 20260225 - 指定日期统计\n"
 }
 __toggleable__ = True
 __scheduled_jobs__ = []
@@ -60,9 +63,18 @@ def _get_display_name(user: types.User) -> str:
 def _parse_stats_args(text: str):
     parts = (text or "").split()
     if len(parts) <= 1:
-        return 1, "d", "今日活跃度排行"
+        return {"mode": "range", "n": 1, "unit": "d", "title": "今日活跃度排行"}
 
-    arg = parts[1].strip().lower()
+    arg_raw = parts[1].strip()
+    target_date = _parse_stats_date_arg(arg_raw)
+    if target_date:
+        return {
+            "mode": "date",
+            "date": target_date,
+            "title": f"{target_date:%Y-%m-%d} 活跃度排行",
+        }
+
+    arg = arg_raw.lower()
     m = re.match(r"^(\d+)([dhwmy])$", arg)
     if m:
         n = int(m.group(1))
@@ -87,7 +99,35 @@ def _parse_stats_args(text: str):
     else:
         title = "今日活跃度排行" if n == 1 else f"近{n}天活跃度排行"
 
-    return n, unit, title
+    return {"mode": "range", "n": n, "unit": unit, "title": title}
+
+
+def _parse_stats_date_arg(arg: str):
+    if not arg:
+        return None
+
+    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", arg)
+    if m:
+        try:
+            return datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
+
+    m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", arg)
+    if m:
+        try:
+            return datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
+
+    m = re.match(r"^(\d{4})(\d{2})(\d{2})$", arg)
+    if m:
+        try:
+            return datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
+
+    return None
 
 
 def _get_time_range(n: int, unit: str):
@@ -112,6 +152,23 @@ def _get_time_range(n: int, unit: str):
         cycle_start = _get_cycle_start(now)
         start_time = cycle_start - datetime.timedelta(days=n - 1)
 
+    return start_time, end_time
+
+
+def _get_date_time_range(target_date: datetime.date):
+    tz = _get_tz()
+    start_time = tz.localize(
+        datetime.datetime(
+            year=target_date.year,
+            month=target_date.month,
+            day=target_date.day,
+            hour=DAY_CUTOFF_HOUR,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+    )
+    end_time = start_time + datetime.timedelta(days=1)
     return start_time, end_time
 
 
@@ -253,16 +310,19 @@ async def handle_stats_command(bot, message: types.Message):
         await bot.reply_to(message, "该统计仅支持群组使用。")
         return
 
-    parsed = _parse_stats_args(message.text)
+    parsed = _parse_stats_args(message.text or "")
     if not parsed:
         await bot.reply_to(
             message,
-            "用法：/stats [Nh|Nd|Nw|Nm|Ny] 例如 /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y",
+            "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD] 例如 /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225",
         )
         return
 
-    n, unit, title = parsed
-    start_time, end_time = _get_time_range(n, unit)
+    title = parsed["title"]
+    if parsed["mode"] == "date":
+        start_time, end_time = _get_date_time_range(parsed["date"])
+    else:
+        start_time, end_time = _get_time_range(parsed["n"], parsed["unit"])
     rows, total = await _query_stats(message.chat.id, start_time, end_time)
 
     display_end_time = end_time - datetime.timedelta(hours=1)
