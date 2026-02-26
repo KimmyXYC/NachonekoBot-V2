@@ -409,7 +409,7 @@ async def handle_dragon_king_schedule(bot):
         try:
             await bot.send_message(
                 group_id,
-                f"恭喜 {display_name} 获得本群🐉龙王标志（已连任{streak_days}天）",
+                f"恭喜 {display_name} 获得本群🐉龙王标志（已蝉联{streak_days}天）",
             )
         except Exception as e:
             logger.error(f"[Stats] 发送龙王消息失败 group={group_id}: {e}")
