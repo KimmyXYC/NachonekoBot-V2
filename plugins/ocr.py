@@ -23,7 +23,7 @@ __command_category__ = "tool"
 __command_order__ = {"ocr": 230}
 __command_descriptions__ = {"ocr": "OCR 识别图片文字"}
 __command_help__ = {
-    "ocr": "/ocr [自定义提示词] - 回复图片/图片文件，或在图片 caption 中使用"
+    "ocr": "/ocr [自定义提示词] - OCR 识别图片文字，回复图片/图片文件，或在图片 caption 中使用"
 }
 
 DEFAULT_PROMPT = (
