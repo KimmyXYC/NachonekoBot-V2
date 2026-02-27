@@ -75,8 +75,9 @@ def _guess_mime_type(message: types.Message) -> str:
 
 async def _download_image_bytes(bot, source_message: types.Message) -> bytes | None:
     file_id = None
-    if getattr(source_message, "photo", None):
-        file_id = source_message.photo[-1].file_id
+    photos = getattr(source_message, "photo", None)
+    if photos:
+        file_id = photos[-1].file_id
     else:
         doc = getattr(source_message, "document", None)
         if doc and doc.mime_type and doc.mime_type.startswith("image/"):
@@ -171,6 +172,42 @@ async def _call_ocr_api(
 async def _process_ocr(
     bot, message: types.Message, source_message: types.Message, prompt: str
 ):
+    progress_msg = None
+    try:
+        progress_msg = await bot.reply_to(message, "OCR识别中...")
+    except Exception as e:
+        logger.warning(f"[OCR] 发送占位消息失败: {e}")
+
+    async def _update_result(text: str):
+        if progress_msg:
+            if len(text) <= 4096:
+                try:
+                    await bot.edit_message_text(
+                        text=text,
+                        chat_id=progress_msg.chat.id,
+                        message_id=progress_msg.message_id,
+                    )
+                    return
+                except Exception as e:
+                    logger.warning(f"[OCR] 编辑占位消息失败，将改为回复发送: {e}")
+            else:
+                try:
+                    await bot.edit_message_text(
+                        text=text[:4096],
+                        chat_id=progress_msg.chat.id,
+                        message_id=progress_msg.message_id,
+                    )
+                    remaining = text[4096:]
+                    while remaining:
+                        chunk = remaining[:4096]
+                        remaining = remaining[4096:]
+                        await bot.send_message(message.chat.id, chunk)
+                    return
+                except Exception as e:
+                    logger.warning(f"[OCR] 分段发送失败，将改为回复发送: {e}")
+
+        await bot.reply_to(message, text)
+
     conf = _get_ocr_config()
     final_prompt = (
         prompt.strip() if prompt and prompt.strip() else conf["default_prompt"]
@@ -178,7 +215,7 @@ async def _process_ocr(
 
     image_bytes = await _download_image_bytes(bot, source_message)
     if not image_bytes:
-        await bot.reply_to(message, "获取图片失败，请检查是否为图片或图片文件。")
+        await _update_result("获取图片失败，请检查是否为图片或图片文件。")
         return
 
     mime_type = _guess_mime_type(source_message)
@@ -187,10 +224,10 @@ async def _process_ocr(
         result = await _call_ocr_api(image_bytes, mime_type, final_prompt, conf)
         if not result:
             result = "识别完成，但未提取到文本内容。"
-        await bot.reply_to(message, result)
+        await _update_result(result)
     except Exception as e:
         logger.error(f"[OCR] 识别失败: {e}")
-        await bot.reply_to(message, f"OCR 识别失败：{e}")
+        await _update_result(f"OCR 识别失败：{e}")
 
 
 async def register_handlers(bot, middleware, plugin_name):
