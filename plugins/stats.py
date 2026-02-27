@@ -18,10 +18,13 @@ __display_name__ = "发言统计记录器"
 __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "群聊发言统计排行（支持日/周/月/年与自定义时间范围）"
-__commands__ = ["stats"]
+__commands__ = ["stats", "dragon"]
 __command_category__ = "utility"
-__command_order__ = {"stats": 520}
-__command_descriptions__ = {"stats": "查看群聊发言排行榜"}
+__command_order__ = {"stats": 520, "dragon": 521}
+__command_descriptions__ = {
+    "stats": "查看群聊发言排行榜",
+    "dragon": "查看龙王总榜",
+}
 __command_help__ = {
     "stats": "/stats - 今日统计\n"
     "/stats 5h - 5小时统计\n"
@@ -31,7 +34,8 @@ __command_help__ = {
     "/stats 1y - 1年统计\n"
     "/stats 2026-02-25 - 指定日期统计\n"
     "/stats 2026/02/25 - 指定日期统计\n"
-    "/stats 20260225 - 指定日期统计\n"
+    "/stats 20260225 - 指定日期统计\n",
+    "dragon": "/dragon - 龙王总榜\n",
 }
 __toggleable__ = True
 __scheduled_jobs__ = []
@@ -307,6 +311,52 @@ async def _upsert_dragon_king_daily(
         logger.error(f"[Stats][Postgres Error]: {e}")
 
 
+async def _query_dragon_king_leaderboard(group_id: int):
+    conn = BotDatabase.conn
+    try:
+        rows = await conn.fetch(
+            """
+            SELECT user_id,
+                   MAX(display_name) AS display_name,
+                   COUNT(*) AS total_wins,
+                   MAX(streak_days) AS max_streak
+            FROM dragon_king_daily
+            WHERE group_id = $1
+            GROUP BY user_id
+            ORDER BY total_wins DESC, max_streak DESC, display_name ASC
+            """,
+            group_id,
+        )
+        total_days = await conn.fetchval(
+            """
+            SELECT COUNT(*)
+            FROM dragon_king_daily
+            WHERE group_id = $1
+            """,
+            group_id,
+        )
+        return rows, int(total_days or 0)
+    except asyncpg.PostgresError as e:
+        logger.error(f"[Stats][Postgres Error]: {e}")
+        return [], 0
+
+
+async def _send_long_reply(
+    bot, message: types.Message, text: str, chunk_size: int = 4096
+):
+    content = text or ""
+    if len(content) <= chunk_size:
+        await bot.reply_to(message, content)
+        return
+
+    await bot.reply_to(message, content[:chunk_size])
+    remaining = content[chunk_size:]
+    while remaining:
+        chunk = remaining[:chunk_size]
+        remaining = remaining[chunk_size:]
+        await bot.send_message(message.chat.id, chunk)
+
+
 async def handle_stats_command(bot, message: types.Message):
     if message.chat.type not in ("group", "supergroup"):
         await bot.reply_to(message, "该统计仅支持群组使用。")
@@ -342,6 +392,27 @@ async def handle_stats_command(bot, message: types.Message):
 
     lines.extend(["", f"总计发言: {total}"])
     await bot.reply_to(message, "\n".join(lines))
+
+
+async def handle_dragon_command(bot, message: types.Message):
+    if message.chat.type not in ("group", "supergroup"):
+        await bot.reply_to(message, "该统计仅支持群组使用。")
+        return
+
+    rows, total_days = await _query_dragon_king_leaderboard(message.chat.id)
+    if not rows:
+        await bot.reply_to(message, "龙王总榜\n\n暂无龙王统计数据")
+        return
+
+    lines = ["龙王总榜", ""]
+    for idx, row in enumerate(rows, start=1):
+        name = row["display_name"]
+        total_wins = int(row["total_wins"] or 0)
+        max_streak = int(row["max_streak"] or 0)
+        lines.append(f"{idx}. {name} - 总次数 {total_wins}，最大蝉联 {max_streak} 天")
+
+    lines.extend(["", f"累计结算天数: {total_days}", f"上榜人数: {len(rows)}"])
+    await _send_long_reply(bot, message, "\n".join(lines))
 
 
 async def handle_stats_message(bot, message: types.Message):
@@ -433,6 +504,15 @@ async def register_handlers(bot, middleware, plugin_name):
     middleware.register_command_handler(
         commands=["stats"],
         callback=handle_stats_command,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=["group", "supergroup", "private"],
+    )
+
+    middleware.register_command_handler(
+        commands=["dragon"],
+        callback=handle_dragon_command,
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
