@@ -1,0 +1,15 @@
+{
+  "meta.description": "Keybox checker tool",
+  "command.description.check": "Check keybox.xml file",
+  "command.help.check": "/check - Check keybox.xml file",
+  "Banned successfully.": "Banned successfully.",
+  "File size is too large": "File size is too large",
+  "Local Bot API enabled but file path is not accessible.": "Local Bot API enabled but file path is not accessible.",
+  "No keybox has been banned.": "No keybox has been banned.",
+  "Please reply to a keybox.xml file.": "Please reply to a keybox.xml file.",
+  "This keybox has been banned.": "This keybox has been banned.",
+  "This keybox has not been banned.": "This keybox has not been banned.",
+  "Unbanned successfully.": "Unbanned successfully.",
+  "Usage: /ban_keybox <serial_number>\nExample: /ban_keybox 1a2b3c4d5e6f": "Usage: /ban_keybox <serial_number>\nExample: /ban_keybox 1a2b3c4d5e6f",
+  "Usage: /unban_keybox <serial_number>\nExample: /unban_keybox 1a2b3c4d5e6f": "Usage: /unban_keybox <serial_number>\nExample: /unban_keybox 1a2b3c4d5e6f"
+}

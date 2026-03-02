@@ -14,7 +14,7 @@ from typing import List, Tuple, Dict
 from loguru import logger
 from telebot import types
 from app.security.permissions import has_group_admin_permission
-from utils.i18n import language_button_label, supported_languages, t
+from utils.i18n import language_button_label, plugin_t, supported_languages, t
 
 
 async def has_change_info_permission(bot, chat_id: int, user_id: int) -> bool:
@@ -42,9 +42,14 @@ def build_keyboard_and_text(
     buttons = []
     for item in items:
         enabled = bool(item.get("enabled"))
-        label = str(item.get("label"))
         kind = str(item.get("kind"))
         key = str(item.get("key"))
+        label = str(item.get("label"))
+        if kind == "plugin":
+            display_key = "meta.display_name"
+            translated = plugin_t(key, display_key, lang)
+            if translated != display_key:
+                label = translated
         mark = "✅" if enabled else "❌"
         text_lines.append(f"• {mark} {label}")
         btn = types.InlineKeyboardButton(

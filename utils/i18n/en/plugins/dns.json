@@ -1,0 +1,5 @@
+{
+  "meta.description": "DNS record lookup",
+  "command.description.dns": "Query DNS records",
+  "command.help.dns": "/dns [Domain] [Record_Type] - Query DNS records\nInline: @NachoNekoX_bot dns [Domain] [Record_Type]"
+}

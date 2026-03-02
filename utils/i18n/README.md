@@ -11,6 +11,15 @@ Plugin language files are reserved under:
 - `utils/i18n/en/plugins/<plugin_name>.json`
 - `utils/i18n/zh-CN/plugins/<plugin_name>.json`
 
+Plugin locale value behavior:
+
+- For command metadata, use keys like:
+  - `command.description.<command>`
+  - `command.help.<command>`
+  - `meta.description`, `meta.display_name`
+- For runtime message text, keys can be the original source text directly.
+  - Middleware applies plugin translation on outgoing `reply_to/send_message/edit_message_text/answer_callback_query` text and common captions.
+
 JSON format example:
 
 ```json
@@ -49,3 +58,16 @@ Notes:
 
 - Use `--force` to overwrite existing `framework.json` from template.
 - The command also updates `utils/i18n/config.py` automatically.
+
+## Scaffold all plugin locale files
+
+Generate locale skeletons for every plugin:
+
+```bash
+python tools/scaffold_plugin_locales.py
+```
+
+This script scans `plugins/*.py` and merges extracted metadata and static outbound texts into:
+
+- `utils/i18n/en/plugins/*.json`
+- `utils/i18n/zh-CN/plugins/*.json`

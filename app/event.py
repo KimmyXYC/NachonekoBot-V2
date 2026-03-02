@@ -43,7 +43,7 @@ async def set_bot_commands(bot, plugin_manager):
     ]
 
     # 从插件收集命令
-    plugin_commands_info = plugin_manager.get_plugin_commands_info()
+    plugin_commands_info = plugin_manager.get_plugin_commands_info("en")
 
     # 添加插件命令
     for cmd_info in plugin_commands_info:
@@ -83,7 +83,7 @@ async def listen_help_command(bot, message: types.Message, plugin_manager, lang:
     help_lines.append(formatting.mcite(""))  # 添加空行分隔
 
     # 从插件收集帮助信息
-    plugin_commands_info = plugin_manager.get_plugin_commands_info()
+    plugin_commands_info = plugin_manager.get_plugin_commands_info(lang)
 
     # 按类别分组添加插件命令帮助
     last_category = None

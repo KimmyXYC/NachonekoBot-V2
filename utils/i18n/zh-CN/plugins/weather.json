@@ -1,0 +1,5 @@
+{
+  "meta.description": "天气查询",
+  "command.description.weather": "查询天气信息",
+  "command.help.weather": "/weather [City_Name] - 查询天气信息"
+}

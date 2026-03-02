@@ -89,6 +89,31 @@ async def get_message_language(message) -> str:
     return normalize_language(await BotDatabase.get_group_language(chat.id))
 
 
+async def get_callback_language(call) -> str:
+    from utils.postgres import BotDatabase
+
+    if not call or not getattr(call, "message", None):
+        return DEFAULT_LANGUAGE
+
+    chat = call.message.chat
+    if chat.type == "private":
+        user_id = getattr(getattr(call, "from_user", None), "id", None)
+        if not user_id:
+            return DEFAULT_LANGUAGE
+        return normalize_language(await BotDatabase.get_user_language(user_id))
+
+    return normalize_language(await BotDatabase.get_group_language(chat.id))
+
+
+async def get_inline_query_language(inline_query) -> str:
+    from utils.postgres import BotDatabase
+
+    user_id = getattr(getattr(inline_query, "from_user", None), "id", None)
+    if not user_id:
+        return DEFAULT_LANGUAGE
+    return normalize_language(await BotDatabase.get_user_language(user_id))
+
+
 def _load_plugin_locale(lang: str, plugin_name: str) -> Dict[str, str]:
     cache_key = f"{lang}:{plugin_name}"
     if cache_key in _PLUGIN_CACHE:

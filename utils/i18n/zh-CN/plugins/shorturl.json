@@ -1,0 +1,6 @@
+{
+  "meta.description": "短链接生成工具",
+  "command.description.short": "生成短链接",
+  "command.help.short": "/short [URL] - 生成短链接",
+  "生成失败, 后端地址未设置": "生成失败, 后端地址未设置"
+}

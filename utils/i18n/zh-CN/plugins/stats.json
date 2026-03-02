@@ -1,0 +1,11 @@
+{
+  "meta.description": "群聊发言统计排行（支持日/周/月/年与自定义时间范围）",
+  "meta.display_name": "发言统计记录器",
+  "command.description.stats": "查看群聊发言排行榜",
+  "command.description.dragon": "查看龙王总榜",
+  "command.help.stats": "/stats - 今日统计\n/stats 5h - 5小时统计\n/stats 4d - 4日统计\n/stats 3w - 3周统计\n/stats 2m - 2月统计\n/stats 1y - 1年统计\n/stats 2026-02-25 - 指定日期统计\n/stats 2026/02/25 - 指定日期统计\n/stats 20260225 - 指定日期统计\n",
+  "command.help.dragon": "/dragon - 龙王总榜\n",
+  "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD] 例如 /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225": "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD] 例如 /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225",
+  "该统计仅支持群组使用。": "该统计仅支持群组使用。",
+  "龙王总榜\n\n暂无龙王统计数据": "龙王总榜\n\n暂无龙王统计数据"
+}

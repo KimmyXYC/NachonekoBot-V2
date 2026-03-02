@@ -1,0 +1,7 @@
+{
+  "meta.description": "BIN lookup",
+  "command.description.bin": "Query bank card BIN information",
+  "command.help.bin": "/bin [Card_BIN] - Query bank card BIN information\nInline: @NachoNekoX_bot bin [Card_BIN]",
+  "出错了呜呜呜 ~ 无效的参数。请提供4到8位数字的BIN号码。": "Oops, invalid parameter. Please provide a 4 to 8 digit BIN.",
+  "请提供有效的BIN号码（4到8位数字）": "Please provide a valid BIN (4 to 8 digits)"
+}

@@ -1,0 +1,5 @@
+{
+  "meta.description": "系统状态查询（仅限管理员）",
+  "command.description.status": "获取机器人状态信息",
+  "command.help.status": "/status - 获取机器人状态信息"
+}

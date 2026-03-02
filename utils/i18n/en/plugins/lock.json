@@ -1,0 +1,14 @@
+{
+  "meta.description": "Group command lock management",
+  "command.description.lock": "Lock commands in this group",
+  "command.description.unlock": "Unlock commands in this group",
+  "command.description.list": "List locked commands in this group",
+  "command.help.lock": "/lock [Command] - Lock commands in this group",
+  "command.help.unlock": "/unlock [Command] - Unlock commands in this group",
+  "command.help.list": "/list - List locked commands in this group",
+  "您无权使用此功能": "You do not have permission to use this feature",
+  "无法识别消息发送者": "Unable to identify message sender",
+  "本群未锁定任何命令": "No commands are locked in this group",
+  "机器人配置错误：bot_id 无效": "Bot configuration error: bot_id is invalid",
+  "请先将机器人设置为管理员并赋予删除消息权限": "Please make the bot an admin and grant delete message permission first"
+}

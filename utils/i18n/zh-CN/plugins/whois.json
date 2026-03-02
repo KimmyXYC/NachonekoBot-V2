@@ -1,0 +1,5 @@
+{
+  "meta.description": "Whois 域名查询",
+  "command.description.whois": "查询 Whois 信息",
+  "command.help.whois": "/whois [Domain] - 查询 Whois 信息\nInline: @NachoNekoX_bot whois [Domain]"
+}

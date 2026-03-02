@@ -13,6 +13,12 @@ from loguru import logger
 from telebot import types
 from setting.telegrambot import BotSetting
 from utils.postgres import BotDatabase
+from utils.i18n import (
+    get_callback_language,
+    get_inline_query_language,
+    get_message_language,
+)
+from utils.i18n.runtime import make_localized_bot
 
 
 @dataclass
@@ -183,7 +189,10 @@ class PluginMiddleware:
                         )
                         continue
                 logger.debug(f"  → 执行 {handler.plugin}.{handler.name}")
-                callback_result = await handler.callback(bot, message)
+                lang = await get_message_language(message)
+                callback_result = await handler.callback(
+                    make_localized_bot(bot, handler.plugin, lang), message
+                )
 
                 # callback 返回 True 代表仅检查后放行，不视为命令被消费
                 if callback_result is True:
@@ -233,7 +242,10 @@ class PluginMiddleware:
                             f"⏭️ 跳过插件 {handler.plugin}（群 {message.chat.id} 已关闭）"
                         )
                         continue
-                await handler.callback(bot, message)
+                lang = await get_message_language(message)
+                await handler.callback(
+                    make_localized_bot(bot, handler.plugin, lang), message
+                )
                 executed_count += 1
 
                 if handler.stop_propagation:
@@ -394,7 +406,10 @@ class PluginMiddleware:
         executed_count = 0
         for handler in matched_handlers:
             try:
-                await handler.callback(bot, inline_query)
+                lang = await get_inline_query_language(inline_query)
+                await handler.callback(
+                    make_localized_bot(bot, handler.plugin, lang), inline_query
+                )
                 executed_count += 1
 
                 key = f"{handler.plugin}.{handler.name}"
@@ -439,7 +454,10 @@ class PluginMiddleware:
                         )
                         continue
 
-                await handler.callback(bot, call)
+                lang = await get_callback_language(call)
+                await handler.callback(
+                    make_localized_bot(bot, handler.plugin, lang), call
+                )
                 executed_count += 1
 
                 if handler.stop_propagation:

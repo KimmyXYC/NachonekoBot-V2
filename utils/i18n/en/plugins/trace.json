@@ -1,0 +1,11 @@
+{
+  "meta.description": "Traceroute tool (using nexttrace)",
+  "command.description.trace": "Trace route",
+  "command.help.trace": "/trace [IP/Domain] [Protocol(T/U)] [Port] - Trace route",
+  "❌ 无效的协议类型，请使用 T (TCP) 或 U (UDP)": "❌ Invalid protocol type. Use T (TCP) or U (UDP)",
+  "❌ 无效的目标地址，请输入有效的 IP 地址或域名": "❌ Invalid target address. Please enter a valid IP address or domain",
+  "❌ 未找到 nexttrace 命令，请先安装 nexttrace": "❌ nexttrace command not found, please install nexttrace first",
+  "❌ 端口号必须在 1-65535 之间": "❌ Port number must be between 1 and 65535",
+  "❌ 端口必须是数字": "❌ Port must be numeric",
+  "用法: /trace <目标地址> [T/U] [端口]\nT = TCP, U = UDP, 不指定则使用 ICMP\n示例: /trace 1.1.1.1\n      /trace example.com T 443": "Usage: /trace <target> [T/U] [port]\nT = TCP, U = UDP, ICMP is used if omitted\nExample: /trace 1.1.1.1\n      /trace example.com T 443"
+}

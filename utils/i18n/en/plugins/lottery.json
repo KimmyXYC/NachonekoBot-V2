@@ -1,0 +1,15 @@
+{
+  "meta.description": "Lottery system",
+  "command.description.lottery": "Lottery",
+  "command.help.lottery": "/lottery [Winners]/[Participants] [Keyword] [Title] - Lottery",
+  "人数必须是整数": "Participant count must be an integer",
+  "只有群管理员可以使用此命令。": "Only group admins can use this command.",
+  "奖品数、人数、关键字和标题不能为空": "Prize count, participant count, keyword, and title cannot be empty",
+  "奖品数、人数不能为空": "Prize count and participant count cannot be empty",
+  "奖品数不能超过人数": "Prize count cannot exceed participant count",
+  "强制开奖成功。": "Force draw completed successfully.",
+  "有抽奖活动正在进行，请稍后再试": "A lottery is currently running, please try again later",
+  "本群暂无正在进行的抽奖活动。": "No ongoing lottery in this group.",
+  "请在群组中使用该命令。": "Please use this command in a group.",
+  "请输入 奖品数、人数等参数 或者 强制开奖\n\n例如 `/lottery 1/10 参加 测试`": "Please enter parameters like prize count/participants, or use force draw\n\nExample: `/lottery 1/10 join test`"
+}

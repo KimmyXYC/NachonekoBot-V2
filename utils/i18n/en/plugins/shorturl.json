@@ -1,0 +1,6 @@
+{
+  "meta.description": "Short URL generator",
+  "command.description.short": "Generate short URLs",
+  "command.help.short": "/short [URL] - Generate short URL",
+  "生成失败, 后端地址未设置": "Generation failed, backend URL is not configured"
+}

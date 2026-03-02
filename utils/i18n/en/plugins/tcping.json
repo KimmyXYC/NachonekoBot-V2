@@ -1,0 +1,7 @@
+{
+  "meta.description": "TCP port connectivity test",
+  "command.description.tcping": "TCP ping test",
+  "command.help.tcping": "/tcping [IP/Domain]:[Port] - TCP ping test",
+  "❌ 无效的端口号。端口号应为1-65535之间的整数。": "❌ Invalid port number. Port must be an integer between 1 and 65535.",
+  "❌ 请提供目标主机和端口，格式: /tcping 主机:端口": "❌ Please provide target host and port in this format: /tcping host:port"
+}

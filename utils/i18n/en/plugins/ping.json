@@ -1,0 +1,7 @@
+{
+  "meta.description": "Ping network connectivity test",
+  "command.description.ping": "Ping test",
+  "command.help.ping": "/ping [IP/Domain] - Ping test",
+  "❌ 无效的目标地址。请提供有效的域名或IP地址。": "❌ Invalid target address. Please provide a valid domain or IP address.",
+  "请提供要 ping 的目标地址，例如: /ping example.com": "Please provide a target to ping, for example: /ping example.com"
+}

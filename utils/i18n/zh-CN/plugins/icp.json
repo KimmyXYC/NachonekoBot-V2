@@ -1,0 +1,5 @@
+{
+  "meta.description": "ICP 备案查询",
+  "command.description.icp": "查询域名 ICP 备案信息",
+  "command.help.icp": "/icp [Domain] - 查询域名 ICP 备案信息\nInline: @NachoNekoX_bot icp [Domain]"
+}

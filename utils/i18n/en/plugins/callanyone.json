@@ -1,0 +1,9 @@
+{
+  "meta.description": "Fun commands to call doctor, MTF, police, etc.",
+  "command.description.calldoctor": "Call doctor",
+  "command.description.callmtf": "Call MTF",
+  "command.description.callpolice": "Call police",
+  "command.help.calldoctor": "/calldoctor - Call doctor\nInline: @NachoNekoX_bot calldoctor",
+  "command.help.callmtf": "/callmtf - Call MTF\nInline: @NachoNekoX_bot callmtf",
+  "command.help.callpolice": "/callpolice - Call police\nInline: @NachoNekoX_bot callpolice"
+}

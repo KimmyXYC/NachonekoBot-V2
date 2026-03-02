@@ -1,0 +1,5 @@
+{
+  "meta.description": "System status query (admin only)",
+  "command.description.status": "Get bot status information",
+  "command.help.status": "/status - Get bot status information"
+}

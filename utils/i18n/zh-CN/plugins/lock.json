@@ -1,0 +1,14 @@
+{
+  "meta.description": "群组命令锁定管理",
+  "command.description.lock": "锁定群组中的命令",
+  "command.description.unlock": "解锁群组中的命令",
+  "command.description.list": "列出群组中被锁定的命令",
+  "command.help.lock": "/lock [Command] - 锁定群组中的命令",
+  "command.help.unlock": "/unlock [Command] - 解锁群组中的命令",
+  "command.help.list": "/list - 列出群组中被锁定的命令",
+  "您无权使用此功能": "您无权使用此功能",
+  "无法识别消息发送者": "无法识别消息发送者",
+  "本群未锁定任何命令": "本群未锁定任何命令",
+  "机器人配置错误：bot_id 无效": "机器人配置错误：bot_id 无效",
+  "请先将机器人设置为管理员并赋予删除消息权限": "请先将机器人设置为管理员并赋予删除消息权限"
+}

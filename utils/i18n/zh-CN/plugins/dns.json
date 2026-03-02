@@ -1,0 +1,5 @@
+{
+  "meta.description": "DNS 记录查询",
+  "command.description.dns": "查询 DNS 记录",
+  "command.help.dns": "/dns [Domain] [Record_Type] - 查询 DNS 记录\nInline: @NachoNekoX_bot dns [Domain] [Record_Type]"
+}

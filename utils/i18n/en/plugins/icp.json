@@ -1,0 +1,5 @@
+{
+  "meta.description": "ICP record lookup",
+  "command.description.icp": "Query domain ICP registration information",
+  "command.help.icp": "/icp [Domain] - Query domain ICP registration information\nInline: @NachoNekoX_bot icp [Domain]"
+}

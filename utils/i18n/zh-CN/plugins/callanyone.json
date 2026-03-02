@@ -1,0 +1,9 @@
+{
+  "meta.description": "呼叫医生、MTF、警察等趣味功能",
+  "command.description.calldoctor": "呼叫医生",
+  "command.description.callmtf": "呼叫 MTF",
+  "command.description.callpolice": "呼叫警察",
+  "command.help.calldoctor": "/calldoctor - 呼叫医生\nInline: @NachoNekoX_bot calldoctor",
+  "command.help.callmtf": "/callmtf - 呼叫 MTF\nInline: @NachoNekoX_bot callmtf",
+  "command.help.callpolice": "/callpolice - 呼叫警察\nInline: @NachoNekoX_bot callpolice"
+}

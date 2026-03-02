@@ -1,0 +1,5 @@
+{
+  "meta.description": "Weather query",
+  "command.description.weather": "Query weather information",
+  "command.help.weather": "/weather [City_Name] - Query weather information"
+}

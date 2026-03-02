@@ -13,6 +13,7 @@ from loguru import logger
 
 from .models import LocalPlugin, plugins_path
 from utils.postgres import BotDatabase
+from utils.i18n import plugin_t
 
 
 COMMAND_CATEGORY_PRIORITY = {
@@ -385,7 +386,7 @@ class PluginManager:
 
         logger.success("所有插件重新加载完成")
 
-    def get_plugin_commands_info(self):
+    def get_plugin_commands_info(self, lang: str = "en"):
         """
         从所有已加载的插件中收集命令信息
         返回: List of dicts with 'command', 'description', 'help_text'
@@ -430,11 +431,25 @@ class PluginManager:
 
                     # 为每个命令添加信息
                     for cmd in plugin_commands:
+                        desc_key = f"command.description.{cmd}"
+                        help_key = f"command.help.{cmd}"
+                        i18n_desc = plugin_t(plugin.name, desc_key, lang)
+                        i18n_help = plugin_t(plugin.name, help_key, lang)
+                        description = (
+                            i18n_desc
+                            if i18n_desc != desc_key
+                            else command_descriptions.get(cmd, "")
+                        )
+                        help_text = (
+                            i18n_help
+                            if i18n_help != help_key
+                            else command_help_texts.get(cmd, "")
+                        )
                         commands_info.append(
                             {
                                 "command": cmd,
-                                "description": command_descriptions.get(cmd, ""),
-                                "help_text": command_help_texts.get(cmd, ""),
+                                "description": description,
+                                "help_text": help_text,
                                 "plugin": plugin.name,
                                 "category": category,
                                 "category_priority": COMMAND_CATEGORY_PRIORITY[
@@ -457,7 +472,7 @@ class PluginManager:
         )
         return commands_info
 
-    def get_inline_commands_info(self) -> List[dict]:
+    def get_inline_commands_info(self, lang: str = "en") -> List[dict]:
         """从所有已加载插件中收集 Inline 命令信息。
 
         规则：
@@ -485,6 +500,10 @@ class PluginManager:
                 for cmd, help_text in help_map.items():
                     if not isinstance(help_text, str):
                         continue
+                    help_key = f"command.help.{cmd}"
+                    i18n_help = plugin_t(plugin.name, help_key, lang)
+                    if i18n_help != help_key:
+                        help_text = i18n_help
                     if "Inline:" not in help_text:
                         continue
 
