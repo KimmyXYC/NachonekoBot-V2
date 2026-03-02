@@ -8,7 +8,6 @@ from telebot import types
 from loguru import logger
 
 from app.utils import markdown_to_telegram_html, command_error_msg
-from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 from utils.yaml import BotConfig
 
 # ==================== 插件元数据 ====================
@@ -26,25 +25,21 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_icp_text(domain: str, lang: str) -> str:
+async def query_icp_text(domain: str, _t) -> str:
     """生成与 `/icp` 命令一致的输出文本，用于命令与 Inline 复用（HTML）。"""
     status, data = await icp_record_check(domain)
     if not status:
-        return markdown_to_telegram_html(
-            plugin_t(__plugin_name__, "error.request_failed", lang, reason=data)
-        )
+        return markdown_to_telegram_html(_t("error.request_failed", reason=data))
 
     if not data:
-        icp_info = plugin_t(__plugin_name__, "result.not_recorded", lang, domain=domain)
+        icp_info = _t("result.not_recorded", domain=domain)
     else:
         icp_info = ""
         for item in data:
             if not isinstance(item, dict):
                 continue
-            icp_info += plugin_t(
-                __plugin_name__,
+            icp_info += _t(
                 "result.record_item",
-                lang,
                 domain=item.get("domain", ""),
                 licence=item.get("mainLicence", ""),
                 unit_name=item.get("unitName", ""),
@@ -63,13 +58,13 @@ async def handle_icp_command(bot, message: types.Message):
     :return:
     """
     domain = message.text.split()[1]
-    lang = await get_message_language(message)
+    _t = bot.t
     msg = await bot.reply_to(
         message,
-        plugin_t(__plugin_name__, "status.icp_querying", lang, domain=domain),
+        _t("status.icp_querying", domain=domain),
         disable_web_page_preview=True,
     )
-    text = await query_icp_text(domain, lang)
+    text = await query_icp_text(domain, _t)
     await bot.edit_message_text(
         text, message.chat.id, msg.message_id, parse_mode="HTML"
     )
@@ -77,16 +72,16 @@ async def handle_icp_command(bot, message: types.Message):
 
 async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot icp [Domain]"""
-    lang = await get_inline_query_language(inline_query)
+    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     if len(tokens) != 2 or tokens[0].lower() != "icp":
-        usage = plugin_t(__plugin_name__, "inline.usage_text", lang)
+        usage = _t("inline.usage_text")
         result = types.InlineQueryResultArticle(
             id="icp_usage",
-            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
-            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
+            title=_t("inline.usage_title"),
+            description=_t("inline.usage_description"),
             input_message_content=types.InputTextMessageContent(usage),
         )
         await bot.answer_inline_query(
@@ -95,11 +90,11 @@ async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     domain = tokens[1]
-    result_text = await query_icp_text(domain, lang)
+    result_text = await query_icp_text(domain, _t)
     result = types.InlineQueryResultArticle(
         id=f"icp_{domain}",
-        title=plugin_t(__plugin_name__, "inline.result_title", lang, domain=domain),
-        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
+        title=_t("inline.result_title", domain=domain),
+        description=_t("inline.send_result_description"),
         input_message_content=types.InputTextMessageContent(
             result_text, parse_mode="HTML"
         ),

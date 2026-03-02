@@ -10,7 +10,6 @@ import aiohttp
 from telebot import types
 from loguru import logger
 from app.utils import command_error_msg
-from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "rdap"
@@ -355,10 +354,10 @@ async def handle_rdap_command(bot, message: types.Message):
     :param message: 消息对象
     """
     data = message.text.split()[1]
-    lang = await get_message_language(message)
+    _t = bot.t
     msg = await bot.reply_to(
         message,
-        plugin_t(__plugin_name__, "status.rdap_querying", lang, target=data),
+        _t("status.rdap_querying", target=data),
         disable_web_page_preview=True,
     )
     text = await query_rdap_text(data)
@@ -369,16 +368,16 @@ async def handle_rdap_command(bot, message: types.Message):
 
 async def handle_rdap_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot rdap [Domain/IP/ASN]"""
-    lang = await get_inline_query_language(inline_query)
+    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     if len(tokens) != 2 or tokens[0].lower() != "rdap":
-        usage = plugin_t(__plugin_name__, "inline.usage_text", lang)
+        usage = _t("inline.usage_text")
         result = types.InlineQueryResultArticle(
             id="rdap_usage",
-            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
-            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
+            title=_t("inline.usage_title"),
+            description=_t("inline.usage_description"),
             input_message_content=types.InputTextMessageContent(usage),
         )
         await bot.answer_inline_query(
@@ -390,8 +389,8 @@ async def handle_rdap_inline_query(bot, inline_query: types.InlineQuery):
     result_text = await query_rdap_text(target)
     result = types.InlineQueryResultArticle(
         id=f"rdap_{target}",
-        title=plugin_t(__plugin_name__, "inline.result_title", lang, target=target),
-        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
+        title=_t("inline.result_title", target=target),
+        description=_t("inline.send_result_description"),
         input_message_content=types.InputTextMessageContent(
             result_text, parse_mode="MarkdownV2"
         ),

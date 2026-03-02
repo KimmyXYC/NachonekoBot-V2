@@ -14,6 +14,9 @@ class LocalizedBotProxy:
             return text
         return plugin_t(self._plugin_name, text, self._lang)
 
+    def t(self, key: str, **kwargs):
+        return plugin_t(self._plugin_name, key, self._lang, **kwargs)
+
     async def reply_to(self, message, text=None, *args, **kwargs):
         if text is not None:
             text = self._translate(text)

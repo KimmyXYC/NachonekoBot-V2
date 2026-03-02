@@ -9,7 +9,6 @@ import aiohttp
 from telebot import types
 from loguru import logger
 from app.utils import escape_md_v2_text, command_error_msg
-from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "ip"
@@ -26,58 +25,40 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_ip_text(raw_target: str, lang: str) -> str:
+async def query_ip_text(raw_target: str, _t) -> str:
     """生成与 `/ip` 命令一致的输出文本，用于命令与 Inline 复用（MarkdownV2）。"""
     url = convert_to_punycode(raw_target)
 
     try:
         status, data = await ipapi_ip(url)
     except Exception as e:
-        return plugin_t(__plugin_name__, "error.request_failed", lang, reason=e)
+        return _t("error.request_failed", reason=e)
 
     if not status:
         # ip-api 的失败通常带 message 字段
         if isinstance(data, dict) and data.get("message"):
-            return plugin_t(
-                __plugin_name__, "error.request_failed", lang, reason=data["message"]
-            )
-        return plugin_t(__plugin_name__, "error.request_failed", lang, reason=data)
+            return _t("error.request_failed", reason=data["message"])
+        return _t("error.request_failed", reason=data)
 
     _is_url = url != data["query"]
     if not data["country"]:
-        ip_info = plugin_t(__plugin_name__, "label.query_target", lang, target=url)
+        ip_info = _t("label.query_target", target=url)
         if _is_url:
-            ip_info += plugin_t(
-                __plugin_name__, "label.resolved_target", lang, target=data["query"]
-            )
-        ip_info += plugin_t(__plugin_name__, "label.region_unknown", lang)
+            ip_info += _t("label.resolved_target", target=data["query"])
+        ip_info += _t("label.region_unknown")
     else:
-        ip_info = plugin_t(__plugin_name__, "label.query_target", lang, target=url)
+        ip_info = _t("label.query_target", target=url)
         if _is_url:
-            ip_info += plugin_t(
-                __plugin_name__, "label.resolved_target", lang, target=data["query"]
-            )
+            ip_info += _t("label.resolved_target", target=data["query"])
         region = (
             f"{data['regionName']} - {data['city']}"
             if data["regionName"] and data["city"]
             else data["regionName"] or data["city"] or data["country"]
         )
-        ip_info += plugin_t(
-            __plugin_name__,
-            "label.region",
-            lang,
-            country=data["country"],
-            region=region,
-        )
-        ip_info += plugin_t(
-            __plugin_name__,
-            "label.geo",
-            lang,
-            lon=data["lon"],
-            lat=data["lat"],
-        )
-        ip_info += plugin_t(__plugin_name__, "label.isp", lang, isp=data["isp"])
-        ip_info += plugin_t(__plugin_name__, "label.org", lang, org=data["org"])
+        ip_info += _t("label.region", country=data["country"], region=region)
+        ip_info += _t("label.geo", lon=data["lon"], lat=data["lat"])
+        ip_info += _t("label.isp", isp=data["isp"])
+        ip_info += _t("label.org", org=data["org"])
         re_match = re.search(r"(AS\d+)", data["as"])
         if re_match:
             as_number = re_match.group(1)
@@ -87,24 +68,24 @@ async def query_ip_text(raw_target: str, lang: str) -> str:
         else:
             ip_info += f"""`{data["as"]}`"""
     if data["mobile"]:
-        ip_info += plugin_t(__plugin_name__, "hint.mobile_ip", lang)
+        ip_info += _t("hint.mobile_ip")
     if data["proxy"]:
-        ip_info += plugin_t(__plugin_name__, "hint.proxy_ip", lang)
+        ip_info += _t("hint.proxy_ip")
     if data["hosting"]:
-        ip_info += plugin_t(__plugin_name__, "hint.hosting_ip", lang)
+        ip_info += _t("hint.hosting_ip")
     return ip_info
 
 
 async def handle_ip_command(bot, message: types.Message):
     """处理 IP 查询命令"""
-    lang = await get_message_language(message)
+    _t = bot.t
     target = message.text.split()[1]
     msg = await bot.reply_to(
         message,
-        plugin_t(__plugin_name__, "status.ip_querying", lang, target=target),
+        _t("status.ip_querying", target=target),
         disable_web_page_preview=True,
     )
-    ip_info = await query_ip_text(target, lang)
+    ip_info = await query_ip_text(target, _t)
     await bot.edit_message_text(
         ip_info,
         message.chat.id,
@@ -116,16 +97,16 @@ async def handle_ip_command(bot, message: types.Message):
 
 async def handle_ip_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot ip [IP/Domain]"""
-    lang = await get_inline_query_language(inline_query)
+    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     if len(tokens) != 2 or tokens[0].lower() != "ip":
-        usage = plugin_t(__plugin_name__, "inline.usage_text", lang)
+        usage = _t("inline.usage_text")
         result = types.InlineQueryResultArticle(
             id="ip_usage",
-            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
-            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
+            title=_t("inline.usage_title"),
+            description=_t("inline.usage_description"),
             input_message_content=types.InputTextMessageContent(usage),
         )
         await bot.answer_inline_query(
@@ -134,12 +115,12 @@ async def handle_ip_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     target = tokens[1]
-    result_text = await query_ip_text(target, lang)
+    result_text = await query_ip_text(target, _t)
 
     result = types.InlineQueryResultArticle(
         id=f"ip_{target}",
-        title=plugin_t(__plugin_name__, "inline.result_title", lang, target=target),
-        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
+        title=_t("inline.result_title", target=target),
+        description=_t("inline.send_result_description"),
         input_message_content=types.InputTextMessageContent(
             result_text, parse_mode="MarkdownV2"
         ),

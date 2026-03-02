@@ -12,7 +12,6 @@ from loguru import logger
 from telebot import types
 from utils.yaml import BotConfig
 from utils.postgres import BotDatabase
-from utils.i18n import get_inline_query_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "xiatou"
@@ -198,17 +197,17 @@ async def handle_inb_command(bot, message: types.Message):
 
 async def handle_inb_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot inb"""
-    lang = await get_inline_query_language(inline_query)
+    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     # 仅在 middleware 过滤后进来；此处再做一次兜底
     if not tokens or tokens[0].lower() != "inb" or len(tokens) != 1:
-        usage = plugin_t(__plugin_name__, "inline.usage_text", lang)
+        usage = _t("inline.usage_text")
         result = types.InlineQueryResultArticle(
             id="inb_usage",
-            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
-            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
+            title=_t("inline.usage_title"),
+            description=_t("inline.usage_description"),
             input_message_content=types.InputTextMessageContent(usage),
         )
         await bot.answer_inline_query(
@@ -219,8 +218,8 @@ async def handle_inb_inline_query(bot, inline_query: types.InlineQuery):
     text = await query_inb_text()
     result = types.InlineQueryResultArticle(
         id="inb_stats",
-        title=plugin_t(__plugin_name__, "inline.result_title", lang),
-        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
+        title=_t("inline.result_title"),
+        description=_t("inline.send_result_description"),
         input_message_content=types.InputTextMessageContent(text),
     )
     await bot.answer_inline_query(

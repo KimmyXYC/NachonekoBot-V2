@@ -8,7 +8,6 @@ import aiohttp
 from json.decoder import JSONDecodeError
 from telebot import types
 from loguru import logger
-from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "bin"
@@ -25,7 +24,7 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_bin_text(card_bin: str, lang: str | None = None) -> str:
+async def query_bin_text(card_bin: str, _t) -> str:
     """查询 BIN"""
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
         return "error.invalid_bin_parameter"
@@ -38,12 +37,7 @@ async def query_bin_text(card_bin: str, lang: str | None = None) -> str:
                 if r.status == 429:
                     return "error.rate_limit_exceeded"
                 if r.status != 200:
-                    return plugin_t(
-                        __plugin_name__,
-                        "error.request_failed_with_status",
-                        lang,
-                        status=r.status,
-                    )
+                    return _t("error.request_failed_with_status", status=r.status)
 
                 content = await r.text()
                 bin_json = json.loads(content)
@@ -52,61 +46,35 @@ async def query_bin_text(card_bin: str, lang: str | None = None) -> str:
     except JSONDecodeError:
         return "error.invalid_parameter"
     except Exception as e:
-        return plugin_t(
-            __plugin_name__, "error.exception_occurred", lang, reason=str(e)
-        )
+        return _t("error.exception_occurred", reason=str(e))
 
     msg_out = []
-    msg_out.extend([plugin_t(__plugin_name__, "label.bin", lang, value=card_bin)])
+    msg_out.extend([_t("label.bin", value=card_bin)])
     try:
-        msg_out.extend(
-            [plugin_t(__plugin_name__, "label.scheme", lang, value=bin_json["scheme"])]
-        )
+        msg_out.extend([_t("label.scheme", value=bin_json["scheme"])])
     except (KeyError, TypeError):
         pass
     try:
-        msg_out.extend(
-            [plugin_t(__plugin_name__, "label.card_type", lang, value=bin_json["type"])]
-        )
+        msg_out.extend([_t("label.card_type", value=bin_json["type"])])
     except (KeyError, TypeError):
         pass
     try:
-        msg_out.extend(
-            [plugin_t(__plugin_name__, "label.brand", lang, value=bin_json["brand"])]
-        )
+        msg_out.extend([_t("label.brand", value=bin_json["brand"])])
     except (KeyError, TypeError):
         pass
     try:
-        msg_out.extend(
-            [
-                plugin_t(
-                    __plugin_name__,
-                    "label.bank_name",
-                    lang,
-                    value=bin_json["bank"]["name"],
-                )
-            ]
-        )
+        msg_out.extend([_t("label.bank_name", value=bin_json["bank"]["name"])])
     except (KeyError, TypeError):
         pass
     try:
         if bin_json["prepaid"]:
-            msg_out.extend([plugin_t(__plugin_name__, "label.prepaid_yes", lang)])
+            msg_out.extend([_t("label.prepaid_yes")])
         else:
-            msg_out.extend([plugin_t(__plugin_name__, "label.prepaid_no", lang)])
+            msg_out.extend([_t("label.prepaid_no")])
     except (KeyError, TypeError):
         pass
     try:
-        msg_out.extend(
-            [
-                plugin_t(
-                    __plugin_name__,
-                    "label.country_name",
-                    lang,
-                    value=bin_json["country"]["name"],
-                )
-            ]
-        )
+        msg_out.extend([_t("label.country_name", value=bin_json["country"]["name"])])
     except (KeyError, TypeError):
         pass
 
@@ -121,7 +89,7 @@ async def handle_bin_command(bot, message: types.Message):
     :return:
     """
     command_args = message.text.split()
-    lang = await get_message_language(message)
+    _t = bot.t
     if len(command_args) != 2:
         await bot.reply_to(message, "prompt.valid_bin_required")
         return
@@ -133,26 +101,26 @@ async def handle_bin_command(bot, message: types.Message):
 
     msg = await bot.reply_to(
         message,
-        plugin_t(__plugin_name__, "status.querying_bin", lang, card_bin=card_bin),
+        _t("status.querying_bin", card_bin=card_bin),
     )
 
-    result_text = await query_bin_text(card_bin, lang)
+    result_text = await query_bin_text(card_bin, _t)
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
 
 async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot bin [Card_BIN]"""
-    lang = await get_inline_query_language(inline_query)
+    _t = bot.t
     query = (inline_query.query or "").strip()
     args = query.split()
 
     # 仅在 middleware 过滤后进来；此处再做一次兜底
     if len(args) != 2 or args[0].lower() != "bin":
-        text = plugin_t(__plugin_name__, "prompt.valid_bin_required", lang)
+        text = _t("prompt.valid_bin_required")
         result = types.InlineQueryResultArticle(
             id="bin_usage",
-            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
-            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
+            title=_t("inline.usage_title"),
+            description=_t("inline.usage_description"),
             input_message_content=types.InputTextMessageContent(text),
         )
         await bot.answer_inline_query(
@@ -161,12 +129,12 @@ async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     card_bin = args[1]
-    result_text = await query_bin_text(card_bin, lang)
+    result_text = await query_bin_text(card_bin, _t)
 
     result = types.InlineQueryResultArticle(
         id=f"bin_{card_bin}",
-        title=plugin_t(__plugin_name__, "inline.result_title", lang, card_bin=card_bin),
-        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
+        title=_t("inline.result_title", card_bin=card_bin),
+        description=_t("inline.send_result_description"),
         input_message_content=types.InputTextMessageContent(result_text),
     )
     await bot.answer_inline_query(
