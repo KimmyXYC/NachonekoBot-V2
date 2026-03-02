@@ -1,0 +1,11 @@
+{
+  "meta.description": "轉生系統",
+  "command.description.remake": "開始轉生",
+  "command.description.remake_data": "查看轉生資料",
+  "command.help.remake": "/remake - 開始轉生",
+  "command.help.remake_data": "/remake_data - 查看轉生資料",
+  "prompt.remake_not_started": "你還沒有轉生記錄，快試試 /remake 吧。",
+  "error.query_failed_retry": "查詢失敗，請稍後再試。",
+  "result.remake_success": "轉生成功！您現在是 {country} 的 {gender} 了。",
+  "result.remake_data": "您現在是 {country} 的 {gender}，已轉生 {count} 次。"
+}

@@ -1,0 +1,9 @@
+{
+  "meta.description": "下頭偵測系統（僅對設定使用者生效）",
+  "command.help.inb": "Inline: @NachoNekoX_bot inb",
+  "inline.usage_text": "用法：inb",
+  "inline.usage_title": "下頭次數統計 (inb)",
+  "inline.usage_description": "用法：inb",
+  "inline.result_title": "下頭次數統計",
+  "inline.send_result_description": "傳送統計結果"
+}

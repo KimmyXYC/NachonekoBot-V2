@@ -1,0 +1,9 @@
+{
+  "meta.description": "テンション低下検出システム（設定されたユーザーにのみ有効）",
+  "command.help.inb": "Inline: @NachoNekoX_bot inb",
+  "inline.usage_text": "使い方：inb",
+  "inline.usage_title": "テンション低下カウント統計 (inb)",
+  "inline.usage_description": "使い方：inb",
+  "inline.result_title": "テンション低下カウント統計",
+  "inline.send_result_description": "統計結果を送信"
+}

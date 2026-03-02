@@ -1,0 +1,20 @@
+{
+  "meta.description": "ルートトレースツール（nexttrace使用）",
+  "command.description.trace": "ネットワークルートをトレース",
+  "command.help.trace": "/trace [IP/Domain] [プロトコルタイプ(T/U)] [ポート] - ルートをトレース",
+  "error.invalid_protocol_type": "❌ プロトコルタイプが無効です。T (TCP) または U (UDP) を使用してください。",
+  "error.trace_invalid_target": "❌ ターゲットアドレスが無効です。有効なIPアドレスまたはドメイン名を入力してください。",
+  "error.nexttrace_not_found": "❌ nexttrace コマンドが見つかりません。先にnexttraceをインストールしてください。",
+  "error.port_out_of_range": "❌ ポート番号は1〜65535の範囲である必要があります。",
+  "error.port_not_numeric": "❌ ポートは数字である必要があります。",
+  "prompt.trace_usage": "使い方：/trace <ターゲットアドレス> [T/U] [ポート]\nT = TCP、U = UDP、未指定の場合はICMPを使用\n例：/trace 1.1.1.1\n     /trace example.com T 443",
+  "status.tracing_route": "⏳ {protocol_name} を使用して {target} へのルートをトレース中...",
+  "error.trace_timeout": "❌ {target} へのルートトレースがタイムアウトしました。{timeout} 秒経過",
+  "error.trace_failed": "❌ ルートトレースに失敗しました: {reason}",
+  "result.output_truncated_suffix": "\n\n... (出力が長すぎるため切り詰めました)",
+  "result.header": "📡 *ルートトレース結果*\n\n",
+  "result.target": "ターゲット: `{target}`\n",
+  "result.protocol": "プロトコル: {protocol}",
+  "result.port": " ポート: {port}",
+  "result.maptrace_link": "\n\n🗺️ [ビジュアルルートマップを表示]({url})"
+}

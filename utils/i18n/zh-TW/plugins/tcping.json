@@ -1,0 +1,19 @@
+{
+  "meta.description": "TCP 埠連通性測試",
+  "command.description.tcping": "執行 TCP Ping 測試",
+  "command.help.tcping": "/tcping [IP/Domain]:[Port] - TCP Ping 測試",
+  "error.invalid_port_number": "❌ 埠號無效，應為 1-65535 之間的整數。",
+  "prompt.tcping_host_port_required": "❌ 請提供目標主機和埠，格式：/tcping 主機:埠",
+  "status.testing_tcp_connection": "⏳ 正在測試 {target}:{port} 的TCP連線，請稍候...",
+  "error.tcping_command_error": "❌ 執行 tcping 命令出錯: {reason}",
+  "error.tcping_not_found": "❌ 未找到 tcping 命令。請確保系統已安裝 tcping 工具。\n\n安裝方法：\nDebian/Ubuntu: apt-get install tcptraceroute\nCentOS/RHEL: yum install tcptraceroute\nmacOS: brew install tcping",
+  "error.tcping_command_exception": "❌ 執行 tcping 命令異常: {reason}",
+  "error.execute_tcping_failed": "❌ 執行 tcping 時出錯: {reason}",
+  "error.parse_tcping_result_exception": "⚠️ 解析 tcping 結果異常: {reason}\n\n原始結果:\n```\n{raw_result}\n```",
+  "result.latency_avg": "⏱ 延遲: 平均 {avg_time}ms",
+  "result.latency_minmax": " (最小 {min_time}ms, 最大 {max_time}ms)",
+  "result.packet_loss": "📊 封包遺失率: {loss_rate}%\n",
+  "result.unparseable": "⚠️ 無法解析 tcping 結果",
+  "result.newline": "\n",
+  "result.raw_block": "\n原始結果:\n```\n{raw_result}\n```"
+}

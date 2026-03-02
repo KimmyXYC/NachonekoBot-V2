@@ -1,0 +1,11 @@
+{
+  "meta.description": "RDAP 照会（ドメイン/IP/ASN）",
+  "command.description.rdap": "RDAP 情報を照会",
+  "command.help.rdap": "/rdap [Domain/IP/ASN] - RDAP 情報を照会\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\n対応形式：ドメイン(example.com)、IP(1.1.1.1)、ASN(AS13335 または 13335)",
+  "status.rdap_querying": "{target} の RDAP 情報を照会中...",
+  "inline.usage_text": "使い方：rdap [Domain/IP/ASN]\n対応形式：ドメイン、IPアドレス、ASN(AS13335または13335)",
+  "inline.usage_title": "RDAP 照会",
+  "inline.usage_description": "使い方：rdap [Domain/IP/ASN]",
+  "inline.result_title": "RDAP：{target}",
+  "inline.send_result_description": "照会結果を送信"
+}

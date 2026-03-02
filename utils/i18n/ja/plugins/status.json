@@ -1,0 +1,5 @@
+{
+  "meta.description": "システムステータス照会（管理者のみ）",
+  "command.description.status": "ボットのステータス情報を取得",
+  "command.help.status": "/status - ボットのステータス情報を取得"
+}

@@ -1,0 +1,22 @@
+{
+  "meta.description": "IPアドレス照会",
+  "command.description.ip": "IP/ドメイン情報を照会",
+  "command.help.ip": "/ip [IP/Domain] - IP またはドメイン情報を照会\nInline: @NachoNekoX_bot ip [IP/Domain]",
+  "error.request_failed": "リクエストが失敗しました: `{reason}`",
+  "label.query_target": "照会対象:  `{target}`\n",
+  "label.resolved_target": "解決アドレス:  `{target}`\n",
+  "label.region_unknown": "地域:  `不明`\n",
+  "label.region": "地域:  `{country} - {region}`\n",
+  "label.geo": "座標:  `{lon}, {lat}`\n",
+  "label.isp": "ISP:  `{isp}`\n",
+  "label.org": "組織:  `{org}`\n",
+  "hint.mobile_ip": "\nこのIPは *モバイルデータIP* の可能性があります",
+  "hint.proxy_ip": "\nこのIPは *プロキシIP* の可能性があります",
+  "hint.hosting_ip": "\nこのIPは *データセンターIP* の可能性があります",
+  "status.ip_querying": "{target} を照会中 ...",
+  "inline.usage_text": "使い方：ip [IP/Domain]",
+  "inline.usage_title": "IP 照会",
+  "inline.usage_description": "使い方：ip [IP/Domain]",
+  "inline.result_title": "IP：{target}",
+  "inline.send_result_description": "照会結果を送信"
+}

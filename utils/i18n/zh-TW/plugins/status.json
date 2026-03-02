@@ -1,0 +1,5 @@
+{
+  "meta.description": "系統狀態查詢（僅管理員）",
+  "command.description.status": "取得機器人狀態資訊",
+  "command.help.status": "/status - 取得機器人狀態資訊"
+}

@@ -1,0 +1,11 @@
+{
+  "meta.description": "RDAP 查詢（網域/IP/ASN）",
+  "command.description.rdap": "查詢 RDAP 資訊",
+  "command.help.rdap": "/rdap [Domain/IP/ASN] - 查詢 RDAP 資訊\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\n支援格式：網域(example.com)、IP(1.1.1.1)、ASN(AS13335 或 13335)",
+  "status.rdap_querying": "正在查詢 {target} RDAP 資訊...",
+  "inline.usage_text": "用法：rdap [Domain/IP/ASN]\n支援格式：網域、IP位址、ASN(AS13335或13335)",
+  "inline.usage_title": "RDAP 查詢",
+  "inline.usage_description": "用法：rdap [Domain/IP/ASN]",
+  "inline.result_title": "RDAP：{target}",
+  "inline.send_result_description": "傳送查詢結果"
+}

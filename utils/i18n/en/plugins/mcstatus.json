@@ -3,7 +3,7 @@
   "command.description.mc": "Query Minecraft server status (auto-detect Java/Bedrock)",
   "command.description.mcje": "Query Minecraft Java server status",
   "command.description.mcbe": "Query Minecraft Bedrock server status",
-  "command.help.mc": "/mcstatus [Server:Port] - Query Minecraft server status (auto-detect Java/Bedrock)\nInline: @NachoNekoX_bot mc [Server:Port]",
+  "command.help.mc": "/mc [Server:Port] - Query Minecraft server status (auto-detect Java/Bedrock)\nInline: @NachoNekoX_bot mc [Server:Port]",
   "command.help.mcje": "/mcje [Server:Port] - Query Minecraft Java server status\nInline: @NachoNekoX_bot mcje [Server:Port]",
   "command.help.mcbe": "/mcbe [Server:Port] - Query Minecraft Bedrock server status\nInline: @NachoNekoX_bot mcbe [Server:Port]",
   "prompt.server_address_required": "Please provide a server address in this format: /mc server:port\nExample: /mc mc.hypixel.net",

@@ -1,0 +1,15 @@
+{
+  "meta.description": "抽選システム",
+  "command.description.lottery": "抽選を開始",
+  "command.help.lottery": "/lottery [Winners]/[Participants] [Keyword] [Title] - 抽選を開始",
+  "error.participant_count_invalid": "参加者数は整数である必要があります。",
+  "error.group_admin_required": "このコマンドはグループ管理者のみ使用できます。",
+  "error.required_args_missing": "賞品数、参加者数、キーワード、タイトルは必須です。",
+  "error.prize_or_participant_missing": "賞品数と参加者数は必須です。",
+  "error.prize_count_exceeds_participants": "賞品数は参加者数を超えることができません。",
+  "status.force_draw_success": "強制抽選に成功しました。",
+  "error.lottery_in_progress": "現在抽選が進行中です。しばらくしてからお試しください。",
+  "error.no_active_lottery": "このグループには現在進行中の抽選はありません。",
+  "error.group_only": "グループ内でこのコマンドを使用してください。",
+  "prompt.lottery_usage": "賞品数、参加者数などのパラメータを入力するか、「強制抽選」を使用してください。\n\n例：`/lottery 1/10 参加 テスト`"
+}

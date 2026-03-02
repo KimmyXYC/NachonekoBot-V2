@@ -1,0 +1,15 @@
+{
+  "meta.description": "抽獎系統",
+  "command.description.lottery": "發起抽獎",
+  "command.help.lottery": "/lottery [Winners]/[Participants] [Keyword] [Title] - 發起抽獎",
+  "error.participant_count_invalid": "人數必須為整數。",
+  "error.group_admin_required": "僅群組管理員可使用該命令。",
+  "error.required_args_missing": "獎品數、人數、關鍵字和標題不能為空。",
+  "error.prize_or_participant_missing": "獎品數和人數不能為空。",
+  "error.prize_count_exceeds_participants": "獎品數不能超過人數。",
+  "status.force_draw_success": "強制開獎成功。",
+  "error.lottery_in_progress": "目前有抽獎活動正在進行，請稍後再試。",
+  "error.no_active_lottery": "本群暫無正在進行的抽獎活動。",
+  "error.group_only": "請在群組中使用該命令。",
+  "prompt.lottery_usage": "請輸入獎品數、人數等參數，或使用「強制開獎」。\n\n例如：`/lottery 1/10 參加 測試`"
+}

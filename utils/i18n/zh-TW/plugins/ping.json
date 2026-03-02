@@ -1,0 +1,18 @@
+{
+  "meta.description": "Ping 連通性測試",
+  "command.description.ping": "執行 Ping 測試",
+  "command.help.ping": "/ping [IP/Domain] - Ping 測試",
+  "error.invalid_target_address": "❌ 目標位址無效，請提供有效網域名稱或 IP 位址。",
+  "prompt.ping_target_required": "請提供要 Ping 的目標位址，例如：/ping example.com",
+  "status.pinging": "⏳ 正在 ping {target}...",
+  "error.ping_command_error": "執行 ping 命令出錯: {reason}",
+  "error.ping_command_exception": "執行 ping 命令異常: {reason}",
+  "error.parse_ping_result_exception": "解析 ping 結果異常: {reason}\n\n原始結果:\n```\n{raw_result}\n```",
+  "result.unreachable_or_timeout": "❌ Ping 失敗：目標主機不可達或網路逾時",
+  "value.unknown": "未知",
+  "result.target": "🎯 目標: {hostname} ({ip})\n",
+  "result.latency": "⏱ 延遲: 平均 {avg}ms (最小 {minimum}ms, 最大 {maximum}ms)\n",
+  "result.packet_loss": "📊 封包遺失率: {loss_rate}%\n",
+  "result.unparseable": "⚠️ 無法解析 ping 結果",
+  "result.raw_block": "\n原始結果:\n```\n{raw_result}\n```"
+}

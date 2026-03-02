@@ -1,0 +1,5 @@
+{
+  "meta.description": "自動將長圖裁切為多張 19.5:9 圖片，並保留 3:19.5 縱向重疊；裁片高度基於 19.5:9，可微調以保證尺寸一致（僅對以檔案方式傳送的圖片生效）。",
+  "meta.display_name": "長圖裁切器",
+  "error.local_botapi_path_inaccessible": "已啟用本地 Bot API，但檔案路徑不可存取。"
+}

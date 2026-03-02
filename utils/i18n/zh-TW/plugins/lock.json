@@ -1,0 +1,17 @@
+{
+  "meta.description": "群命令鎖定管理",
+  "command.description.lock": "鎖定群內命令",
+  "command.description.unlock": "解鎖群內命令",
+  "command.description.list": "列出群內已鎖定命令",
+  "command.help.lock": "/lock [Command] - 鎖定群內命令",
+  "command.help.unlock": "/unlock [Command] - 解鎖群內命令",
+  "command.help.list": "/list - 列出群內已鎖定命令",
+  "error.permission_denied": "你無權使用該功能。",
+  "error.sender_unrecognized": "無法識別訊息發送者。",
+  "lock.list.empty": "本群目前未鎖定任何命令。",
+  "error.bot_id_invalid": "機器人配置錯誤：bot_id 無效。",
+  "error.bot_delete_permission_required": "請先將機器人設為管理員並授予刪除訊息權限。",
+  "result.batch_add": "批次新增結果: 新增成功 `{added}`，已存在 `{already_exist}`，不可鎖定 `{not_lockable}`，格式非法 `{invalid_format}`",
+  "result.batch_remove": "批次刪除結果: 刪除成功 `{removed}`，不存在 `{not_found}`，格式非法 `{invalid_format}`",
+  "result.list_header": "以下命令在本群中被鎖定:\n"
+}

@@ -1,0 +1,11 @@
+{
+  "meta.description": "Whois 網域查詢",
+  "command.description.whois": "查詢 Whois 資訊",
+  "command.help.whois": "/whois [Domain] - 查詢 Whois 資訊\nInline: @NachoNekoX_bot whois [Domain]",
+  "status.whois_querying": "正在查詢 {target} Whois 資訊...",
+  "inline.usage_text": "用法：whois [Domain]",
+  "inline.usage_title": "Whois 查詢",
+  "inline.usage_description": "用法：whois [Domain]",
+  "inline.result_title": "Whois：{domain}",
+  "inline.send_result_description": "傳送查詢結果"
+}

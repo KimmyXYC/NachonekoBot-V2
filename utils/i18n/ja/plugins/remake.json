@@ -1,0 +1,11 @@
+{
+  "meta.description": "転生システム",
+  "command.description.remake": "転生を開始",
+  "command.description.remake_data": "転生データを確認",
+  "command.help.remake": "/remake - 転生を開始",
+  "command.help.remake_data": "/remake_data - 転生データを確認",
+  "prompt.remake_not_started": "転生記録がありません。/remake を試してみてください。",
+  "error.query_failed_retry": "照会に失敗しました。しばらくしてからお試しください。",
+  "result.remake_success": "転生成功！あなたは今 {country} の {gender} になりました。",
+  "result.remake_data": "あなたは今 {country} の {gender} で、{count} 回転生しました。"
+}

@@ -1,0 +1,10 @@
+{
+  "meta.description": "短縮URLジェネレーター",
+  "command.description.short": "短縮URLを生成",
+  "command.help.short": "/short [URL] - 短縮URLを生成",
+  "error.backend_url_not_configured": "生成に失敗しました：バックエンドURLが設定されていません。",
+  "status.generating_short_url": "短縮URLを生成中: `{url}`",
+  "result.short_url": "短縮URL: `{short_url}`",
+  "error.generate_failed_backend_invalid": "生成に失敗しました。バックエンドURLが有効か確認してください: `{reason}`",
+  "error.generate_failed_invalid_url": "生成に失敗しました。URLが有効か確認してください: `{reason}`"
+}

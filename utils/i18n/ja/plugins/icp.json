@@ -1,0 +1,14 @@
+{
+  "meta.description": "ICP 備案照会",
+  "command.description.icp": "ドメインの ICP 備案情報を照会",
+  "command.help.icp": "/icp [Domain] - ドメインの ICP 備案情報を照会\nInline: @NachoNekoX_bot icp [Domain]",
+  "error.request_failed": "リクエストが失敗しました: `{reason}`",
+  "result.not_recorded": "照会対象:  `{domain}`\n備案状態:  `未登録`",
+  "result.record_item": "ドメイン:  `{domain}`\n備案番号:  `{licence}`\n備案主体:  `{unit_name}`\n備案性質:  `{nature_name}`\n備案日時:  `{update_time}`\n\n",
+  "status.icp_querying": "ドメイン {domain} の備案情報を照会中...",
+  "inline.usage_text": "使い方：icp [Domain]",
+  "inline.usage_title": "ICP 備案照会",
+  "inline.usage_description": "使い方：icp [Domain]",
+  "inline.result_title": "ICP：{domain}",
+  "inline.send_result_description": "照会結果を送信"
+}

@@ -1,0 +1,10 @@
+{
+  "meta.description": "短網址生成工具",
+  "command.description.short": "生成短網址",
+  "command.help.short": "/short [URL] - 生成短網址",
+  "error.backend_url_not_configured": "生成失敗：後端位址未設定。",
+  "status.generating_short_url": "正在生成短網址: `{url}`",
+  "result.short_url": "短網址: `{short_url}`",
+  "error.generate_failed_backend_invalid": "生成失敗，請檢查後端位址是否有效: `{reason}`",
+  "error.generate_failed_invalid_url": "生成失敗，請檢查 URL 是否有效: `{reason}`"
+}

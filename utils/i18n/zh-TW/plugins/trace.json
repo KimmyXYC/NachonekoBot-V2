@@ -1,0 +1,20 @@
+{
+  "meta.description": "路由追蹤工具（使用 nexttrace）",
+  "command.description.trace": "追蹤網路路由",
+  "command.help.trace": "/trace [IP/Domain] [協定類型(T/U)] [埠] - 追蹤路由",
+  "error.invalid_protocol_type": "❌ 協定類型無效，請使用 T (TCP) 或 U (UDP)。",
+  "error.trace_invalid_target": "❌ 目標位址無效，請輸入有效的 IP 位址或網域名稱。",
+  "error.nexttrace_not_found": "❌ 未找到 nexttrace 命令，請先安裝 nexttrace。",
+  "error.port_out_of_range": "❌ 埠號必須在 1-65535 之間。",
+  "error.port_not_numeric": "❌ 埠必須為數字。",
+  "prompt.trace_usage": "用法：/trace <目標位址> [T/U] [埠]\nT = TCP，U = UDP，不指定則使用 ICMP\n範例：/trace 1.1.1.1\n      /trace example.com T 443",
+  "status.tracing_route": "⏳ 正在使用 {protocol_name} 追蹤路由到 {target}...",
+  "error.trace_timeout": "❌ 追蹤路由到 {target} 超時，已執行 {timeout} 秒",
+  "error.trace_failed": "❌ 追蹤路由失敗: {reason}",
+  "result.output_truncated_suffix": "\n\n... (輸出過長已截斷)",
+  "result.header": "📡 *路由追蹤結果*\n\n",
+  "result.target": "目標: `{target}`\n",
+  "result.protocol": "協定: {protocol}",
+  "result.port": " 埠: {port}",
+  "result.maptrace_link": "\n\n🗺️ [查看可視化路由圖]({url})"
+}

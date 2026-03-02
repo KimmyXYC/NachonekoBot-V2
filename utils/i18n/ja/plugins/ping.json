@@ -1,0 +1,18 @@
+{
+  "meta.description": "Ping 接続性テスト",
+  "command.description.ping": "Ping テストを実行",
+  "command.help.ping": "/ping [IP/Domain] - Ping テスト",
+  "error.invalid_target_address": "❌ ターゲットアドレスが無効です。有効なドメイン名またはIPアドレスを指定してください。",
+  "prompt.ping_target_required": "Pingするターゲットアドレスを指定してください。例：/ping example.com",
+  "status.pinging": "⏳ {target} にpingを実行中...",
+  "error.ping_command_error": "pingコマンドの実行でエラーが発生しました: {reason}",
+  "error.ping_command_exception": "pingコマンドの実行で例外が発生しました: {reason}",
+  "error.parse_ping_result_exception": "ping結果の解析で例外が発生しました: {reason}\n\n生データ:\n```\n{raw_result}\n```",
+  "result.unreachable_or_timeout": "❌ Ping 失敗：ターゲットホストに到達できないかネットワークタイムアウト",
+  "value.unknown": "不明",
+  "result.target": "🎯 ターゲット: {hostname} ({ip})\n",
+  "result.latency": "⏱ レイテンシ: 平均 {avg}ms (最小 {minimum}ms, 最大 {maximum}ms)\n",
+  "result.packet_loss": "📊 パケットロス: {loss_rate}%\n",
+  "result.unparseable": "⚠️ ping結果を解析できません",
+  "result.raw_block": "\n生データ:\n```\n{raw_result}\n```"
+}

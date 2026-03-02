@@ -1,0 +1,17 @@
+{
+  "meta.description": "グループコマンドロック管理",
+  "command.description.lock": "グループ内のコマンドをロック",
+  "command.description.unlock": "グループ内のコマンドのロックを解除",
+  "command.description.list": "グループ内のロック済みコマンドを一覧表示",
+  "command.help.lock": "/lock [Command] - グループ内のコマンドをロック",
+  "command.help.unlock": "/unlock [Command] - グループ内のコマンドのロックを解除",
+  "command.help.list": "/list - グループ内のロック済みコマンドを一覧表示",
+  "error.permission_denied": "この機能を使用する権限がありません。",
+  "error.sender_unrecognized": "メッセージ送信者を認識できません。",
+  "lock.list.empty": "このグループには現在ロックされているコマンドはありません。",
+  "error.bot_id_invalid": "ボットの設定エラー：bot_idが無効です。",
+  "error.bot_delete_permission_required": "先にボットを管理者に設定し、メッセージ削除権限を付与してください。",
+  "result.batch_add": "一括追加結果: 追加成功 `{added}`、既存 `{already_exist}`、ロック不可 `{not_lockable}`、形式不正 `{invalid_format}`",
+  "result.batch_remove": "一括削除結果: 削除成功 `{removed}`、存在しない `{not_found}`、形式不正 `{invalid_format}`",
+  "result.list_header": "このグループでロックされているコマンド:\n"
+}

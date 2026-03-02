@@ -3,7 +3,7 @@
   "command.description.mc": "查询 Minecraft 服务器状态（自动识别 Java/基岩）",
   "command.description.mcje": "查询 Minecraft Java 版服务器状态",
   "command.description.mcbe": "查询 Minecraft 基岩版服务器状态",
-  "command.help.mc": "/mcstatus [服务器地址:端口] - 查询 Minecraft 服务器状态（自动识别 Java/基岩）\nInline: @NachoNekoX_bot mc [服务器地址:端口]",
+  "command.help.mc": "/mc [服务器地址:端口] - 查询 Minecraft 服务器状态（自动识别 Java/基岩）\nInline: @NachoNekoX_bot mc [服务器地址:端口]",
   "command.help.mcje": "/mcje [服务器地址:端口] - 查询 Minecraft Java 版服务器状态\nInline: @NachoNekoX_bot mcje [服务器地址:端口]",
   "command.help.mcbe": "/mcbe [服务器地址:端口] - 查询 Minecraft 基岩版服务器状态\nInline: @NachoNekoX_bot mcbe [服务器地址:端口]",
   "prompt.server_address_required": "请提供服务器地址，格式：/mc 服务器地址:端口\n例如：/mc mc.hypixel.net",

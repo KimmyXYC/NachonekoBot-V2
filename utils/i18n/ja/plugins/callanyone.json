@@ -1,0 +1,16 @@
+{
+  "meta.description": "お楽しみ呼び出し機能（医者 / MTF / 警察）",
+  "command.description.calldoctor": "医者を呼ぶ",
+  "command.description.callmtf": "MTFを呼ぶ",
+  "command.description.callpolice": "警察を呼ぶ",
+  "command.help.calldoctor": "/calldoctor - 医者を呼ぶ\nInline: @NachoNekoX_bot calldoctor",
+  "command.help.callmtf": "/callmtf - MTFを呼ぶ\nInline: @NachoNekoX_bot callmtf",
+  "command.help.callpolice": "/callpolice - 警察を呼ぶ\nInline: @NachoNekoX_bot callpolice",
+  "inline.usage_text": "使い方：\n- calldoctor\n- callmtf\n- callpolice",
+  "inline.usage_title": "呼び出し (callanyone)",
+  "inline.usage_description": "使い方：calldoctor / callmtf / callpolice",
+  "inline.title.calldoctor": "医者を呼ぶ",
+  "inline.title.callmtf": "MTFを呼ぶ",
+  "inline.title.callpolice": "警察を呼ぶ",
+  "inline.send_result_description": "呼び出し結果を送信"
+}

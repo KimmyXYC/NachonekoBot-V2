@@ -1,0 +1,19 @@
+{
+  "meta.description": "TCP ポート接続性テスト",
+  "command.description.tcping": "TCP Ping テストを実行",
+  "command.help.tcping": "/tcping [IP/Domain]:[Port] - TCP Ping テスト",
+  "error.invalid_port_number": "❌ ポート番号が無効です。1〜65535の整数を指定してください。",
+  "prompt.tcping_host_port_required": "❌ ターゲットホストとポートを指定してください。形式：/tcping ホスト:ポート",
+  "status.testing_tcp_connection": "⏳ {target}:{port} のTCP接続をテスト中、しばらくお待ちください...",
+  "error.tcping_command_error": "❌ tcpingコマンドの実行でエラーが発生しました: {reason}",
+  "error.tcping_not_found": "❌ tcpingコマンドが見つかりません。tcpingツールがインストールされているか確認してください。\n\nインストール方法：\nDebian/Ubuntu: apt-get install tcptraceroute\nCentOS/RHEL: yum install tcptraceroute\nmacOS: brew install tcping",
+  "error.tcping_command_exception": "❌ tcpingコマンドの実行で例外が発生しました: {reason}",
+  "error.execute_tcping_failed": "❌ tcping実行中にエラーが発生しました: {reason}",
+  "error.parse_tcping_result_exception": "⚠️ tcping結果の解析で例外が発生しました: {reason}\n\n生データ:\n```\n{raw_result}\n```",
+  "result.latency_avg": "⏱ レイテンシ: 平均 {avg_time}ms",
+  "result.latency_minmax": " (最小 {min_time}ms, 最大 {max_time}ms)",
+  "result.packet_loss": "📊 パケットロス: {loss_rate}%\n",
+  "result.unparseable": "⚠️ tcping結果を解析できません",
+  "result.newline": "\n",
+  "result.raw_block": "\n生データ:\n```\n{raw_result}\n```"
+}

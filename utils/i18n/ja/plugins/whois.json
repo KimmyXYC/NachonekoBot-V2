@@ -1,0 +1,11 @@
+{
+  "meta.description": "Whois ドメイン照会",
+  "command.description.whois": "Whois 情報を照会",
+  "command.help.whois": "/whois [Domain] - Whois 情報を照会\nInline: @NachoNekoX_bot whois [Domain]",
+  "status.whois_querying": "{target} の Whois 情報を照会中...",
+  "inline.usage_text": "使い方：whois [Domain]",
+  "inline.usage_title": "Whois 照会",
+  "inline.usage_description": "使い方：whois [Domain]",
+  "inline.result_title": "Whois：{domain}",
+  "inline.send_result_description": "照会結果を送信"
+}

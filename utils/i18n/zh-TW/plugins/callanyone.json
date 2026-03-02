@@ -1,0 +1,16 @@
+{
+  "meta.description": "趣味呼叫功能（醫生 / MTF / 警察）",
+  "command.description.calldoctor": "呼叫醫生",
+  "command.description.callmtf": "呼叫 MTF",
+  "command.description.callpolice": "呼叫警察",
+  "command.help.calldoctor": "/calldoctor - 呼叫醫生\nInline: @NachoNekoX_bot calldoctor",
+  "command.help.callmtf": "/callmtf - 呼叫 MTF\nInline: @NachoNekoX_bot callmtf",
+  "command.help.callpolice": "/callpolice - 呼叫警察\nInline: @NachoNekoX_bot callpolice",
+  "inline.usage_text": "用法：\n- calldoctor\n- callmtf\n- callpolice",
+  "inline.usage_title": "呼叫 (callanyone)",
+  "inline.usage_description": "用法：calldoctor / callmtf / callpolice",
+  "inline.title.calldoctor": "呼叫醫生",
+  "inline.title.callmtf": "呼叫 MTF",
+  "inline.title.callpolice": "呼叫警察",
+  "inline.send_result_description": "傳送呼叫結果"
+}

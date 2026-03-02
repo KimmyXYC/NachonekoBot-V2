@@ -1,0 +1,8 @@
+{
+  "meta.description": "OCR 文字認識（Alibaba Cloud qwen-vl-ocr）",
+  "command.description.ocr": "画像の文字を認識",
+  "command.help.ocr": "/ocr [カスタムプロンプト] - 画像の文字をOCR認識。画像/画像ファイルに返信するか、画像のcaptionで使用",
+  "status.ocr_processing": "OCR 認識中...",
+  "error.ocr_invalid_format": "形式エラー。期待される形式：/ocr [カスタムプロンプト]",
+  "prompt.ocr_reply_image_first": "先に画像または画像ファイルに返信してから、/ocr [カスタムプロンプト] を使用してください。"
+}

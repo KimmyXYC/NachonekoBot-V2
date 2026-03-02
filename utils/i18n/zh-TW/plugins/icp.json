@@ -1,0 +1,14 @@
+{
+  "meta.description": "ICP 備案查詢",
+  "command.description.icp": "查詢網域 ICP 備案資訊",
+  "command.help.icp": "/icp [Domain] - 查詢網域 ICP 備案資訊\nInline: @NachoNekoX_bot icp [Domain]",
+  "error.request_failed": "請求失敗: `{reason}`",
+  "result.not_recorded": "查詢目標:  `{domain}`\n備案狀態:  `未備案`",
+  "result.record_item": "網域:  `{domain}`\n備案號:  `{licence}`\n備案主體:  `{unit_name}`\n備案性質:  `{nature_name}`\n備案時間:  `{update_time}`\n\n",
+  "status.icp_querying": "正在查詢網域 {domain} 備案資訊...",
+  "inline.usage_text": "用法：icp [Domain]",
+  "inline.usage_title": "ICP 備案查詢",
+  "inline.usage_description": "用法：icp [Domain]",
+  "inline.result_title": "ICP：{domain}",
+  "inline.send_result_description": "傳送查詢結果"
+}

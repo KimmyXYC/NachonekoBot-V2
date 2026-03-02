@@ -1,0 +1,15 @@
+{
+  "meta.description": "Keybox 検証ツール",
+  "command.description.check": "keybox.xml ファイルを検証",
+  "command.help.check": "/check - keybox.xml ファイルを検証",
+  "keybox.ban.success": "バンに成功しました。",
+  "error.file_too_large": "ファイルサイズが上限を超えています。",
+  "error.local_botapi_path_inaccessible": "ローカルBot APIが有効ですが、ファイルパスにアクセスできません。",
+  "keybox.ban.empty": "現在バンされているkeyboxはありません。",
+  "prompt.reply_keybox_xml": "keybox.xml ファイルに返信してください。",
+  "keybox.ban.already_banned": "このkeyboxはすでにバンされています。",
+  "keybox.ban.not_found": "このkeyboxはバンされていません。",
+  "keybox.unban.success": "バン解除に成功しました。",
+  "prompt.ban_keybox_usage": "使い方：/ban_keybox <serial_number>\n例：/ban_keybox 1a2b3c4d5e6f",
+  "prompt.unban_keybox_usage": "使い方：/unban_keybox <serial_number>\n例：/unban_keybox 1a2b3c4d5e6f"
+}

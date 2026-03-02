@@ -1,0 +1,15 @@
+{
+  "meta.description": "Keybox 校驗工具",
+  "command.description.check": "校驗 keybox.xml 檔案",
+  "command.help.check": "/check - 校驗 keybox.xml 檔案",
+  "keybox.ban.success": "封禁成功。",
+  "error.file_too_large": "檔案大小超限。",
+  "error.local_botapi_path_inaccessible": "已啟用本地 Bot API，但檔案路徑不可存取。",
+  "keybox.ban.empty": "目前沒有被封禁的 keybox。",
+  "prompt.reply_keybox_xml": "請回覆一份 keybox.xml 檔案。",
+  "keybox.ban.already_banned": "該 keybox 已被封禁。",
+  "keybox.ban.not_found": "該 keybox 未被封禁。",
+  "keybox.unban.success": "解除封禁成功。",
+  "prompt.ban_keybox_usage": "用法：/ban_keybox <serial_number>\n範例：/ban_keybox 1a2b3c4d5e6f",
+  "prompt.unban_keybox_usage": "用法：/unban_keybox <serial_number>\n範例：/unban_keybox 1a2b3c4d5e6f"
+}
