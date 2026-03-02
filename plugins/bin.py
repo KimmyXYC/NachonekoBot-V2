@@ -27,7 +27,7 @@ __command_help__ = {
 async def query_bin_text(card_bin: str) -> str:
     """查询 BIN"""
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
-        return "出错了呜呜呜 ~ 无效的参数。请提供4到8位数字的BIN号码。"
+        return "error.invalid_bin_parameter"
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -90,13 +90,13 @@ async def handle_bin_command(bot, message: types.Message):
     """
     command_args = message.text.split()
     if len(command_args) != 2:
-        await bot.reply_to(message, "请提供有效的BIN号码（4到8位数字）")
+        await bot.reply_to(message, "prompt.valid_bin_required")
         return
 
     card_bin = command_args[1]
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
         await bot.reply_to(
-            message, "出错了呜呜呜 ~ 无效的参数。请提供4到8位数字的BIN号码。"
+            message, "error.invalid_bin_parameter"
         )
         return
 
@@ -113,7 +113,7 @@ async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
 
     # 仅在 middleware 过滤后进来；此处再做一次兜底
     if len(args) != 2 or args[0].lower() != "bin":
-        text = "请提供有效的BIN号码（4到8位数字）"
+        text = "prompt.valid_bin_required"
         result = types.InlineQueryResultArticle(
             id="bin_usage",
             title="BIN 查询",

@@ -220,7 +220,7 @@ async def handle_mcstatus_command(
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            "请提供服务器地址，格式：/mc 服务器地址:端口\n例如：/mc mc.hypixel.net",
+            "prompt.server_address_required",
         )
         return
 
@@ -252,7 +252,7 @@ async def handle_mcstatus_auto_command(bot, message: types.Message):
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            "请提供服务器地址，格式：/mc 服务器地址:端口\n例如：/mc mc.hypixel.net",
+            "prompt.server_address_required",
         )
         return
 

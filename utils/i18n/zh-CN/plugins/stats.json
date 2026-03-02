@@ -5,7 +5,7 @@
   "command.description.dragon": "查看龙王总榜",
   "command.help.stats": "/stats - 今日统计\n/stats 5h - 近 5 小时统计\n/stats 4d - 近 4 日统计\n/stats 3w - 近 3 周统计\n/stats 2m - 近 2 月统计\n/stats 1y - 近 1 年统计\n/stats 2026-02-25 - 指定日期统计\n/stats 2026/02/25 - 指定日期统计\n/stats 20260225 - 指定日期统计\n",
   "command.help.dragon": "/dragon - 龙王总榜\n",
-  "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD] 例如 /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225": "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD]\n例如：/stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225",
-  "该统计仅支持群组使用。": "该统计仅支持在群组中使用。",
-  "龙王总榜\n\n暂无龙王统计数据": "龙王总榜\n\n暂无龙王统计数据。"
+  "prompt.stats_usage": "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD]\n例如：/stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225",
+  "error.stats_group_only": "该统计仅支持在群组中使用。",
+  "dragon.empty": "龙王总榜\n\n暂无龙王统计数据。"
 }

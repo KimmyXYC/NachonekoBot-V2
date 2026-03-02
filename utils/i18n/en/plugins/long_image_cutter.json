@@ -1,5 +1,5 @@
 {
   "meta.description": "Automatically cut long images into multiple 19.5:9 slices with 3:19.5 overlap; slice height follows a 19.5:9 baseline with fine tuning to keep all slices uniform (only effective for images sent as files).",
   "meta.display_name": "Long Image Cutter",
-  "Local Bot API enabled but file path is not accessible.": "Local Bot API enabled but file path is not accessible."
+  "error.local_botapi_path_inaccessible": "Local Bot API enabled but file path is not accessible."
 }

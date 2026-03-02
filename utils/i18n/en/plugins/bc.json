@@ -2,5 +2,5 @@
   "meta.description": "Currency converter (supports multiple fiat rate sources and crypto)",
   "command.description.bc": "Convert currencies (multiple fiat rate sources + crypto)",
   "command.help.bc": "/bc [Amount] [Currency_From] [Currency_To] - Convert currencies (fiat supports multiple rate sources: EU/UnionPay/Mastercard/Visa)\nInline: @NachoNekoX_bot bc [Amount] [Currency_From] [Currency_To]",
-  "数量必须是有效的数字": "The amount must be a valid number"
+  "error.amount_invalid": "The amount must be a valid number"
 }

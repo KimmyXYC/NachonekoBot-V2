@@ -2,6 +2,6 @@
   "meta.description": "TCP 端口连通性测试",
   "command.description.tcping": "执行 TCP Ping 测试",
   "command.help.tcping": "/tcping [IP/Domain]:[Port] - TCP Ping 测试",
-  "❌ 无效的端口号。端口号应为1-65535之间的整数。": "❌ 端口号无效，应为 1-65535 之间的整数。",
-  "❌ 请提供目标主机和端口，格式: /tcping 主机:端口": "❌ 请提供目标主机和端口，格式：/tcping 主机:端口"
+  "error.invalid_port_number": "❌ 端口号无效，应为 1-65535 之间的整数。",
+  "prompt.tcping_host_port_required": "❌ 请提供目标主机和端口，格式：/tcping 主机:端口"
 }

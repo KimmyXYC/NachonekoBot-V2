@@ -2,7 +2,7 @@
   "meta.description": "OCR text recognition (Alibaba qwen-vl-ocr)",
   "command.description.ocr": "Recognize text in images via OCR",
   "command.help.ocr": "/ocr [Custom Prompt] - OCR image text; reply to an image/image file, or use in image caption",
-  "OCR识别中...": "Running OCR...",
-  "格式错误，格式应为 /ocr [自定义提示词]": "Invalid format. Use: /ocr [Custom Prompt]",
-  "请回复一张图片或图片文件后再使用 /ocr [自定义提示词]。": "Please reply to an image or image file, then use /ocr [Custom Prompt]."
+  "status.ocr_processing": "Running OCR...",
+  "error.ocr_invalid_format": "Invalid format. Use: /ocr [Custom Prompt]",
+  "prompt.ocr_reply_image_first": "Please reply to an image or image file, then use /ocr [Custom Prompt]."
 }

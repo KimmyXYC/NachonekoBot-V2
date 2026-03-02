@@ -2,6 +2,6 @@
   "meta.description": "银行卡 BIN 查询",
   "command.description.bin": "查询银行卡 BIN 信息",
   "command.help.bin": "/bin [Card_BIN] - 查询银行卡 BIN 信息\nInline: @NachoNekoX_bot bin [Card_BIN]",
-  "出错了呜呜呜 ~ 无效的参数。请提供4到8位数字的BIN号码。": "参数无效，请提供 4 到 8 位数字的 BIN 号。",
-  "请提供有效的BIN号码（4到8位数字）": "请提供有效的 BIN 号（4 到 8 位数字）。"
+  "error.invalid_bin_parameter": "参数无效，请提供 4 到 8 位数字的 BIN 号。",
+  "prompt.valid_bin_required": "请提供有效的 BIN 号（4 到 8 位数字）。"
 }

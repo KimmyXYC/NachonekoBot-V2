@@ -4,6 +4,6 @@
   "command.description.remake_data": "View reincarnation data",
   "command.help.remake": "/remake - Reincarnate",
   "command.help.remake_data": "/remake_data - View reincarnation data",
-  "您还没有 remake 过呢，快 /remake 吧": "You haven't done a remake yet, try /remake",
-  "查询失败，请稍后再试。": "Query failed, please try again later."
+  "prompt.remake_not_started": "You haven't done a remake yet, try /remake",
+  "error.query_failed_retry": "Query failed, please try again later."
 }

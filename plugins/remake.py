@@ -102,10 +102,10 @@ async def handle_remake_data_command(bot, message):
                 f"您现在是 {user_data['country']} 的 {user_data['gender']}，已转生 {user_data['count']} 次。",
             )
         else:
-            await bot.reply_to(message, "您还没有 remake 过呢，快 /remake 吧")
+            await bot.reply_to(message, "prompt.remake_not_started")
     except Exception as e:
         logger.error(f"Database error: {e}")
-        await bot.reply_to(message, "查询失败，请稍后再试。")
+        await bot.reply_to(message, "error.query_failed_retry")
 
 
 # ==================== 插件注册 ====================

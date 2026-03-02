@@ -2,10 +2,10 @@
   "meta.description": "路由追踪工具（使用 nexttrace）",
   "command.description.trace": "追踪网络路由",
   "command.help.trace": "/trace [IP/Domain] [协议类型(T/U)] [端口] - 追踪路由",
-  "❌ 无效的协议类型，请使用 T (TCP) 或 U (UDP)": "❌ 协议类型无效，请使用 T (TCP) 或 U (UDP)。",
-  "❌ 无效的目标地址，请输入有效的 IP 地址或域名": "❌ 目标地址无效，请输入有效的 IP 地址或域名。",
-  "❌ 未找到 nexttrace 命令，请先安装 nexttrace": "❌ 未找到 nexttrace 命令，请先安装 nexttrace。",
-  "❌ 端口号必须在 1-65535 之间": "❌ 端口号必须在 1-65535 之间。",
-  "❌ 端口必须是数字": "❌ 端口必须为数字。",
-  "用法: /trace <目标地址> [T/U] [端口]\nT = TCP, U = UDP, 不指定则使用 ICMP\n示例: /trace 1.1.1.1\n      /trace example.com T 443": "用法：/trace <目标地址> [T/U] [端口]\nT = TCP，U = UDP，不指定则使用 ICMP\n示例：/trace 1.1.1.1\n      /trace example.com T 443"
+  "error.invalid_protocol_type": "❌ 协议类型无效，请使用 T (TCP) 或 U (UDP)。",
+  "error.trace_invalid_target": "❌ 目标地址无效，请输入有效的 IP 地址或域名。",
+  "error.nexttrace_not_found": "❌ 未找到 nexttrace 命令，请先安装 nexttrace。",
+  "error.port_out_of_range": "❌ 端口号必须在 1-65535 之间。",
+  "error.port_not_numeric": "❌ 端口必须为数字。",
+  "prompt.trace_usage": "用法：/trace <目标地址> [T/U] [端口]\nT = TCP，U = UDP，不指定则使用 ICMP\n示例：/trace 1.1.1.1\n      /trace example.com T 443"
 }

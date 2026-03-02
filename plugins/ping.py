@@ -77,7 +77,7 @@ async def execute_ping_command(target, count=4, timeout=2):
     try:
         # 验证目标是否合法
         if not is_valid_target(target):
-            return "❌ 无效的目标地址。请提供有效的域名或IP地址。"
+            return "error.invalid_target_address"
 
         # 验证ping次数，避免过大的数值
         if not isinstance(count, int) or count <= 0 or count > 10:
@@ -216,7 +216,7 @@ async def handle_ping_command(bot, message: types.Message, target=None):
             target = command_args[1]
         else:
             await bot.reply_to(
-                message, "请提供要 ping 的目标地址，例如: /ping example.com"
+                message, "prompt.ping_target_required"
             )
             return
 
@@ -226,7 +226,7 @@ async def handle_ping_command(bot, message: types.Message, target=None):
 
     # 检查目标是否合法
     if not is_valid_target(target):
-        await bot.reply_to(message, "❌ 无效的目标地址。请提供有效的域名或IP地址。")
+        await bot.reply_to(message, "error.invalid_target_address")
         return
 
     # 发送正在处理的消息

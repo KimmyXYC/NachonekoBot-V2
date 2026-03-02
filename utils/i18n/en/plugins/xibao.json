@@ -1,5 +1,5 @@
 {
   "meta.description": "Xibao/Beibao/Tongbao/Jingbao image generator",
   "meta.display_name": "Report Image Generator",
-  "发生未知错误": "An unknown error occurred"
+  "error.unknown": "An unknown error occurred"
 }

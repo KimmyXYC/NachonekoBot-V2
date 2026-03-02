@@ -359,14 +359,14 @@ async def _send_long_reply(
 
 async def handle_stats_command(bot, message: types.Message):
     if message.chat.type not in ("group", "supergroup"):
-        await bot.reply_to(message, "该统计仅支持群组使用。")
+        await bot.reply_to(message, "error.stats_group_only")
         return
 
     parsed = _parse_stats_args(message.text or "")
     if not parsed:
         await bot.reply_to(
             message,
-            "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD] 例如 /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225",
+            "prompt.stats_usage",
         )
         return
 
@@ -396,12 +396,12 @@ async def handle_stats_command(bot, message: types.Message):
 
 async def handle_dragon_command(bot, message: types.Message):
     if message.chat.type not in ("group", "supergroup"):
-        await bot.reply_to(message, "该统计仅支持群组使用。")
+        await bot.reply_to(message, "error.stats_group_only")
         return
 
     rows, total_days = await _query_dragon_king_leaderboard(message.chat.id)
     if not rows:
-        await bot.reply_to(message, "龙王总榜\n\n暂无龙王统计数据")
+        await bot.reply_to(message, "dragon.empty")
         return
 
     lines = ["龙王总榜", ""]

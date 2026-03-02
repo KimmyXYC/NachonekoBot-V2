@@ -47,18 +47,18 @@ async def check_permissions(bot, message: types.Message):
     """
     from_user = message.from_user
     if not from_user:
-        await bot.reply_to(message, "无法识别消息发送者")
+        await bot.reply_to(message, "error.sender_unrecognized")
         return False
 
     raw_bot_id = BotSetting.bot_id
     if raw_bot_id is None:
-        await bot.reply_to(message, "机器人配置错误：bot_id 无效")
+        await bot.reply_to(message, "error.bot_id_invalid")
         return False
 
     try:
         bot_id = int(raw_bot_id)
     except Exception:
-        await bot.reply_to(message, "机器人配置错误：bot_id 无效")
+        await bot.reply_to(message, "error.bot_id_invalid")
         return False
 
     bot_can_delete = await has_group_admin_permission(
@@ -70,7 +70,7 @@ async def check_permissions(bot, message: types.Message):
         allow_bot_admin=False,
     )
     if not bot_can_delete:
-        await bot.reply_to(message, "请先将机器人设置为管理员并赋予删除消息权限")
+        await bot.reply_to(message, "error.bot_delete_permission_required")
         return False
 
     user_can_delete = await has_group_admin_permission(
@@ -82,7 +82,7 @@ async def check_permissions(bot, message: types.Message):
         allow_bot_admin=True,
     )
     if not user_can_delete:
-        await bot.reply_to(message, "您无权使用此功能")
+        await bot.reply_to(message, "error.permission_denied")
         return False
     return True
 
@@ -242,7 +242,7 @@ async def handle_list_command(bot, message: types.Message):
     """
     result = _get_sanitized_locklist(message.chat.id)
     if not result:
-        await bot.reply_to(message, "本群未锁定任何命令")
+        await bot.reply_to(message, "lock.list.empty")
     else:
         msg = "以下命令在本群中被锁定:\n"
         msg += "\n".join(f"- `{item}`" for item in result)

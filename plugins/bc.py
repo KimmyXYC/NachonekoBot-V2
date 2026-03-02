@@ -572,7 +572,7 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
     try:
         number = float(args[0])
     except ValueError:
-        return "数量必须是有效的数字"
+        return "error.amount_invalid"
 
     _from = args[1].upper().strip()
     _to = args[2].upper().strip()
@@ -759,7 +759,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     try:
         number = float(args[0])
     except ValueError:
-        await bot.reply_to(message, "数量必须是有效的数字")
+        await bot.reply_to(message, "error.amount_invalid")
         return
 
     _from = args[1].upper().strip()

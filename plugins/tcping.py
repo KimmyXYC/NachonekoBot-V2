@@ -88,11 +88,11 @@ async def execute_tcping_command(target, port, count=4, timeout=3):
     try:
         # 验证目标是否合法
         if not is_valid_target(target):
-            return "❌ 无效的目标地址。请提供有效的域名或IP地址。"
+            return "error.invalid_target_address"
 
         # 验证端口是否合法
         if not is_valid_port(port):
-            return "❌ 无效的端口号。端口号应为1-65535之间的整数。"
+            return "error.invalid_port_number"
 
         # 验证tcping次数，避免过大的数值
         if not isinstance(count, int) or count <= 0 or count > 10:
@@ -213,7 +213,7 @@ async def handle_tcping_command(bot, message: types.Message):
     command_args = message.text.split()
 
     if len(command_args) < 2:
-        await bot.reply_to(message, "❌ 请提供目标主机和端口，格式: /tcping 主机:端口")
+        await bot.reply_to(message, "prompt.tcping_host_port_required")
         return
 
     # 解析目标和端口
@@ -224,7 +224,7 @@ async def handle_tcping_command(bot, message: types.Message):
             port = int(port)
         except ValueError:
             await bot.reply_to(
-                message, "❌ 无效的端口号。端口号应为1-65535之间的整数。"
+                message, "error.invalid_port_number"
             )
             return
     else:

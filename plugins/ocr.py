@@ -174,7 +174,7 @@ async def _process_ocr(
 ):
     progress_msg = None
     try:
-        progress_msg = await bot.reply_to(message, "OCR识别中...")
+        progress_msg = await bot.reply_to(message, "status.ocr_processing")
     except Exception as e:
         logger.warning(f"[OCR] 发送占位消息失败: {e}")
 
@@ -234,14 +234,14 @@ async def register_handlers(bot, middleware, plugin_name):
     async def ocr_command_handler(bot, message: types.Message):
         prompt = _extract_prompt(message.text or "")
         if prompt is None:
-            await bot.reply_to(message, "格式错误，格式应为 /ocr [自定义提示词]")
+            await bot.reply_to(message, "error.ocr_invalid_format")
             return
 
         reply = getattr(message, "reply_to_message", None)
         if not reply or not _is_image_message(reply):
             await bot.reply_to(
                 message,
-                "请回复一张图片或图片文件后再使用 /ocr [自定义提示词]。",
+                "prompt.ocr_reply_image_first",
             )
             return
 

@@ -73,10 +73,7 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            "用法: /trace <目标地址> [T/U] [端口]\n"
-            "T = TCP, U = UDP, 不指定则使用 ICMP\n"
-            "示例: /trace 1.1.1.1\n"
-            "      /trace example.com T 443",
+            "prompt.trace_usage",
         )
         return
 
@@ -84,7 +81,7 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
 
     # 验证目标地址，防止注入
     if not validate_target(target):
-        await bot.reply_to(message, "❌ 无效的目标地址，请输入有效的 IP 地址或域名")
+        await bot.reply_to(message, "error.trace_invalid_target")
         return
 
     protocol = None  # 默认使用ICMP
@@ -98,22 +95,22 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
         elif protocol_arg in ["U", "UDP"]:
             protocol = "U"
         else:
-            await bot.reply_to(message, "❌ 无效的协议类型，请使用 T (TCP) 或 U (UDP)")
+            await bot.reply_to(message, "error.invalid_protocol_type")
             return
 
     # 解析端口参数
     if len(command_args) >= 4:
         if not command_args[3].isdigit():
-            await bot.reply_to(message, "❌ 端口必须是数字")
+            await bot.reply_to(message, "error.port_not_numeric")
             return
         port = int(command_args[3])
         if not validate_port(port):
-            await bot.reply_to(message, "❌ 端口号必须在 1-65535 之间")
+            await bot.reply_to(message, "error.port_out_of_range")
             return
 
     # 检查 nexttrace 是否安装
     if not shutil.which("nexttrace"):
-        await bot.reply_to(message, "❌ 未找到 nexttrace 命令，请先安装 nexttrace")
+        await bot.reply_to(message, "error.nexttrace_not_found")
         return
 
     # 发送初始消息

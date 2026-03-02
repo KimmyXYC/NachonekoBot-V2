@@ -2,5 +2,5 @@
   "meta.description": "货币换算工具（支持多法币汇率源与加密货币）",
   "command.description.bc": "货币换算",
   "command.help.bc": "/bc [Amount] [Currency_From] [Currency_To] - 货币换算（法币支持欧盟/银联/Mastercard/Visa 多汇率源）\nInline: @NachoNekoX_bot bc [Amount] [Currency_From] [Currency_To]",
-  "数量必须是有效的数字": "数量必须是有效数字。"
+  "error.amount_invalid": "数量必须是有效数字。"
 }

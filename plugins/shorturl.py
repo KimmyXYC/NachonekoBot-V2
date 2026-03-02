@@ -44,7 +44,7 @@ async def handle_short_command(bot, message: types.Message, url):
     if server == "":
         logger.error(f"[Short URL][{message.chat.id}]: Backend Address Not Set")
         await bot.edit_message_text(
-            "生成失败, 后端地址未设置",
+            "error.backend_url_not_configured",
             message.chat.id,
             reply.message_id,
             disable_web_page_preview=True,

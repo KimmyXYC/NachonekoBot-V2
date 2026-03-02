@@ -4,6 +4,6 @@
   "command.description.remake_data": "查看转生数据",
   "command.help.remake": "/remake - 开始转生",
   "command.help.remake_data": "/remake_data - 查看转生数据",
-  "您还没有 remake 过呢，快 /remake 吧": "你还没有转生记录，快试试 /remake 吧。",
-  "查询失败，请稍后再试。": "查询失败，请稍后重试。"
+  "prompt.remake_not_started": "你还没有转生记录，快试试 /remake 吧。",
+  "error.query_failed_retry": "查询失败，请稍后重试。"
 }
