@@ -1,4 +1,9 @@
 {
   "meta.description": "Lower-head detection system (only effective for configured users)",
-  "command.help.inb": "Inline: @NachoNekoX_bot inb"
+  "command.help.inb": "Inline: @NachoNekoX_bot inb",
+  "inline.usage_text": "Usage: inb",
+  "inline.usage_title": "Xiatou stats (inb)",
+  "inline.usage_description": "Usage: inb",
+  "inline.result_title": "Xiatou Stats",
+  "inline.send_result_description": "Send stats result"
 }

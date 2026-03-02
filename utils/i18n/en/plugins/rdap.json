@@ -1,5 +1,11 @@
 {
   "meta.description": "RDAP lookup for domains, IPs, and ASNs",
   "command.description.rdap": "Query RDAP information",
-  "command.help.rdap": "/rdap [Domain/IP/ASN] - Query RDAP information\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\nSupported formats: domain(example.com), IP(1.1.1.1), ASN(AS13335 or 13335)"
+  "command.help.rdap": "/rdap [Domain/IP/ASN] - Query RDAP information\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\nSupported formats: domain(example.com), IP(1.1.1.1), ASN(AS13335 or 13335)",
+  "status.rdap_querying": "Querying RDAP info for {target}...",
+  "inline.usage_text": "Usage: rdap [Domain/IP/ASN]\nSupported: domain, IP, ASN (AS13335 or 13335)",
+  "inline.usage_title": "RDAP Lookup",
+  "inline.usage_description": "Usage: rdap [Domain/IP/ASN]",
+  "inline.result_title": "RDAP: {target}",
+  "inline.send_result_description": "Send lookup result"
 }

@@ -1,5 +1,11 @@
 {
   "meta.description": "Whois domain lookup",
   "command.description.whois": "Query Whois information",
-  "command.help.whois": "/whois [Domain] - Query Whois information\nInline: @NachoNekoX_bot whois [Domain]"
+  "command.help.whois": "/whois [Domain] - Query Whois information\nInline: @NachoNekoX_bot whois [Domain]",
+  "status.whois_querying": "Querying Whois info for {target}...",
+  "inline.usage_text": "Usage: whois [Domain]",
+  "inline.usage_title": "Whois Lookup",
+  "inline.usage_description": "Usage: whois [Domain]",
+  "inline.result_title": "Whois: {domain}",
+  "inline.send_result_description": "Send lookup result"
 }

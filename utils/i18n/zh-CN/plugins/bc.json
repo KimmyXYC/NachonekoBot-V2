@@ -2,5 +2,11 @@
   "meta.description": "货币换算工具（支持多法币汇率源与加密货币）",
   "command.description.bc": "货币换算",
   "command.help.bc": "/bc [Amount] [Currency_From] [Currency_To] - 货币换算（法币支持欧盟/银联/Mastercard/Visa 多汇率源）\nInline: @NachoNekoX_bot bc [Amount] [Currency_From] [Currency_To]",
-  "error.amount_invalid": "数量必须是有效数字。"
+  "error.amount_invalid": "数量必须是有效数字。",
+  "inline.usage_text": "使用方法: bc <数量> <币种1> <币种2>\n例如: bc 100 USD EUR",
+  "inline.usage_title": "货币转换 (bc)",
+  "inline.usage_description": "用法：bc [Amount] [Currency_From] [Currency_To]",
+  "inline.send_result_description": "发送转换结果",
+  "prompt.bc_usage": "使用方法: /bc <数量> <币种1> <币种2>\n例如: /bc 100 USD EUR - 将100美元转换为欧元\n例如: /bc 1 BTC USD - 将1比特币转换为美元\n例如: /bc 0.5 ETH BTC - 将0.5以太坊转换为比特币",
+  "status.bc_converting": "正在转换 {amount} {source_currency} 到 {target_currency}..."
 }

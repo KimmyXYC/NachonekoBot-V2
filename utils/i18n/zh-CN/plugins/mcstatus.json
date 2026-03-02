@@ -6,5 +6,13 @@
   "command.help.mc": "/mcstatus [服务器地址:端口] - 查询 Minecraft 服务器状态（自动识别 Java/基岩）\nInline: @NachoNekoX_bot mc [服务器地址:端口]",
   "command.help.mcje": "/mcje [服务器地址:端口] - 查询 Minecraft Java 版服务器状态\nInline: @NachoNekoX_bot mcje [服务器地址:端口]",
   "command.help.mcbe": "/mcbe [服务器地址:端口] - 查询 Minecraft 基岩版服务器状态\nInline: @NachoNekoX_bot mcbe [服务器地址:端口]",
-  "prompt.server_address_required": "请提供服务器地址，格式：/mc 服务器地址:端口\n例如：/mc mc.hypixel.net"
+  "prompt.server_address_required": "请提供服务器地址，格式：/mc 服务器地址:端口\n例如：/mc mc.hypixel.net",
+  "inline.usage_text": "请提供服务器地址\n用法：mc [服务器地址:端口] (自动识别) 或 mcje/mcbe [服务器地址:端口] (指定版本)",
+  "inline.usage_title": "MC 服务器状态查询",
+  "inline.usage_description": "用法：mc/mcje/mcbe [服务器地址:端口]",
+  "inline.prefix_bedrock": "基岩版",
+  "inline.prefix_java": "Java版",
+  "inline.prefix_auto": "自动识别",
+  "inline.result_title": "MC {prefix}：{server_address}",
+  "inline.send_result_description": "发送查询结果"
 }

@@ -8,6 +8,7 @@ from telebot import types
 from loguru import logger
 
 from app.utils import markdown_to_telegram_html, command_error_msg
+from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 from utils.yaml import BotConfig
 
 # ==================== 插件元数据 ====================
@@ -25,23 +26,30 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_icp_text(domain: str) -> str:
+async def query_icp_text(domain: str, lang: str) -> str:
     """生成与 `/icp` 命令一致的输出文本，用于命令与 Inline 复用（HTML）。"""
     status, data = await icp_record_check(domain)
     if not status:
-        return markdown_to_telegram_html(f"请求失败: `{data}`")
+        return markdown_to_telegram_html(
+            plugin_t(__plugin_name__, "error.request_failed", lang, reason=data)
+        )
 
     if not data:
-        icp_info = f"""查询目标:  `{domain}`\n备案状态:  `未备案`"""
+        icp_info = plugin_t(__plugin_name__, "result.not_recorded", lang, domain=domain)
     else:
         icp_info = ""
         for item in data:
-            icp_info += (
-                f"域名:  `{item['domain']}`\n"
-                f"备案号:  `{item['mainLicence']}`\n"
-                f"备案主体:  `{item['unitName']}`\n"
-                f"备案性质:  `{item['natureName']}`\n"
-                f"备案时间:  `{item['updateRecordTime']}`\n\n"
+            if not isinstance(item, dict):
+                continue
+            icp_info += plugin_t(
+                __plugin_name__,
+                "result.record_item",
+                lang,
+                domain=item.get("domain", ""),
+                licence=item.get("mainLicence", ""),
+                unit_name=item.get("unitName", ""),
+                nature_name=item.get("natureName", ""),
+                update_time=item.get("updateRecordTime", ""),
             )
 
     return markdown_to_telegram_html(icp_info)
@@ -55,10 +63,13 @@ async def handle_icp_command(bot, message: types.Message):
     :return:
     """
     domain = message.text.split()[1]
+    lang = await get_message_language(message)
     msg = await bot.reply_to(
-        message, f"正在查询域名 {domain} 备案信息...", disable_web_page_preview=True
+        message,
+        plugin_t(__plugin_name__, "status.icp_querying", lang, domain=domain),
+        disable_web_page_preview=True,
     )
-    text = await query_icp_text(domain)
+    text = await query_icp_text(domain, lang)
     await bot.edit_message_text(
         text, message.chat.id, msg.message_id, parse_mode="HTML"
     )
@@ -66,15 +77,16 @@ async def handle_icp_command(bot, message: types.Message):
 
 async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot icp [Domain]"""
+    lang = await get_inline_query_language(inline_query)
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     if len(tokens) != 2 or tokens[0].lower() != "icp":
-        usage = "用法：icp [Domain]"
+        usage = plugin_t(__plugin_name__, "inline.usage_text", lang)
         result = types.InlineQueryResultArticle(
             id="icp_usage",
-            title="ICP 备案查询",
-            description="用法：icp [Domain]",
+            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
+            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
             input_message_content=types.InputTextMessageContent(usage),
         )
         await bot.answer_inline_query(
@@ -83,11 +95,11 @@ async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     domain = tokens[1]
-    result_text = await query_icp_text(domain)
+    result_text = await query_icp_text(domain, lang)
     result = types.InlineQueryResultArticle(
         id=f"icp_{domain}",
-        title=f"ICP：{domain}",
-        description="发送查询结果",
+        title=plugin_t(__plugin_name__, "inline.result_title", lang, domain=domain),
+        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
         input_message_content=types.InputTextMessageContent(
             result_text, parse_mode="HTML"
         ),

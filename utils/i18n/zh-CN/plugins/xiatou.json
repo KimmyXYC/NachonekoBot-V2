@@ -1,4 +1,9 @@
 {
   "meta.description": "下头检测系统（仅对配置用户生效）",
-  "command.help.inb": "Inline: @NachoNekoX_bot inb"
+  "command.help.inb": "Inline: @NachoNekoX_bot inb",
+  "inline.usage_text": "用法：inb",
+  "inline.usage_title": "下头次数统计 (inb)",
+  "inline.usage_description": "用法：inb",
+  "inline.result_title": "下头次数统计",
+  "inline.send_result_description": "发送统计结果"
 }

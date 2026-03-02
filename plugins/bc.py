@@ -12,6 +12,7 @@ from loguru import logger
 from binance.spot import Spot
 from binance.error import ClientError
 import xmltodict
+from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 
 try:
     from curl_cffi.requests import AsyncSession
@@ -679,16 +680,17 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
 
 async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot bc [Amount] [Currency_From] [Currency_To]"""
+    lang = await get_inline_query_language(inline_query)
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     # 仅在 middleware 过滤后进来；此处再做一次兜底
     if not tokens or tokens[0].lower() != "bc":
-        text = "使用方法: bc <数量> <币种1> <币种2>\n例如: bc 100 USD EUR"
+        text = plugin_t(__plugin_name__, "inline.usage_text", lang)
         result = types.InlineQueryResultArticle(
             id="bc_usage",
-            title="货币转换 (bc)",
-            description="用法：bc [Amount] [Currency_From] [Currency_To]",
+                title=plugin_t(__plugin_name__, "inline.usage_title", lang),
+            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
             input_message_content=types.InputTextMessageContent(text),
         )
         await bot.answer_inline_query(
@@ -698,11 +700,11 @@ async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
 
     args = _normalize_bc_tokens(tokens)
     if len(args) not in (0, 3):
-        text = "使用方法: bc <数量> <币种1> <币种2>\n例如: bc 100 USD EUR"
+        text = plugin_t(__plugin_name__, "inline.usage_text", lang)
         result = types.InlineQueryResultArticle(
             id="bc_usage",
-            title="货币转换 (bc)",
-            description="用法：bc [Amount] [Currency_From] [Currency_To]",
+            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
+            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
             input_message_content=types.InputTextMessageContent(text),
         )
         await bot.answer_inline_query(
@@ -720,7 +722,7 @@ async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
     result = types.InlineQueryResultArticle(
         id=result_id,
         title=title,
-        description="发送转换结果",
+        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
         input_message_content=types.InputTextMessageContent(result_text),
     )
     await bot.answer_inline_query(
@@ -736,6 +738,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     :return:
     """
     command_args = (message.text or "").split()
+    lang = await get_message_language(message)
     args = _normalize_bc_tokens(command_args)
 
     # 无参数时显示BTC和ETH的价格
@@ -746,12 +749,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
 
     # 参数不足
     if len(args) < 3:
-        usage_text = (
-            "使用方法: /bc <数量> <币种1> <币种2>\n"
-            "例如: /bc 100 USD EUR - 将100美元转换为欧元\n"
-            "例如: /bc 1 BTC USD - 将1比特币转换为美元\n"
-            "例如: /bc 0.5 ETH BTC - 将0.5以太坊转换为比特币"
-        )
+        usage_text = plugin_t(__plugin_name__, "prompt.bc_usage", lang)
         await bot.reply_to(message, usage_text)
         return
 
@@ -765,7 +763,17 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     _from = args[1].upper().strip()
     _to = args[2].upper().strip()
 
-    msg = await bot.reply_to(message, f"正在转换 {number} {_from} 到 {_to}...")
+    msg = await bot.reply_to(
+        message,
+        plugin_t(
+            __plugin_name__,
+            "status.bc_converting",
+            lang,
+            amount=number,
+            source_currency=_from,
+            target_currency=_to,
+        ),
+    )
 
     result_text = await query_bc_text(command_args)
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)

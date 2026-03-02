@@ -7,6 +7,7 @@
 import random
 from telebot import types
 from loguru import logger
+from utils.i18n import get_inline_query_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "callanyone"
@@ -78,6 +79,7 @@ async def handle_call_command(bot, message):
 
 async def handle_call_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot calldoctor/callmtf/callpolice"""
+    lang = await get_inline_query_language(inline_query)
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
@@ -87,11 +89,11 @@ async def handle_call_inline_query(bot, inline_query: types.InlineQuery):
 
     cmd = tokens[0].lower()
     if cmd not in supported or len(tokens) != 1:
-        text = "用法：\n- calldoctor\n- callmtf\n- callpolice"
+        text = plugin_t(__plugin_name__, "inline.usage_text", lang)
         result = types.InlineQueryResultArticle(
             id="callanyone_usage",
-            title="呼叫 (callanyone)",
-            description="用法：calldoctor / callmtf / callpolice",
+            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
+            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
             input_message_content=types.InputTextMessageContent(text),
         )
         await bot.answer_inline_query(
@@ -101,14 +103,14 @@ async def handle_call_inline_query(bot, inline_query: types.InlineQuery):
 
     anyone_msg = query_call_text(cmd)
     titles = {
-        "calldoctor": "呼叫医生",
-        "callmtf": "呼叫 MTF",
-        "callpolice": "呼叫警察",
+        "calldoctor": plugin_t(__plugin_name__, "inline.title.calldoctor", lang),
+        "callmtf": plugin_t(__plugin_name__, "inline.title.callmtf", lang),
+        "callpolice": plugin_t(__plugin_name__, "inline.title.callpolice", lang),
     }
     result = types.InlineQueryResultArticle(
         id=f"callanyone_{cmd}",
         title=titles.get(cmd, cmd),
-        description="发送呼叫结果",
+        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
         input_message_content=types.InputTextMessageContent(anyone_msg),
     )
     await bot.answer_inline_query(

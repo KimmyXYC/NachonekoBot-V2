@@ -6,5 +6,13 @@
   "command.help.mc": "/mcstatus [Server:Port] - Query Minecraft server status (auto-detect Java/Bedrock)\nInline: @NachoNekoX_bot mc [Server:Port]",
   "command.help.mcje": "/mcje [Server:Port] - Query Minecraft Java server status\nInline: @NachoNekoX_bot mcje [Server:Port]",
   "command.help.mcbe": "/mcbe [Server:Port] - Query Minecraft Bedrock server status\nInline: @NachoNekoX_bot mcbe [Server:Port]",
-  "prompt.server_address_required": "Please provide a server address in this format: /mc server:port\nExample: /mc mc.hypixel.net"
+  "prompt.server_address_required": "Please provide a server address in this format: /mc server:port\nExample: /mc mc.hypixel.net",
+  "inline.usage_text": "Please provide server address\nUsage: mc [server:port] (auto) or mcje/mcbe [server:port] (specific edition)",
+  "inline.usage_title": "MC Server Status",
+  "inline.usage_description": "Usage: mc/mcje/mcbe [server:port]",
+  "inline.prefix_bedrock": "Bedrock",
+  "inline.prefix_java": "Java",
+  "inline.prefix_auto": "Auto",
+  "inline.result_title": "MC {prefix}: {server_address}",
+  "inline.send_result_description": "Send lookup result"
 }

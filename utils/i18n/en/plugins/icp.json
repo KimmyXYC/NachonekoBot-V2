@@ -1,5 +1,14 @@
 {
   "meta.description": "ICP record lookup",
   "command.description.icp": "Query domain ICP registration information",
-  "command.help.icp": "/icp [Domain] - Query domain ICP registration information\nInline: @NachoNekoX_bot icp [Domain]"
+  "command.help.icp": "/icp [Domain] - Query domain ICP registration information\nInline: @NachoNekoX_bot icp [Domain]",
+  "error.request_failed": "Request failed: `{reason}`",
+  "result.not_recorded": "Query target: `{domain}`\nRecord status: `Not registered`",
+  "result.record_item": "Domain: `{domain}`\nLicense: `{licence}`\nRegistrant: `{unit_name}`\nType: `{nature_name}`\nUpdated at: `{update_time}`\n\n",
+  "status.icp_querying": "Querying ICP record for {domain}...",
+  "inline.usage_text": "Usage: icp [Domain]",
+  "inline.usage_title": "ICP Lookup",
+  "inline.usage_description": "Usage: icp [Domain]",
+  "inline.result_title": "ICP: {domain}",
+  "inline.send_result_description": "Send lookup result"
 }

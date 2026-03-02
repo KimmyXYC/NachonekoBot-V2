@@ -1,5 +1,22 @@
 {
   "meta.description": "IP address lookup",
   "command.description.ip": "Query IP/domain information",
-  "command.help.ip": "/ip [IP/Domain] - Query IP/domain information\nInline: @NachoNekoX_bot ip [IP/Domain]"
+  "command.help.ip": "/ip [IP/Domain] - Query IP/domain information\nInline: @NachoNekoX_bot ip [IP/Domain]",
+  "error.request_failed": "Request failed: `{reason}`",
+  "label.query_target": "Query target:  `{target}`\n",
+  "label.resolved_target": "Resolved address:  `{target}`\n",
+  "label.region_unknown": "Region:  `Unknown`\n",
+  "label.region": "Region:  `{country} - {region}`\n",
+  "label.geo": "Geo:  `{lon}, {lat}`\n",
+  "label.isp": "ISP:  `{isp}`\n",
+  "label.org": "Organization:  `{org}`\n",
+  "hint.mobile_ip": "\nThis IP may be *mobile data IP*",
+  "hint.proxy_ip": "\nThis IP may be *proxy IP*",
+  "hint.hosting_ip": "\nThis IP may be *datacenter IP*",
+  "status.ip_querying": "Querying {target} ...",
+  "inline.usage_text": "Usage: ip [IP/Domain]",
+  "inline.usage_title": "IP Lookup",
+  "inline.usage_description": "Usage: ip [IP/Domain]",
+  "inline.result_title": "IP: {target}",
+  "inline.send_result_description": "Send lookup result"
 }

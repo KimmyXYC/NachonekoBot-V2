@@ -9,6 +9,7 @@ import aiohttp
 from telebot import types
 from loguru import logger
 from app.utils import escape_md_v2_text, command_error_msg
+from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "ip"
@@ -25,38 +26,58 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_ip_text(raw_target: str) -> str:
+async def query_ip_text(raw_target: str, lang: str) -> str:
     """生成与 `/ip` 命令一致的输出文本，用于命令与 Inline 复用（MarkdownV2）。"""
     url = convert_to_punycode(raw_target)
 
     try:
         status, data = await ipapi_ip(url)
     except Exception as e:
-        return f"请求失败: `{e}`"
+        return plugin_t(__plugin_name__, "error.request_failed", lang, reason=e)
 
     if not status:
         # ip-api 的失败通常带 message 字段
         if isinstance(data, dict) and data.get("message"):
-            return f"请求失败: `{data['message']}`"
-        return f"请求失败: `{data}`"
+            return plugin_t(
+                __plugin_name__, "error.request_failed", lang, reason=data["message"]
+            )
+        return plugin_t(__plugin_name__, "error.request_failed", lang, reason=data)
 
     _is_url = url != data["query"]
     if not data["country"]:
-        ip_info = f"""查询目标:  `{url}`\n"""
+        ip_info = plugin_t(__plugin_name__, "label.query_target", lang, target=url)
         if _is_url:
-            ip_info += f"""解析地址:  `{data["query"]}`\n"""
-        ip_info += """地区:  `未知`\n"""
+            ip_info += plugin_t(
+                __plugin_name__, "label.resolved_target", lang, target=data["query"]
+            )
+        ip_info += plugin_t(__plugin_name__, "label.region_unknown", lang)
     else:
-        ip_info = f"""查询目标:  `{url}`\n"""
+        ip_info = plugin_t(__plugin_name__, "label.query_target", lang, target=url)
         if _is_url:
-            ip_info += f"""解析地址:  `{data["query"]}`\n"""
+            ip_info += plugin_t(
+                __plugin_name__, "label.resolved_target", lang, target=data["query"]
+            )
         region = (
             f"{data['regionName']} - {data['city']}"
             if data["regionName"] and data["city"]
             else data["regionName"] or data["city"] or data["country"]
         )
-        ip_info += f"""地区:  `{data["country"]} - {region}`\n"""
-        ip_info += f"""经纬度:  `{data["lon"]}, {data["lat"]}`\nISP:  `{data["isp"]}`\n组织:  `{data["org"]}`\n"""
+        ip_info += plugin_t(
+            __plugin_name__,
+            "label.region",
+            lang,
+            country=data["country"],
+            region=region,
+        )
+        ip_info += plugin_t(
+            __plugin_name__,
+            "label.geo",
+            lang,
+            lon=data["lon"],
+            lat=data["lat"],
+        )
+        ip_info += plugin_t(__plugin_name__, "label.isp", lang, isp=data["isp"])
+        ip_info += plugin_t(__plugin_name__, "label.org", lang, org=data["org"])
         re_match = re.search(r"(AS\d+)", data["as"])
         if re_match:
             as_number = re_match.group(1)
@@ -66,21 +87,24 @@ async def query_ip_text(raw_target: str) -> str:
         else:
             ip_info += f"""`{data["as"]}`"""
     if data["mobile"]:
-        ip_info += """\n此 IP 可能为 *蜂窝移动数据 IP*"""
+        ip_info += plugin_t(__plugin_name__, "hint.mobile_ip", lang)
     if data["proxy"]:
-        ip_info += """\n此 IP 可能为 *代理 IP*"""
+        ip_info += plugin_t(__plugin_name__, "hint.proxy_ip", lang)
     if data["hosting"]:
-        ip_info += """\n此 IP 可能为 *数据中心 IP*"""
+        ip_info += plugin_t(__plugin_name__, "hint.hosting_ip", lang)
     return ip_info
 
 
 async def handle_ip_command(bot, message: types.Message):
     """处理 IP 查询命令"""
+    lang = await get_message_language(message)
     target = message.text.split()[1]
     msg = await bot.reply_to(
-        message, f"正在查询 {target} ...", disable_web_page_preview=True
+        message,
+        plugin_t(__plugin_name__, "status.ip_querying", lang, target=target),
+        disable_web_page_preview=True,
     )
-    ip_info = await query_ip_text(target)
+    ip_info = await query_ip_text(target, lang)
     await bot.edit_message_text(
         ip_info,
         message.chat.id,
@@ -92,15 +116,16 @@ async def handle_ip_command(bot, message: types.Message):
 
 async def handle_ip_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot ip [IP/Domain]"""
+    lang = await get_inline_query_language(inline_query)
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     if len(tokens) != 2 or tokens[0].lower() != "ip":
-        usage = "用法：ip [IP/Domain]"
+        usage = plugin_t(__plugin_name__, "inline.usage_text", lang)
         result = types.InlineQueryResultArticle(
             id="ip_usage",
-            title="IP 查询",
-            description="用法：ip [IP/Domain]",
+            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
+            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
             input_message_content=types.InputTextMessageContent(usage),
         )
         await bot.answer_inline_query(
@@ -109,12 +134,12 @@ async def handle_ip_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     target = tokens[1]
-    result_text = await query_ip_text(target)
+    result_text = await query_ip_text(target, lang)
 
     result = types.InlineQueryResultArticle(
         id=f"ip_{target}",
-        title=f"IP：{target}",
-        description="发送查询结果",
+        title=plugin_t(__plugin_name__, "inline.result_title", lang, target=target),
+        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
         input_message_content=types.InputTextMessageContent(
             result_text, parse_mode="MarkdownV2"
         ),

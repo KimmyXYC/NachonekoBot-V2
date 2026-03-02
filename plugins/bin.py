@@ -8,6 +8,7 @@ import aiohttp
 from json.decoder import JSONDecodeError
 from telebot import types
 from loguru import logger
+from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "bin"
@@ -24,7 +25,7 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_bin_text(card_bin: str) -> str:
+async def query_bin_text(card_bin: str, lang: str | None = None) -> str:
     """查询 BIN"""
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
         return "error.invalid_bin_parameter"
@@ -33,48 +34,79 @@ async def query_bin_text(card_bin: str) -> str:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://lookup.binlist.net/{card_bin}") as r:
                 if r.status == 404:
-                    return "出错了呜呜呜 ~ 目标卡头不存在"
+                    return "error.bin_not_found"
                 if r.status == 429:
-                    return "出错了呜呜呜 ~ 每分钟限额超过，请等待一分钟再试"
+                    return "error.rate_limit_exceeded"
                 if r.status != 200:
-                    return f"出错了呜呜呜 ~ 请求失败，状态码: {r.status}"
+                    return plugin_t(
+                        __plugin_name__,
+                        "error.request_failed_with_status",
+                        lang,
+                        status=r.status,
+                    )
 
                 content = await r.text()
                 bin_json = json.loads(content)
     except aiohttp.ClientError:
-        return "出错了呜呜呜 ~ 无法访问到binlist。"
+        return "error.binlist_unreachable"
     except JSONDecodeError:
-        return "出错了呜呜呜 ~ 无效的参数。"
+        return "error.invalid_parameter"
     except Exception as e:
-        return f"出错了呜呜呜 ~ 发生错误: {str(e)}"
+        return plugin_t(
+            __plugin_name__, "error.exception_occurred", lang, reason=str(e)
+        )
 
     msg_out = []
-    msg_out.extend([f"BIN：{card_bin}"])
+    msg_out.extend([plugin_t(__plugin_name__, "label.bin", lang, value=card_bin)])
     try:
-        msg_out.extend([f"卡品牌：{bin_json['scheme']}"])
+        msg_out.extend(
+            [plugin_t(__plugin_name__, "label.scheme", lang, value=bin_json["scheme"])]
+        )
     except (KeyError, TypeError):
         pass
     try:
-        msg_out.extend([f"卡类型：{bin_json['type']}"])
+        msg_out.extend(
+            [plugin_t(__plugin_name__, "label.card_type", lang, value=bin_json["type"])]
+        )
     except (KeyError, TypeError):
         pass
     try:
-        msg_out.extend([f"卡种类：{bin_json['brand']}"])
+        msg_out.extend(
+            [plugin_t(__plugin_name__, "label.brand", lang, value=bin_json["brand"])]
+        )
     except (KeyError, TypeError):
         pass
     try:
-        msg_out.extend([f"发卡行：{bin_json['bank']['name']}"])
+        msg_out.extend(
+            [
+                plugin_t(
+                    __plugin_name__,
+                    "label.bank_name",
+                    lang,
+                    value=bin_json["bank"]["name"],
+                )
+            ]
+        )
     except (KeyError, TypeError):
         pass
     try:
         if bin_json["prepaid"]:
-            msg_out.extend(["是否预付：是"])
+            msg_out.extend([plugin_t(__plugin_name__, "label.prepaid_yes", lang)])
         else:
-            msg_out.extend(["是否预付：否"])
+            msg_out.extend([plugin_t(__plugin_name__, "label.prepaid_no", lang)])
     except (KeyError, TypeError):
         pass
     try:
-        msg_out.extend([f"发卡国家：{bin_json['country']['name']}"])
+        msg_out.extend(
+            [
+                plugin_t(
+                    __plugin_name__,
+                    "label.country_name",
+                    lang,
+                    value=bin_json["country"]["name"],
+                )
+            ]
+        )
     except (KeyError, TypeError):
         pass
 
@@ -89,35 +121,38 @@ async def handle_bin_command(bot, message: types.Message):
     :return:
     """
     command_args = message.text.split()
+    lang = await get_message_language(message)
     if len(command_args) != 2:
         await bot.reply_to(message, "prompt.valid_bin_required")
         return
 
     card_bin = command_args[1]
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
-        await bot.reply_to(
-            message, "error.invalid_bin_parameter"
-        )
+        await bot.reply_to(message, "error.invalid_bin_parameter")
         return
 
-    msg = await bot.reply_to(message, f"正在查询BIN: {card_bin} ...")
+    msg = await bot.reply_to(
+        message,
+        plugin_t(__plugin_name__, "status.querying_bin", lang, card_bin=card_bin),
+    )
 
-    result_text = await query_bin_text(card_bin)
+    result_text = await query_bin_text(card_bin, lang)
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
 
 async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot bin [Card_BIN]"""
+    lang = await get_inline_query_language(inline_query)
     query = (inline_query.query or "").strip()
     args = query.split()
 
     # 仅在 middleware 过滤后进来；此处再做一次兜底
     if len(args) != 2 or args[0].lower() != "bin":
-        text = "prompt.valid_bin_required"
+        text = plugin_t(__plugin_name__, "prompt.valid_bin_required", lang)
         result = types.InlineQueryResultArticle(
             id="bin_usage",
-            title="BIN 查询",
-            description="用法：bin [Card_BIN]",
+            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
+            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
             input_message_content=types.InputTextMessageContent(text),
         )
         await bot.answer_inline_query(
@@ -126,12 +161,12 @@ async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     card_bin = args[1]
-    result_text = await query_bin_text(card_bin)
+    result_text = await query_bin_text(card_bin, lang)
 
     result = types.InlineQueryResultArticle(
         id=f"bin_{card_bin}",
-        title=f"BIN：{card_bin}",
-        description="发送查询结果",
+        title=plugin_t(__plugin_name__, "inline.result_title", lang, card_bin=card_bin),
+        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
         input_message_content=types.InputTextMessageContent(result_text),
     )
     await bot.answer_inline_query(

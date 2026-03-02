@@ -1,5 +1,11 @@
 {
   "meta.description": "Whois 域名查询",
   "command.description.whois": "查询 Whois 信息",
-  "command.help.whois": "/whois [Domain] - 查询 Whois 信息\nInline: @NachoNekoX_bot whois [Domain]"
+  "command.help.whois": "/whois [Domain] - 查询 Whois 信息\nInline: @NachoNekoX_bot whois [Domain]",
+  "status.whois_querying": "正在查询 {target} Whois 信息...",
+  "inline.usage_text": "用法：whois [Domain]",
+  "inline.usage_title": "Whois 查询",
+  "inline.usage_description": "用法：whois [Domain]",
+  "inline.result_title": "Whois：{domain}",
+  "inline.send_result_description": "发送查询结果"
 }

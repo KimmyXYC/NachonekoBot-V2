@@ -9,6 +9,7 @@ import idna
 from telebot import types
 from loguru import logger
 from app.utils import command_error_msg
+from utils.i18n import get_inline_query_language, get_message_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "whois"
@@ -146,8 +147,11 @@ async def handle_whois_command(bot, message: types.Message):
     :return:
     """
     data = message.text.split()[1]
+    lang = await get_message_language(message)
     msg = await bot.reply_to(
-        message, f"正在查询 {data} Whois 信息...", disable_web_page_preview=True
+        message,
+        plugin_t(__plugin_name__, "status.whois_querying", lang, target=data),
+        disable_web_page_preview=True,
     )
     text = await query_whois_text(data)
     await bot.edit_message_text(
@@ -157,15 +161,16 @@ async def handle_whois_command(bot, message: types.Message):
 
 async def handle_whois_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot whois [Domain]"""
+    lang = await get_inline_query_language(inline_query)
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
     if len(tokens) != 2 or tokens[0].lower() != "whois":
-        usage = "用法：whois [Domain]"
+        usage = plugin_t(__plugin_name__, "inline.usage_text", lang)
         result = types.InlineQueryResultArticle(
             id="whois_usage",
-            title="Whois 查询",
-            description="用法：whois [Domain]",
+            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
+            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
             input_message_content=types.InputTextMessageContent(usage),
         )
         await bot.answer_inline_query(
@@ -177,8 +182,8 @@ async def handle_whois_inline_query(bot, inline_query: types.InlineQuery):
     result_text = await query_whois_text(domain)
     result = types.InlineQueryResultArticle(
         id=f"whois_{domain}",
-        title=f"Whois：{domain}",
-        description="发送查询结果",
+        title=plugin_t(__plugin_name__, "inline.result_title", lang, domain=domain),
+        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
         input_message_content=types.InputTextMessageContent(
             result_text, parse_mode="MarkdownV2"
         ),

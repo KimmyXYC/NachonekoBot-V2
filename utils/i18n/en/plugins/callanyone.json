@@ -5,5 +5,12 @@
   "command.description.callpolice": "Call police",
   "command.help.calldoctor": "/calldoctor - Call doctor\nInline: @NachoNekoX_bot calldoctor",
   "command.help.callmtf": "/callmtf - Call MTF\nInline: @NachoNekoX_bot callmtf",
-  "command.help.callpolice": "/callpolice - Call police\nInline: @NachoNekoX_bot callpolice"
+  "command.help.callpolice": "/callpolice - Call police\nInline: @NachoNekoX_bot callpolice",
+  "inline.usage_text": "Usage:\n- calldoctor\n- callmtf\n- callpolice",
+  "inline.usage_title": "Call (callanyone)",
+  "inline.usage_description": "Usage: calldoctor / callmtf / callpolice",
+  "inline.title.calldoctor": "Call doctor",
+  "inline.title.callmtf": "Call MTF",
+  "inline.title.callpolice": "Call police",
+  "inline.send_result_description": "Send call result"
 }

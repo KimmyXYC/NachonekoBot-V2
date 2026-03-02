@@ -1,5 +1,22 @@
 {
   "meta.description": "IP 地址查询",
   "command.description.ip": "查询 IP/域名信息",
-  "command.help.ip": "/ip [IP/Domain] - 查询 IP 或域名信息\nInline: @NachoNekoX_bot ip [IP/Domain]"
+  "command.help.ip": "/ip [IP/Domain] - 查询 IP 或域名信息\nInline: @NachoNekoX_bot ip [IP/Domain]",
+  "error.request_failed": "请求失败: `{reason}`",
+  "label.query_target": "查询目标:  `{target}`\n",
+  "label.resolved_target": "解析地址:  `{target}`\n",
+  "label.region_unknown": "地区:  `未知`\n",
+  "label.region": "地区:  `{country} - {region}`\n",
+  "label.geo": "经纬度:  `{lon}, {lat}`\n",
+  "label.isp": "ISP:  `{isp}`\n",
+  "label.org": "组织:  `{org}`\n",
+  "hint.mobile_ip": "\n此 IP 可能为 *蜂窝移动数据 IP*",
+  "hint.proxy_ip": "\n此 IP 可能为 *代理 IP*",
+  "hint.hosting_ip": "\n此 IP 可能为 *数据中心 IP*",
+  "status.ip_querying": "正在查询 {target} ...",
+  "inline.usage_text": "用法：ip [IP/Domain]",
+  "inline.usage_title": "IP 查询",
+  "inline.usage_description": "用法：ip [IP/Domain]",
+  "inline.result_title": "IP：{target}",
+  "inline.send_result_description": "发送查询结果"
 }

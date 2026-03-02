@@ -7,6 +7,7 @@ import asyncio
 from mcstatus import JavaServer, BedrockServer
 from telebot import types
 from loguru import logger
+from utils.i18n import get_inline_query_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "mcstatus"
@@ -267,15 +268,16 @@ async def handle_mcstatus_auto_command(bot, message: types.Message):
 
 async def handle_mcstatus_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot mcstatus/mcje/mcbe [服务器地址]"""
+    lang = await get_inline_query_language(inline_query)
     query = (inline_query.query or "").strip()
     args = query.split()
 
     if len(args) < 2:
-        text = "请提供服务器地址\n用法：mc [服务器地址:端口] (自动识别) 或 mcje/mcbe [服务器地址:端口] (指定版本)"
+        text = plugin_t(__plugin_name__, "inline.usage_text", lang)
         result = types.InlineQueryResultArticle(
             id="mcstatus_usage",
-            title="MC 服务器状态查询",
-            description="用法：mc/mcje/mcbe [服务器地址:端口]",
+            title=plugin_t(__plugin_name__, "inline.usage_title", lang),
+            description=plugin_t(__plugin_name__, "inline.usage_description", lang),
             input_message_content=types.InputTextMessageContent(text),
         )
         await bot.answer_inline_query(
@@ -289,18 +291,24 @@ async def handle_mcstatus_inline_query(bot, inline_query: types.InlineQuery):
     # 确定服务器类型和查询方式
     if command == "mcbe":
         result_text = await query_bedrock_server(server_address)
-        title_prefix = "基岩版"
+        title_prefix = plugin_t(__plugin_name__, "inline.prefix_bedrock", lang)
     elif command == "mcje":
         result_text = await query_java_server(server_address)
-        title_prefix = "Java版"
+        title_prefix = plugin_t(__plugin_name__, "inline.prefix_java", lang)
     else:  # mcstatus - 自动识别
         result_text = await query_auto_server(server_address)
-        title_prefix = "自动识别"
+        title_prefix = plugin_t(__plugin_name__, "inline.prefix_auto", lang)
 
     result = types.InlineQueryResultArticle(
         id=f"mcstatus_{server_address}",
-        title=f"MC {title_prefix}：{server_address}",
-        description="发送查询结果",
+        title=plugin_t(
+            __plugin_name__,
+            "inline.result_title",
+            lang,
+            prefix=title_prefix,
+            server_address=server_address,
+        ),
+        description=plugin_t(__plugin_name__, "inline.send_result_description", lang),
         input_message_content=types.InputTextMessageContent(result_text),
     )
     await bot.answer_inline_query(

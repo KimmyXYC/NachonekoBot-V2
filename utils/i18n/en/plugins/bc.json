@@ -2,5 +2,11 @@
   "meta.description": "Currency converter (supports multiple fiat rate sources and crypto)",
   "command.description.bc": "Convert currencies (multiple fiat rate sources + crypto)",
   "command.help.bc": "/bc [Amount] [Currency_From] [Currency_To] - Convert currencies (fiat supports multiple rate sources: EU/UnionPay/Mastercard/Visa)\nInline: @NachoNekoX_bot bc [Amount] [Currency_From] [Currency_To]",
-  "error.amount_invalid": "The amount must be a valid number"
+  "error.amount_invalid": "The amount must be a valid number",
+  "inline.usage_text": "Usage: bc <amount> <currency_from> <currency_to>\nExample: bc 100 USD EUR",
+  "inline.usage_title": "Currency Converter (bc)",
+  "inline.usage_description": "Usage: bc [Amount] [Currency_From] [Currency_To]",
+  "inline.send_result_description": "Send conversion result",
+  "prompt.bc_usage": "Usage: /bc <amount> <currency_from> <currency_to>\nExample: /bc 100 USD EUR - convert 100 USD to EUR\nExample: /bc 1 BTC USD - convert 1 BTC to USD\nExample: /bc 0.5 ETH BTC - convert 0.5 ETH to BTC",
+  "status.bc_converting": "Converting {amount} {source_currency} to {target_currency}..."
 }

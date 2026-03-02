@@ -1,5 +1,11 @@
 {
   "meta.description": "RDAP 查询（域名/IP/ASN）",
   "command.description.rdap": "查询 RDAP 信息",
-  "command.help.rdap": "/rdap [Domain/IP/ASN] - 查询 RDAP 信息\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\n支持格式：域名(example.com)、IP(1.1.1.1)、ASN(AS13335 或 13335)"
+  "command.help.rdap": "/rdap [Domain/IP/ASN] - 查询 RDAP 信息\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\n支持格式：域名(example.com)、IP(1.1.1.1)、ASN(AS13335 或 13335)",
+  "status.rdap_querying": "正在查询 {target} RDAP 信息...",
+  "inline.usage_text": "用法：rdap [Domain/IP/ASN]\n支持格式：域名、IP地址、ASN(AS13335或13335)",
+  "inline.usage_title": "RDAP 查询",
+  "inline.usage_description": "用法：rdap [Domain/IP/ASN]",
+  "inline.result_title": "RDAP：{target}",
+  "inline.send_result_description": "发送查询结果"
 }
