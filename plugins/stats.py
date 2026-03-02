@@ -39,6 +39,9 @@ __command_help__ = {
 }
 __toggleable__ = True
 __scheduled_jobs__ = []
+__scheduled_job_display_names__ = {
+    "dragon_king": "job.dragon_king",
+}
 
 DAY_CUTOFF_HOUR = 4
 
@@ -565,7 +568,7 @@ async def register_handlers(bot, middleware, plugin_name):
         cron_expr="0 4 * * *",
         timezone="Asia/Shanghai",
         callback=handle_dragon_king_schedule,
-        display_name="龙王标志",
+        display_name="job.dragon_king",
     )
 
 

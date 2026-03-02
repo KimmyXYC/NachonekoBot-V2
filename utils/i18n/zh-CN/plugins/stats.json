@@ -23,5 +23,6 @@
   "result.dragon_row": "{rank}. {name} - 总次数 {total_wins}，最大蝉联 {max_streak} 天",
   "result.total_settlement_days": "累计结算天数: {total_days}",
   "result.leaderboard_user_count": "上榜人数: {user_count}",
-  "result.dragon_congrats": "恭喜 {display_name} 获得本群🐉龙王标志（已蝉联{streak_days}天）"
+  "result.dragon_congrats": "恭喜 {display_name} 获得本群🐉龙王标志（已蝉联{streak_days}天）",
+  "job.dragon_king": "龙王标志"
 }

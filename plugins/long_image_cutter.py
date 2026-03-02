@@ -183,9 +183,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                 logger.error(
                     f"[LongImageCutter][{message.chat.id}] local file not found: {local_path}"
                 )
-                await bot.reply_to(
-                    message, "error.local_botapi_path_inaccessible"
-                )
+                await bot.reply_to(message, "error.local_botapi_path_inaccessible")
                 return
             with open(local_path, "rb") as f:
                 file_bytes = f.read()

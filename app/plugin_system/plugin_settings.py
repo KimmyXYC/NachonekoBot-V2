@@ -50,6 +50,12 @@ def build_keyboard_and_text(
             translated = plugin_t(key, display_key, lang)
             if translated != display_key:
                 label = translated
+        elif kind == "job":
+            plugin_name = key.split(".", 1)[0] if "." in key else ""
+            if plugin_name:
+                translated = plugin_t(plugin_name, label, lang)
+                if translated != label:
+                    label = translated
         mark = "✅" if enabled else "❌"
         text_lines.append(f"• {mark} {label}")
         btn = types.InlineKeyboardButton(

@@ -588,17 +588,19 @@ class BotRunner:
 
         # 回调分发器（除核心前缀外，其余交由中间件处理）
         @bot.callback_query_handler(
-            func=lambda c: not (
-                c.data
-                and (
-                    c.data.startswith("plg_toggle:")
-                    or c.data == "plg_close"
-                    or c.data == "plg_lang_menu"
-                    or c.data == "plg_lang_back"
-                    or c.data.startswith("plg_lang_set:")
-                    or c.data.startswith("lang_set_user:")
-                    or c.data.startswith("lang_set_group:")
-                    or c.data == "lang_close"
+            func=lambda c: (
+                not (
+                    c.data
+                    and (
+                        c.data.startswith("plg_toggle:")
+                        or c.data == "plg_close"
+                        or c.data == "plg_lang_menu"
+                        or c.data == "plg_lang_back"
+                        or c.data.startswith("plg_lang_set:")
+                        or c.data.startswith("lang_set_user:")
+                        or c.data.startswith("lang_set_group:")
+                        or c.data == "lang_close"
+                    )
                 )
             )
         )

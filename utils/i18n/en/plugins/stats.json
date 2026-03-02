@@ -23,5 +23,6 @@
   "result.dragon_row": "{rank}. {name} - Total wins {total_wins}, Max streak {max_streak} days",
   "result.total_settlement_days": "Total settled days: {total_days}",
   "result.leaderboard_user_count": "Users on leaderboard: {user_count}",
-  "result.dragon_congrats": "Congratulations {display_name} for becoming the 🐉 Dragon King (streak {streak_days} days)"
+  "result.dragon_congrats": "Congratulations {display_name} for becoming the 🐉 Dragon King (streak {streak_days} days)",
+  "job.dragon_king": "Dragon King Badge"
 }
