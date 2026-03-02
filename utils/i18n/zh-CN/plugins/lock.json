@@ -10,5 +10,8 @@
   "error.sender_unrecognized": "无法识别消息发送者。",
   "lock.list.empty": "本群当前未锁定任何命令。",
   "error.bot_id_invalid": "机器人配置错误：bot_id 无效。",
-  "error.bot_delete_permission_required": "请先将机器人设为管理员并授予删除消息权限。"
+  "error.bot_delete_permission_required": "请先将机器人设为管理员并授予删除消息权限。",
+  "result.batch_add": "批量添加结果: 添加成功 `{added}`，已存在 `{already_exist}`，不可锁定 `{not_lockable}`，格式非法 `{invalid_format}`",
+  "result.batch_remove": "批量删除结果: 删除成功 `{removed}`，不存在 `{not_found}`，格式非法 `{invalid_format}`",
+  "result.list_header": "以下命令在本群中被锁定:\n"
 }

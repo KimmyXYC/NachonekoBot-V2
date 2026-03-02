@@ -22,14 +22,14 @@ __command_descriptions__ = {
     "mcbe": "查询 Minecraft 基岩版服务器状态",
 }
 __command_help__ = {
-    "mc": "/mcstatus [服务器地址:端口] - 查询 Minecraft 服务器状态（自动识别 Java 版/基岩版）\nInline: @NachoNekoX_bot mc [服务器地址:端口]",
+    "mc": "/mc [服务器地址:端口] - 查询 Minecraft 服务器状态（自动识别 Java 版/基岩版）\nInline: @NachoNekoX_bot mc [服务器地址:端口]",
     "mcje": "/mcje [服务器地址:端口] - 查询 Minecraft Java 版服务器状态\nInline: @NachoNekoX_bot mcje [服务器地址:端口]",
     "mcbe": "/mcbe [服务器地址:端口] - 查询 Minecraft 基岩版服务器状态\nInline: @NachoNekoX_bot mcbe [服务器地址:端口]",
 }
 
 
 # ==================== 核心功能 ====================
-async def query_java_server(address: str) -> str:
+async def query_java_server(address: str, _t) -> str:
     """查询 Minecraft Java 版服务器状态"""
     try:
         # 在异步环境中运行同步的 mcstatus 代码
@@ -38,12 +38,18 @@ async def query_java_server(address: str) -> str:
         status = await loop.run_in_executor(None, server.status)
 
         msg_out = []
-        msg_out.append("🎮 Minecraft Java 版服务器状态")
-        msg_out.append("━━━━━━━━━━━━━━━━━━━━")
-        msg_out.append(f"📍 服务器地址：{address}")
-        msg_out.append(f"👥 在线玩家：{status.players.online}/{status.players.max}")
-        msg_out.append(f"📊 版本：{status.version.name}")
-        msg_out.append(f"⏱️ 延迟：{status.latency:.2f} ms")
+        msg_out.append(_t("title.java_status"))
+        msg_out.append(_t("sep.line"))
+        msg_out.append(_t("label.server_address", address=address))
+        msg_out.append(
+            _t(
+                "label.online_players_java",
+                online=status.players.online,
+                maximum=status.players.max,
+            )
+        )
+        msg_out.append(_t("label.version_java", version=status.version.name))
+        msg_out.append(_t("label.latency", latency=f"{status.latency:.2f}"))
 
         # MOTD (服务器描述)
         if hasattr(status, "description") and status.description:
@@ -53,35 +59,39 @@ async def query_java_server(address: str) -> str:
             else:
                 motd_text = str(motd)
             if motd_text:
-                msg_out.append(f"📝 MOTD：{motd_text[:100]}")
+                msg_out.append(_t("label.motd", motd=motd_text[:100]))
 
         # 在线玩家列表
         if status.players.sample:
             player_names = [player.name for player in status.players.sample[:10]]
-            msg_out.append(f"🎯 在线玩家：{', '.join(player_names)}")
+            msg_out.append(
+                _t("label.online_player_list", players=", ".join(player_names))
+            )
             if len(status.players.sample) > 10:
-                msg_out.append(f"   ... 还有 {len(status.players.sample) - 10} 位玩家")
+                msg_out.append(
+                    _t("label.more_players", count=len(status.players.sample) - 10)
+                )
 
         return "\n".join(msg_out)
 
     except asyncio.TimeoutError:
-        return f"出错了呜呜呜 ~ 连接服务器 {address} 超时"
+        return _t("error.connect_timeout", address=address)
     except ConnectionRefusedError:
-        return f"出错了呜呜呜 ~ 无法连接到服务器 {address}，连接被拒绝"
+        return _t("error.connection_refused", address=address)
     except Exception as e:
         error_msg = str(e)
         if "timed out" in error_msg.lower():
-            return f"出错了呜呜呜 ~ 连接服务器 {address} 超时"
+            return _t("error.connect_timeout", address=address)
         elif (
             "name or service not known" in error_msg.lower()
             or "nodename nor servname provided" in error_msg.lower()
         ):
-            return f"出错了呜呜呜 ~ 无法解析服务器地址 {address}"
+            return _t("error.resolve_failed", address=address)
         else:
-            return f"出错了呜呜呜 ~ 查询失败: {error_msg}"
+            return _t("error.query_failed", reason=error_msg)
 
 
-async def query_bedrock_server(address: str) -> str:
+async def query_bedrock_server(address: str, _t) -> str:
     """查询 Minecraft 基岩版服务器状态"""
     try:
         # 在异步环境中运行同步的 mcstatus 代码
@@ -90,45 +100,51 @@ async def query_bedrock_server(address: str) -> str:
         status = await loop.run_in_executor(None, server.status)
 
         msg_out = []
-        msg_out.append("🎮 Minecraft 基岩版服务器状态")
-        msg_out.append("━━━━━━━━━━━━━━━━━━━━")
-        msg_out.append(f"📍 服务器地址：{address}")
-        msg_out.append(f"👥 在线玩家：{status.players_online}/{status.players_max}")
-        msg_out.append(f"📊 版本：{status.version.version}")
-        msg_out.append(f"⏱️ 延迟：{status.latency:.2f} ms")
+        msg_out.append(_t("title.bedrock_status"))
+        msg_out.append(_t("sep.line"))
+        msg_out.append(_t("label.server_address", address=address))
+        msg_out.append(
+            _t(
+                "label.online_players_bedrock",
+                online=status.players_online,
+                maximum=status.players_max,
+            )
+        )
+        msg_out.append(_t("label.version_bedrock", version=status.version.version))
+        msg_out.append(_t("label.latency", latency=f"{status.latency:.2f}"))
 
         # MOTD
         if hasattr(status, "motd") and status.motd:
-            msg_out.append(f"📝 MOTD：{status.motd[:100]}")
+            msg_out.append(_t("label.motd", motd=status.motd[:100]))
 
         # 游戏模式
         if hasattr(status, "gamemode") and status.gamemode:
-            msg_out.append(f"🎯 游戏模式：{status.gamemode}")
+            msg_out.append(_t("label.gamemode", gamemode=status.gamemode))
 
         # 地图名称
         if hasattr(status, "map") and status.map:
-            msg_out.append(f"🗺️ 地图：{status.map}")
+            msg_out.append(_t("label.map", map_name=status.map))
 
         return "\n".join(msg_out)
 
     except asyncio.TimeoutError:
-        return f"出错了呜呜呜 ~ 连接服务器 {address} 超时"
+        return _t("error.connect_timeout", address=address)
     except ConnectionRefusedError:
-        return f"出错了呜呜呜 ~ 无法连接到服务器 {address}，连接被拒绝"
+        return _t("error.connection_refused", address=address)
     except Exception as e:
         error_msg = str(e)
         if "timed out" in error_msg.lower():
-            return f"出错了呜呜呜 ~ 连接服务器 {address} 超时"
+            return _t("error.connect_timeout", address=address)
         elif (
             "name or service not known" in error_msg.lower()
             or "nodename nor servname provided" in error_msg.lower()
         ):
-            return f"出错了呜呜呜 ~ 无法解析服务器地址 {address}"
+            return _t("error.resolve_failed", address=address)
         else:
-            return f"出错了呜呜呜 ~ 查询失败: {error_msg}"
+            return _t("error.query_failed", reason=error_msg)
 
 
-async def query_auto_server(address: str) -> str:
+async def query_auto_server(address: str, _t) -> str:
     """自动识别并查询 Minecraft 服务器状态（先尝试 Java 版，失败后尝试基岩版）"""
     try:
         # 先尝试 Java 版查询
@@ -137,12 +153,18 @@ async def query_auto_server(address: str) -> str:
         status = await loop.run_in_executor(None, server.status)
 
         msg_out = []
-        msg_out.append("🎮 Minecraft Java 版服务器状态")
-        msg_out.append("━━━━━━━━━━━━━━━━━━━━")
-        msg_out.append(f"📍 服务器地址：{address}")
-        msg_out.append(f"👥 在线玩家：{status.players.online}/{status.players.max}")
-        msg_out.append(f"📊 版本：{status.version.name}")
-        msg_out.append(f"⏱️ 延迟：{status.latency:.2f} ms")
+        msg_out.append(_t("title.java_status"))
+        msg_out.append(_t("sep.line"))
+        msg_out.append(_t("label.server_address", address=address))
+        msg_out.append(
+            _t(
+                "label.online_players_java",
+                online=status.players.online,
+                maximum=status.players.max,
+            )
+        )
+        msg_out.append(_t("label.version_java", version=status.version.name))
+        msg_out.append(_t("label.latency", latency=f"{status.latency:.2f}"))
 
         # MOTD (服务器描述)
         if hasattr(status, "description") and status.description:
@@ -152,14 +174,18 @@ async def query_auto_server(address: str) -> str:
             else:
                 motd_text = str(motd)
             if motd_text:
-                msg_out.append(f"📝 MOTD：{motd_text[:100]}")
+                msg_out.append(_t("label.motd", motd=motd_text[:100]))
 
         # 在线玩家列表
         if status.players.sample:
             player_names = [player.name for player in status.players.sample[:10]]
-            msg_out.append(f"🎯 在线玩家：{', '.join(player_names)}")
+            msg_out.append(
+                _t("label.online_player_list", players=", ".join(player_names))
+            )
             if len(status.players.sample) > 10:
-                msg_out.append(f"   ... 还有 {len(status.players.sample) - 10} 位玩家")
+                msg_out.append(
+                    _t("label.more_players", count=len(status.players.sample) - 10)
+                )
 
         return "\n".join(msg_out)
 
@@ -171,24 +197,30 @@ async def query_auto_server(address: str) -> str:
             status = await loop.run_in_executor(None, server.status)
 
             msg_out = []
-            msg_out.append("🎮 Minecraft 基岩版服务器状态")
-            msg_out.append("━━━━━━━━━━━━━━━━━━━━")
-            msg_out.append(f"📍 服务器地址：{address}")
-            msg_out.append(f"👥 在线玩家：{status.players_online}/{status.players_max}")
-            msg_out.append(f"📊 版本：{status.version.version}")
-            msg_out.append(f"⏱️ 延迟：{status.latency:.2f} ms")
+            msg_out.append(_t("title.bedrock_status"))
+            msg_out.append(_t("sep.line"))
+            msg_out.append(_t("label.server_address", address=address))
+            msg_out.append(
+                _t(
+                    "label.online_players_bedrock",
+                    online=status.players_online,
+                    maximum=status.players_max,
+                )
+            )
+            msg_out.append(_t("label.version_bedrock", version=status.version.version))
+            msg_out.append(_t("label.latency", latency=f"{status.latency:.2f}"))
 
             # MOTD
             if hasattr(status, "motd") and status.motd:
-                msg_out.append(f"📝 MOTD：{status.motd[:100]}")
+                msg_out.append(_t("label.motd", motd=status.motd[:100]))
 
             # 游戏模式
             if hasattr(status, "gamemode") and status.gamemode:
-                msg_out.append(f"🎯 游戏模式：{status.gamemode}")
+                msg_out.append(_t("label.gamemode", gamemode=status.gamemode))
 
             # 地图名称
             if hasattr(status, "map") and status.map:
-                msg_out.append(f"🗺️ 地图：{status.map}")
+                msg_out.append(_t("label.map", map_name=status.map))
 
             return "\n".join(msg_out)
 
@@ -196,14 +228,14 @@ async def query_auto_server(address: str) -> str:
             # 两种方式都失败，返回错误信息
             error_msg = str(java_error)
             if "timed out" in error_msg.lower():
-                return f"出错了呜呜呜 ~ 连接服务器 {address} 超时"
+                return _t("error.connect_timeout", address=address)
             elif (
                 "name or service not known" in error_msg.lower()
                 or "nodename nor servname provided" in error_msg.lower()
             ):
-                return f"出错了呜呜呜 ~ 无法解析服务器地址 {address}"
+                return _t("error.resolve_failed", address=address)
             else:
-                return f"出错了呜呜呜 ~ 无法连接到服务器 {address}（已尝试 Java 版和基岩版）"
+                return _t("error.connection_failed_both", address=address)
 
 
 async def handle_mcstatus_command(
@@ -217,6 +249,7 @@ async def handle_mcstatus_command(
     :return:
     """
     command_args = message.text.split()
+    _t = bot.t
     if len(command_args) < 2:
         await bot.reply_to(
             message,
@@ -226,12 +259,14 @@ async def handle_mcstatus_command(
 
     server_address = command_args[1]
 
-    msg = await bot.reply_to(message, f"正在查询服务器: {server_address} ...")
+    msg = await bot.reply_to(
+        message, _t("status.querying_server", address=server_address)
+    )
 
     if server_type == "bedrock":
-        result_text = await query_bedrock_server(server_address)
+        result_text = await query_bedrock_server(server_address, _t)
     else:
-        result_text = await query_java_server(server_address)
+        result_text = await query_java_server(server_address, _t)
 
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
@@ -249,6 +284,7 @@ async def handle_mcbe_command(bot, message: types.Message):
 async def handle_mcstatus_auto_command(bot, message: types.Message):
     """处理自动识别服务器类型的查询命令"""
     command_args = message.text.split()
+    _t = bot.t
     if len(command_args) < 2:
         await bot.reply_to(
             message,
@@ -258,9 +294,11 @@ async def handle_mcstatus_auto_command(bot, message: types.Message):
 
     server_address = command_args[1]
 
-    msg = await bot.reply_to(message, f"正在查询服务器: {server_address} ...")
+    msg = await bot.reply_to(
+        message, _t("status.querying_server", address=server_address)
+    )
 
-    result_text = await query_auto_server(server_address)
+    result_text = await query_auto_server(server_address, _t)
 
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
@@ -289,13 +327,13 @@ async def handle_mcstatus_inline_query(bot, inline_query: types.InlineQuery):
 
     # 确定服务器类型和查询方式
     if command == "mcbe":
-        result_text = await query_bedrock_server(server_address)
+        result_text = await query_bedrock_server(server_address, _t)
         title_prefix = _t("inline.prefix_bedrock")
     elif command == "mcje":
-        result_text = await query_java_server(server_address)
+        result_text = await query_java_server(server_address, _t)
         title_prefix = _t("inline.prefix_java")
     else:  # mcstatus - 自动识别
-        result_text = await query_auto_server(server_address)
+        result_text = await query_auto_server(server_address, _t)
         title_prefix = _t("inline.prefix_auto")
 
     result = types.InlineQueryResultArticle(

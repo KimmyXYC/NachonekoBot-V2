@@ -3,5 +3,17 @@
   "command.description.tcping": "执行 TCP Ping 测试",
   "command.help.tcping": "/tcping [IP/Domain]:[Port] - TCP Ping 测试",
   "error.invalid_port_number": "❌ 端口号无效，应为 1-65535 之间的整数。",
-  "prompt.tcping_host_port_required": "❌ 请提供目标主机和端口，格式：/tcping 主机:端口"
+  "prompt.tcping_host_port_required": "❌ 请提供目标主机和端口，格式：/tcping 主机:端口",
+  "status.testing_tcp_connection": "⏳ 正在测试 {target}:{port} 的TCP连接，请稍候...",
+  "error.tcping_command_error": "❌ 执行 tcping 命令出错: {reason}",
+  "error.tcping_not_found": "❌ 未找到 tcping 命令。请确保系统已安装 tcping 工具。\n\n安装方法：\nDebian/Ubuntu: apt-get install tcptraceroute\nCentOS/RHEL: yum install tcptraceroute\nmacOS: brew install tcping",
+  "error.tcping_command_exception": "❌ 执行 tcping 命令异常: {reason}",
+  "error.execute_tcping_failed": "❌ 执行 tcping 时出错: {reason}",
+  "error.parse_tcping_result_exception": "⚠️ 解析 tcping 结果异常: {reason}\n\n原始结果:\n```\n{raw_result}\n```",
+  "result.latency_avg": "⏱ 延迟: 平均 {avg_time}ms",
+  "result.latency_minmax": " (最小 {min_time}ms, 最大 {max_time}ms)",
+  "result.packet_loss": "📊 丢包率: {loss_rate}%\n",
+  "result.unparseable": "⚠️ 无法解析 tcping 结果",
+  "result.newline": "\n",
+  "result.raw_block": "\n原始结果:\n```\n{raw_result}\n```"
 }

@@ -38,6 +38,7 @@ def get_csv_data_list():
 
 
 async def handle_remake_command(bot, message):
+    _t = bot.t
     rd_data, rd_weights = get_csv_data_list()
     country_choice = np.random.choice(rd_data, p=np.array(rd_weights) / sum(rd_weights))
     sex_choice = random.choice(
@@ -59,7 +60,8 @@ async def handle_remake_command(bot, message):
         ]
     )
     await bot.reply_to(
-        message, f"转生成功！您现在是 {country_choice} 的 {sex_choice} 了。"
+        message,
+        _t("result.remake_success", country=country_choice, gender=sex_choice),
     )
     conn = BotDatabase.conn
     try:
@@ -87,6 +89,7 @@ async def handle_remake_command(bot, message):
 
 
 async def handle_remake_data_command(bot, message):
+    _t = bot.t
     conn = BotDatabase.conn
     try:
         result = await conn.fetch(
@@ -99,7 +102,12 @@ async def handle_remake_data_command(bot, message):
             user_data = result[0]
             await bot.reply_to(
                 message,
-                f"您现在是 {user_data['country']} 的 {user_data['gender']}，已转生 {user_data['count']} 次。",
+                _t(
+                    "result.remake_data",
+                    country=user_data["country"],
+                    gender=user_data["gender"],
+                    count=user_data["count"],
+                ),
             )
         else:
             await bot.reply_to(message, "prompt.remake_not_started")

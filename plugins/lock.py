@@ -201,13 +201,18 @@ async def handle_lock_command(bot, message: types.Message, cmd: list):
     if not await check_permissions(bot, message):
         return
 
+    _t = bot.t
+
     result = batch_add_to_locklist(message.chat.id, cmd)
     await bot.reply_to(
         message,
-        "批量添加结果: "
-        f"添加成功 `{result['added']}`，已存在 `{result['already_exist']}`，"
-        f"不可锁定 `{result['not_lockable']}`，"
-        f"格式非法 `{result['invalid_format']}`",
+        _t(
+            "result.batch_add",
+            added=result["added"],
+            already_exist=result["already_exist"],
+            not_lockable=result["not_lockable"],
+            invalid_format=result["invalid_format"],
+        ),
         parse_mode="Markdown",
     )
 
@@ -223,12 +228,17 @@ async def handle_unlock_command(bot, message: types.Message, cmd: list):
     if not await check_permissions(bot, message):
         return
 
+    _t = bot.t
+
     result = batch_remove_from_locklist(message.chat.id, cmd)
     await bot.reply_to(
         message,
-        "批量删除结果: "
-        f"删除成功 `{result['removed']}`，不存在 `{result['not_found']}`，"
-        f"格式非法 `{result['invalid_format']}`",
+        _t(
+            "result.batch_remove",
+            removed=result["removed"],
+            not_found=result["not_found"],
+            invalid_format=result["invalid_format"],
+        ),
         parse_mode="Markdown",
     )
 
@@ -244,7 +254,8 @@ async def handle_list_command(bot, message: types.Message):
     if not result:
         await bot.reply_to(message, "lock.list.empty")
     else:
-        msg = "以下命令在本群中被锁定:\n"
+        _t = bot.t
+        msg = _t("result.list_header")
         msg += "\n".join(f"- `{item}`" for item in result)
         await bot.reply_to(message, msg, parse_mode="Markdown")
 

@@ -530,7 +530,7 @@ def _normalize_bc_tokens(tokens: list[str]) -> list[str]:
     return tokens
 
 
-async def query_bc_text(raw_tokens: list[str]) -> str:
+async def query_bc_text(raw_tokens: list[str], _t) -> str:
     """生成与 `/bc` 命令一致的输出文本，用于命令与 Inline 复用。"""
     args = _normalize_bc_tokens(raw_tokens)
 
@@ -541,7 +541,7 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
         nowtimestamp = binanceclient.time()
         nowtime = datetime.fromtimestamp(float(nowtimestamp["serverTime"]) / 1000, UTC)
     except Exception as e:
-        return f"初始化失败: {str(e)}"
+        return _t("error.init_failed", reason=str(e))
 
     # 无参数时显示BTC和ETH的价格
     if len(args) == 0:
@@ -549,30 +549,25 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
             btc_price_data = binanceclient.ticker_price("BTCUSDT")
             eth_price_data = binanceclient.ticker_price("ETHUSDT")
 
-            response_text = (
-                f"{nowtime.strftime('%Y-%m-%d %H:%M:%S')} UTC\n"
-                f"1 BTC = {float(btc_price_data['price']):.2f} USDT\n"
-                f"1 ETH = {float(eth_price_data['price']):.2f} USDT"
+            response_text = _t(
+                "result.spot_prices",
+                timestamp=nowtime.strftime("%Y-%m-%d %H:%M:%S"),
+                btc_price=f"{float(btc_price_data['price']):.2f}",
+                eth_price=f"{float(eth_price_data['price']):.2f}",
             )
             return response_text
         except Exception as e:
-            return f"获取价格失败: {str(e)}"
+            return _t("error.fetch_price_failed", reason=str(e))
 
     # 参数不足
     if len(args) < 3:
-        usage_text = (
-            "使用方法: /bc <数量> <币种1> <币种2>\n"
-            "例如: /bc 100 USD EUR - 将100美元转换为欧元\n"
-            "例如: /bc 1 BTC USD - 将1比特币转换为美元\n"
-            "例如: /bc 0.5 ETH BTC - 将0.5以太坊转换为比特币"
-        )
-        return usage_text
+        return _t("prompt.bc_usage")
 
     # 解析参数
     try:
         number = float(args[0])
     except ValueError:
-        return "error.amount_invalid"
+        return _t("error.amount_invalid")
 
     _from = args[1].upper().strip()
     _to = args[2].upper().strip()
@@ -594,35 +589,87 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
 
         if eu_result["success"]:
             response_lines.append(
-                f"欧盟: {number:.2f} {_from} ≈ {eu_result['converted_amount']:.2f} {_to} "
-                f"(汇率: {eu_result['rate']:.4f})"
+                _t(
+                    "result.fiat_source_success",
+                    source=_t("source.eu"),
+                    amount=f"{number:.2f}",
+                    source_currency=_from,
+                    converted_amount=f"{eu_result['converted_amount']:.2f}",
+                    target_currency=_to,
+                    rate=f"{eu_result['rate']:.4f}",
+                )
             )
         else:
-            response_lines.append(f"欧盟: {eu_result['error']}")
+            response_lines.append(
+                _t(
+                    "result.fiat_source_error",
+                    source=_t("source.eu"),
+                    error=eu_result["error"],
+                )
+            )
 
         if unionpay_result["success"]:
             response_lines.append(
-                f"银联: {number:.2f} {_from} ≈ {unionpay_result['converted_amount']:.2f} {_to} "
-                f"(汇率: {unionpay_result['rate']:.4f})"
+                _t(
+                    "result.fiat_source_success",
+                    source=_t("source.unionpay"),
+                    amount=f"{number:.2f}",
+                    source_currency=_from,
+                    converted_amount=f"{unionpay_result['converted_amount']:.2f}",
+                    target_currency=_to,
+                    rate=f"{unionpay_result['rate']:.4f}",
+                )
             )
         else:
-            response_lines.append(f"银联: {unionpay_result['error']}")
+            response_lines.append(
+                _t(
+                    "result.fiat_source_error",
+                    source=_t("source.unionpay"),
+                    error=unionpay_result["error"],
+                )
+            )
 
         if mastercard_result["success"]:
             response_lines.append(
-                f"Mastercard: {number:.2f} {_from} ≈ {mastercard_result['converted_amount']:.2f} {_to} "
-                f"(汇率: {mastercard_result['rate']:.4f})"
+                _t(
+                    "result.fiat_source_success",
+                    source=_t("source.mastercard"),
+                    amount=f"{number:.2f}",
+                    source_currency=_from,
+                    converted_amount=f"{mastercard_result['converted_amount']:.2f}",
+                    target_currency=_to,
+                    rate=f"{mastercard_result['rate']:.4f}",
+                )
             )
         else:
-            response_lines.append(f"Mastercard: {mastercard_result['error']}")
+            response_lines.append(
+                _t(
+                    "result.fiat_source_error",
+                    source=_t("source.mastercard"),
+                    error=mastercard_result["error"],
+                )
+            )
 
         if visa_result["success"]:
             response_lines.append(
-                f"Visa: {number:.2f} {_from} ≈ {visa_result['converted_amount']:.2f} {_to} "
-                f"(汇率: {visa_result['rate']:.4f})"
+                _t(
+                    "result.fiat_source_success",
+                    source=_t("source.visa"),
+                    amount=f"{number:.2f}",
+                    source_currency=_from,
+                    converted_amount=f"{visa_result['converted_amount']:.2f}",
+                    target_currency=_to,
+                    rate=f"{visa_result['rate']:.4f}",
+                )
             )
         else:
-            response_lines.append(f"Visa: {visa_result['error']}")
+            response_lines.append(
+                _t(
+                    "result.fiat_source_error",
+                    source=_t("source.visa"),
+                    error=visa_result["error"],
+                )
+            )
 
         return "\n".join(response_lines)
 
@@ -634,14 +681,18 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
                 price_data = binanceclient.ticker_price(f"{_to}USDT")
                 crypto_amount = 1 / float(price_data["price"]) * usd_number
 
-                return (
-                    f"{number} {_from} = {crypto_amount:.8f} {_to}\n"
-                    f"{number} {_from} = {usd_number:.2f} USD"
+                return _t(
+                    "result.fiat_to_crypto",
+                    amount=number,
+                    source_currency=_from,
+                    crypto_amount=f"{crypto_amount:.8f}",
+                    target_currency=_to,
+                    usd_amount=f"{usd_number:.2f}",
                 )
             except ClientError:
-                return f"找不到交易对 {_to}USDT"
+                return _t("error.pair_not_found", pair=f"{_to}USDT")
         except Exception as e:
-            return f"转换失败: {str(e)}"
+            return _t("error.convert_failed", reason=str(e))
 
     # 从加密货币到法定货币
     if currencies.count(_to) != 0:
@@ -650,31 +701,51 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
             usd_price = float(price_data["price"])
             fiat_amount = usd_price * number * data[_to] / data["USD"]
 
-            return (
-                f"{number} {_from} = {fiat_amount:.2f} {_to}\n"
-                f"1 {_from} = {usd_price:.2f} USD"
+            return _t(
+                "result.crypto_to_fiat",
+                amount=number,
+                source_currency=_from,
+                fiat_amount=f"{fiat_amount:.2f}",
+                target_currency=_to,
+                unit_usd_price=f"{usd_price:.2f}",
             )
         except ClientError:
-            return f"找不到交易对 {_from}USDT"
+            return _t("error.pair_not_found", pair=f"{_from}USDT")
         except Exception as e:
-            return f"转换失败: {str(e)}"
+            return _t("error.convert_failed", reason=str(e))
 
     # 两种都是加密货币
     try:
         try:
             price_data = binanceclient.ticker_price(f"{_from}{_to}")
             result = float(price_data["price"]) * number
-            return f"{number} {_from} = {result} {_to}"
+            return _t(
+                "result.crypto_pair",
+                amount=number,
+                source_currency=_from,
+                converted_amount=result,
+                target_currency=_to,
+            )
         except ClientError:
             # 尝试反向交易对
             try:
                 price_data = binanceclient.ticker_price(f"{_to}{_from}")
                 result = number / float(price_data["price"])
-                return f"{number} {_from} = {result} {_to}"
+                return _t(
+                    "result.crypto_pair",
+                    amount=number,
+                    source_currency=_from,
+                    converted_amount=result,
+                    target_currency=_to,
+                )
             except ClientError:
-                return f"找不到交易对 {_from}{_to} 或 {_to}{_from}"
+                return _t(
+                    "error.pair_not_found_both",
+                    pair_a=f"{_from}{_to}",
+                    pair_b=f"{_to}{_from}",
+                )
     except Exception as e:
-        return f"转换失败: {str(e)}"
+        return _t("error.convert_failed", reason=str(e))
 
 
 async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
@@ -711,7 +782,7 @@ async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
         )
         return
 
-    result_text = await query_bc_text(tokens)
+    result_text = await query_bc_text(tokens, _t)
     title = "bc"
     result_id = "bc_prices"
     if len(args) == 3:
@@ -742,7 +813,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
 
     # 无参数时显示BTC和ETH的价格
     if len(args) == 0:
-        response_text = await query_bc_text(command_args)
+        response_text = await query_bc_text(command_args, _t)
         await bot.reply_to(message, response_text)
         return
 
@@ -772,7 +843,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         ),
     )
 
-    result_text = await query_bc_text(command_args)
+    result_text = await query_bc_text(command_args, _t)
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
 

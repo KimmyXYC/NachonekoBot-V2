@@ -76,7 +76,7 @@ def is_valid_target(target):
     return is_valid_hostname(target) or is_valid_ip(target)
 
 
-async def execute_tcping_command(target, port, count=4, timeout=3):
+async def execute_tcping_command(target, port, _t, count=4, timeout=3):
     """
     执行 tcping 命令并返回结果
     :param target: 目标地址（IP 或域名）
@@ -88,11 +88,11 @@ async def execute_tcping_command(target, port, count=4, timeout=3):
     try:
         # 验证目标是否合法
         if not is_valid_target(target):
-            return "error.invalid_target_address"
+            return _t("error.invalid_target_address")
 
         # 验证端口是否合法
         if not is_valid_port(port):
-            return "error.invalid_port_number"
+            return _t("error.invalid_port_number")
 
         # 验证tcping次数，避免过大的数值
         if not isinstance(count, int) or count <= 0 or count > 10:
@@ -124,8 +124,9 @@ async def execute_tcping_command(target, port, count=4, timeout=3):
 
         if stderr:
             logger.error(f"TCPing error: {stderr.decode('utf-8', errors='replace')}")
-            return (
-                f"❌ 执行 tcping 命令出错: {stderr.decode('utf-8', errors='replace')}"
+            return _t(
+                "error.tcping_command_error",
+                reason=stderr.decode("utf-8", errors="replace"),
             )
 
         # 解码输出
@@ -135,19 +136,22 @@ async def execute_tcping_command(target, port, count=4, timeout=3):
 
     except FileNotFoundError:
         logger.error("tcping 命令未找到，请确保已安装 tcping")
-        return "❌ 未找到 tcping 命令。请确保系统已安装 tcping 工具。\n\n安装方法：\nDebian/Ubuntu: apt-get install tcptraceroute\nCentOS/RHEL: yum install tcptraceroute\nmacOS: brew install tcping"
+        return _t("error.tcping_not_found")
     except Exception as e:
         logger.exception(f"执行 tcping 命令异常: {str(e)}")
-        return f"❌ 执行 tcping 命令异常: {str(e)}"
+        return _t("error.tcping_command_exception", reason=str(e))
 
 
-async def parse_tcping_result(result):
+async def parse_tcping_result(result, _t):
     """
     解析 tcping 结果，提取关键信息
     :param result: tcping 命令原始输出
     :return: 格式化后的结果摘要
     """
     summary = ""
+
+    if isinstance(result, str) and result.startswith("❌"):
+        return result
 
     try:
         # 提取统计信息
@@ -183,25 +187,33 @@ async def parse_tcping_result(result):
                 min_time = min(times) if times else 0
                 max_time = max(times) if times else 0
 
-                summary += f"⏱ 延迟: 平均 {avg_time:.0f}ms"
+                summary += _t("result.latency_avg", avg_time=f"{avg_time:.0f}")
                 if times:
-                    summary += f" (最小 {min_time:.0f}ms, 最大 {max_time:.0f}ms)"
-                summary += "\n"
+                    summary += _t(
+                        "result.latency_minmax",
+                        min_time=f"{min_time:.0f}",
+                        max_time=f"{max_time:.0f}",
+                    )
+                summary += _t("result.newline")
 
-            summary += f"📊 丢包率: {loss_rate:.0f}%\n"
+            summary += _t("result.packet_loss", loss_rate=f"{loss_rate:.0f}")
         else:
-            summary = "⚠️ 无法解析 tcping 结果\n"
+            summary = _t("result.unparseable") + _t("result.newline")
 
         # 添加原始结果
         if len(result) > 500:
             result = result[:500] + "..."
-        summary += f"\n原始结果:\n```\n{result}\n```"
+        summary += _t("result.raw_block", raw_result=result)
 
         return summary
 
     except Exception as e:
         logger.exception(f"解析 tcping 结果异常: {str(e)}")
-        return f"⚠️ 解析 tcping 结果异常: {str(e)}\n\n原始结果:\n```\n{result[:300]}...\n```"
+        return _t(
+            "error.parse_tcping_result_exception",
+            reason=str(e),
+            raw_result=result[:300] + "...",
+        )
 
 
 async def handle_tcping_command(bot, message: types.Message):
@@ -210,6 +222,7 @@ async def handle_tcping_command(bot, message: types.Message):
     :param bot: 机器人实例
     :param message: 消息对象
     """
+    _t = bot.t
     command_args = message.text.split()
 
     if len(command_args) < 2:
@@ -223,9 +236,7 @@ async def handle_tcping_command(bot, message: types.Message):
         try:
             port = int(port)
         except ValueError:
-            await bot.reply_to(
-                message, "error.invalid_port_number"
-            )
+            await bot.reply_to(message, "error.invalid_port_number")
             return
     else:
         target = target_arg
@@ -233,15 +244,15 @@ async def handle_tcping_command(bot, message: types.Message):
 
     # 发送处理中消息
     processing_msg = await bot.reply_to(
-        message, f"⏳ 正在测试 {target}:{port} 的TCP连接，请稍候..."
+        message, _t("status.testing_tcp_connection", target=target, port=port)
     )
 
     try:
         # 执行 tcping 命令
-        result = await execute_tcping_command(target, port)
+        result = await execute_tcping_command(target, port, _t)
 
         # 解析结果
-        summary = await parse_tcping_result(result)
+        summary = await parse_tcping_result(result, _t)
 
         # 更新消息
         await bot.edit_message_text(
@@ -254,7 +265,7 @@ async def handle_tcping_command(bot, message: types.Message):
     except Exception as e:
         logger.error(f"TCP Ping 执行错误: {e}")
         await bot.edit_message_text(
-            f"❌ 执行 tcping 时出错: {str(e)}",
+            _t("error.execute_tcping_failed", reason=str(e)),
             chat_id=processing_msg.chat.id,
             message_id=processing_msg.message_id,
         )

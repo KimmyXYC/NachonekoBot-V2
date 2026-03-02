@@ -1,5 +1,9 @@
 {
   "meta.description": "天气查询",
   "command.description.weather": "查询天气信息",
-  "command.help.weather": "/weather [City_Name] - 查询天气信息"
+  "command.help.weather": "/weather [City_Name] - 查询天气信息",
+  "error.city_not_found": "出错了呜呜呜 ~ 无法找到城市「{city}」的天气信息",
+  "error.weather_api_failed": "获取天气数据失败，状态码: {status_code}",
+  "error.weather_unavailable": "出错了呜呜呜 ~ 无法获取天气信息。错误信息: {reason}",
+  "result.weather_summary": "{city_name} {icon}{description} 💨{wind_direction} {wind_speed}m/s\n大气🌡 {temp_c}℃ ({temp_f}℉) 💦 {humidity}% \n体感🌡 {feels_like}℃\n气压 {pressure}hpa\n🌅{sunrise} 🌇{sunset} "
 }

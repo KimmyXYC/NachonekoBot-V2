@@ -3,5 +3,17 @@
   "command.description.tcping": "TCP ping test",
   "command.help.tcping": "/tcping [IP/Domain]:[Port] - TCP ping test",
   "error.invalid_port_number": "❌ Invalid port number. Port must be an integer between 1 and 65535.",
-  "prompt.tcping_host_port_required": "❌ Please provide target host and port in this format: /tcping host:port"
+  "prompt.tcping_host_port_required": "❌ Please provide target host and port in this format: /tcping host:port",
+  "status.testing_tcp_connection": "⏳ Testing TCP connection to {target}:{port}, please wait...",
+  "error.tcping_command_error": "❌ tcping command error: {reason}",
+  "error.tcping_not_found": "❌ tcping command not found. Please install tcping.\n\nInstall:\nDebian/Ubuntu: apt-get install tcptraceroute\nCentOS/RHEL: yum install tcptraceroute\nmacOS: brew install tcping",
+  "error.tcping_command_exception": "❌ tcping command exception: {reason}",
+  "error.execute_tcping_failed": "❌ Error while running tcping: {reason}",
+  "error.parse_tcping_result_exception": "⚠️ Failed to parse tcping result: {reason}\n\nRaw result:\n```\n{raw_result}\n```",
+  "result.latency_avg": "⏱ Latency: avg {avg_time}ms",
+  "result.latency_minmax": " (min {min_time}ms, max {max_time}ms)",
+  "result.packet_loss": "📊 Packet loss: {loss_rate}%\n",
+  "result.unparseable": "⚠️ Unable to parse tcping result",
+  "result.newline": "\n",
+  "result.raw_block": "\nRaw result:\n```\n{raw_result}\n```"
 }

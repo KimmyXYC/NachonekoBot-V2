@@ -34,10 +34,11 @@ async def handle_short_command(bot, message: types.Message, url):
     :param url: URL 地址
     :return:
     """
+    _t = bot.t
     server = BotConfig["shorturl"]["api"]
     reply = await bot.reply_to(
         message,
-        f"正在生成短链接: `{url}`",
+        _t("status.generating_short_url", url=url),
         disable_web_page_preview=True,
         parse_mode="Markdown",
     )
@@ -62,7 +63,10 @@ async def handle_short_command(bot, message: types.Message, url):
                             f"[Short URL][{message.chat.id}]: Can't Get Short URL: {response.status}"
                         )
                         await bot.edit_message_text(
-                            f"生成失败, 请检查后端地址是否有效: `{response.status}`",
+                            _t(
+                                "error.generate_failed_backend_invalid",
+                                reason=response.status,
+                            ),
                             message.chat.id,
                             reply.message_id,
                             disable_web_page_preview=True,
@@ -76,7 +80,7 @@ async def handle_short_command(bot, message: types.Message, url):
             if json_data["status"] == 200:
                 _url = server + json_data["key"]
                 await bot.edit_message_text(
-                    f"短链接: `{_url}`",
+                    _t("result.short_url", short_url=_url),
                     message.chat.id,
                     reply.message_id,
                     disable_web_page_preview=True,
@@ -87,7 +91,7 @@ async def handle_short_command(bot, message: types.Message, url):
                     f"[Short URL][{message.chat.id}]: Can't Get Short URL: {json_data}"
                 )
                 await bot.edit_message_text(
-                    f"生成失败, 请检查 URL 是否有效: `{json_data}`",
+                    _t("error.generate_failed_invalid_url", reason=json_data),
                     message.chat.id,
                     reply.message_id,
                     disable_web_page_preview=True,
@@ -96,7 +100,7 @@ async def handle_short_command(bot, message: types.Message, url):
         except Exception as e:
             logger.error(f"[Short URL][{message.chat.id}]: Can't Get Short URL: {e}")
             await bot.edit_message_text(
-                f"生成失败, 请检查后端地址是否有效: `{e}`",
+                _t("error.generate_failed_backend_invalid", reason=e),
                 message.chat.id,
                 reply.message_id,
                 disable_web_page_preview=True,

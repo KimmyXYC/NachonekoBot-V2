@@ -7,5 +7,14 @@
   "error.nexttrace_not_found": "❌ 未找到 nexttrace 命令，请先安装 nexttrace。",
   "error.port_out_of_range": "❌ 端口号必须在 1-65535 之间。",
   "error.port_not_numeric": "❌ 端口必须为数字。",
-  "prompt.trace_usage": "用法：/trace <目标地址> [T/U] [端口]\nT = TCP，U = UDP，不指定则使用 ICMP\n示例：/trace 1.1.1.1\n      /trace example.com T 443"
+  "prompt.trace_usage": "用法：/trace <目标地址> [T/U] [端口]\nT = TCP，U = UDP，不指定则使用 ICMP\n示例：/trace 1.1.1.1\n      /trace example.com T 443",
+  "status.tracing_route": "⏳ 正在使用 {protocol_name} 跟踪路由到 {target}...",
+  "error.trace_timeout": "❌ 跟踪路由到 {target} 超时，已执行 {timeout} 秒",
+  "error.trace_failed": "❌ 跟踪路由失败: {reason}",
+  "result.output_truncated_suffix": "\n\n... (输出过长已截断)",
+  "result.header": "📡 *路由追踪结果*\n\n",
+  "result.target": "目标: `{target}`\n",
+  "result.protocol": "协议: {protocol}",
+  "result.port": " 端口: {port}",
+  "result.maptrace_link": "\n\n🗺️ [查看可视化路由图]({url})"
 }

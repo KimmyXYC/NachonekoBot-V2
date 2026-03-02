@@ -5,5 +5,7 @@
   "command.help.remake": "/remake - Reincarnate",
   "command.help.remake_data": "/remake_data - View reincarnation data",
   "prompt.remake_not_started": "You haven't done a remake yet, try /remake",
-  "error.query_failed_retry": "Query failed, please try again later."
+  "error.query_failed_retry": "Query failed, please try again later.",
+  "result.remake_success": "Reincarnation successful! You are now a {gender} from {country}.",
+  "result.remake_data": "You are currently a {gender} from {country}, with {count} reincarnations."
 }

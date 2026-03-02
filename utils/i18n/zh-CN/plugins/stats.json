@@ -7,5 +7,21 @@
   "command.help.dragon": "/dragon - 龙王总榜\n",
   "prompt.stats_usage": "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD]\n例如：/stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225",
   "error.stats_group_only": "该统计仅支持在群组中使用。",
-  "dragon.empty": "龙王总榜\n\n暂无龙王统计数据。"
+  "dragon.empty": "龙王总榜\n\n暂无龙王统计数据。",
+  "title.today_activity": "今日活跃度排行",
+  "title.date_activity": "{date} 活跃度排行",
+  "title.range_hours": "近{n}小时活跃度排行",
+  "title.range_weeks": "近{n}周活跃度排行",
+  "title.range_months": "近{n}月活跃度排行",
+  "title.range_years": "近{n}年活跃度排行",
+  "title.range_days": "近{n}天活跃度排行",
+  "title.dragon_leaderboard": "龙王总榜",
+  "label.stats_range": "统计区间: {range_text}",
+  "result.stats_empty": "{title}\n统计区间: {range_text}\n\n暂无统计数据",
+  "result.stats_row": "{rank}. {name} - {count}",
+  "result.total_messages": "总计发言: {total}",
+  "result.dragon_row": "{rank}. {name} - 总次数 {total_wins}，最大蝉联 {max_streak} 天",
+  "result.total_settlement_days": "累计结算天数: {total_days}",
+  "result.leaderboard_user_count": "上榜人数: {user_count}",
+  "result.dragon_congrats": "恭喜 {display_name} 获得本群🐉龙王标志（已蝉联{streak_days}天）"
 }

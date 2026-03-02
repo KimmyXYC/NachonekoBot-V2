@@ -67,9 +67,21 @@ def _get_display_name(user: types.User) -> str:
 
 
 def _parse_stats_args(text: str):
+    t = bot_instance.t if bot_instance and hasattr(bot_instance, "t") else None
+
+    def _lt(key: str, **kwargs):
+        if t:
+            return t(key, **kwargs)
+        return key
+
     parts = (text or "").split()
     if len(parts) <= 1:
-        return {"mode": "range", "n": 1, "unit": "d", "title": "今日活跃度排行"}
+        return {
+            "mode": "range",
+            "n": 1,
+            "unit": "d",
+            "title": _lt("title.today_activity"),
+        }
 
     arg_raw = parts[1].strip()
     target_date = _parse_stats_date_arg(arg_raw)
@@ -77,7 +89,7 @@ def _parse_stats_args(text: str):
         return {
             "mode": "date",
             "date": target_date,
-            "title": f"{target_date:%Y-%m-%d} 活跃度排行",
+            "title": _lt("title.date_activity", date=f"{target_date:%Y-%m-%d}"),
         }
 
     arg = arg_raw.lower()
@@ -95,15 +107,15 @@ def _parse_stats_args(text: str):
         return None
 
     if unit == "h":
-        title = f"近{n}小时活跃度排行"
+        title = _lt("title.range_hours", n=n)
     elif unit == "w":
-        title = f"近{n}周活跃度排行"
+        title = _lt("title.range_weeks", n=n)
     elif unit == "m":
-        title = f"近{n}月活跃度排行"
+        title = _lt("title.range_months", n=n)
     elif unit == "y":
-        title = f"近{n}年活跃度排行"
+        title = _lt("title.range_years", n=n)
     else:
-        title = "今日活跃度排行" if n == 1 else f"近{n}天活跃度排行"
+        title = _lt("title.today_activity") if n == 1 else _lt("title.range_days", n=n)
 
     return {"mode": "range", "n": n, "unit": unit, "title": title}
 
@@ -358,6 +370,7 @@ async def _send_long_reply(
 
 
 async def handle_stats_command(bot, message: types.Message):
+    _t = bot.t
     if message.chat.type not in ("group", "supergroup"):
         await bot.reply_to(message, "error.stats_group_only")
         return
@@ -380,21 +393,25 @@ async def handle_stats_command(bot, message: types.Message):
     display_end_time = end_time - datetime.timedelta(hours=1)
     range_text = f"{start_time:%Y-%m-%d %H:%M} ~ {display_end_time:%Y-%m-%d %H:%M}"
     if not rows:
-        await bot.reply_to(message, f"{title}\n统计区间: {range_text}\n\n暂无统计数据")
+        await bot.reply_to(
+            message,
+            _t("result.stats_empty", title=title, range_text=range_text),
+        )
         return
 
-    lines = [title, f"统计区间: {range_text}", ""]
+    lines = [title, _t("label.stats_range", range_text=range_text), ""]
 
     for idx, row in enumerate(rows, start=1):
         name = row["display_name"]
         count = row["total"]
-        lines.append(f"{idx}. {name} - {count}")
+        lines.append(_t("result.stats_row", rank=idx, name=name, count=count))
 
-    lines.extend(["", f"总计发言: {total}"])
+    lines.extend(["", _t("result.total_messages", total=total)])
     await bot.reply_to(message, "\n".join(lines))
 
 
 async def handle_dragon_command(bot, message: types.Message):
+    _t = bot.t
     if message.chat.type not in ("group", "supergroup"):
         await bot.reply_to(message, "error.stats_group_only")
         return
@@ -404,14 +421,28 @@ async def handle_dragon_command(bot, message: types.Message):
         await bot.reply_to(message, "dragon.empty")
         return
 
-    lines = ["龙王总榜", ""]
+    lines = [_t("title.dragon_leaderboard"), ""]
     for idx, row in enumerate(rows, start=1):
         name = row["display_name"]
         total_wins = int(row["total_wins"] or 0)
         max_streak = int(row["max_streak"] or 0)
-        lines.append(f"{idx}. {name} - 总次数 {total_wins}，最大蝉联 {max_streak} 天")
+        lines.append(
+            _t(
+                "result.dragon_row",
+                rank=idx,
+                name=name,
+                total_wins=total_wins,
+                max_streak=max_streak,
+            )
+        )
 
-    lines.extend(["", f"累计结算天数: {total_days}", f"上榜人数: {len(rows)}"])
+    lines.extend(
+        [
+            "",
+            _t("result.total_settlement_days", total_days=total_days),
+            _t("result.leaderboard_user_count", user_count=len(rows)),
+        ]
+    )
     await _send_long_reply(bot, message, "\n".join(lines))
 
 
@@ -434,6 +465,7 @@ async def handle_stats_message(bot, message: types.Message):
 
 
 async def handle_dragon_king_schedule(bot):
+    _t = bot.t if hasattr(bot, "t") else (lambda k, **kw: k)
     job_name = f"{__plugin_name__}.dragon_king"
     rows = await BotDatabase.get_enabled_scheduled_groups(job_name)
     if not rows:
@@ -480,7 +512,11 @@ async def handle_dragon_king_schedule(bot):
         try:
             await bot.send_message(
                 group_id,
-                f"恭喜 {display_name} 获得本群🐉龙王标志（已蝉联{streak_days}天）",
+                _t(
+                    "result.dragon_congrats",
+                    display_name=display_name,
+                    streak_days=streak_days,
+                ),
             )
         except Exception as e:
             logger.error(f"[Stats] 发送龙王消息失败 group={group_id}: {e}")

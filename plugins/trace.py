@@ -68,6 +68,7 @@ def validate_port(port: int) -> bool:
 
 async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
     """处理 trace 命令"""
+    _t = bot.t
     command_args = message.text.split()
 
     if len(command_args) < 2:
@@ -121,7 +122,12 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
         protocol_name = "UDP"
 
     status_message = await bot.reply_to(
-        message, f"⏳ 正在使用 {protocol_name} 跟踪路由到 {target}..."
+        message,
+        _t(
+            "status.tracing_route",
+            protocol_name=protocol_name,
+            target=target,
+        ),
     )
 
     try:
@@ -131,11 +137,15 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
         )
 
         # 格式化并发送结果
-        formatted_result = format_nexttrace_output(target, protocol_name, port, result)
+        formatted_result = format_nexttrace_output(
+            target, protocol_name, port, result, _t
+        )
 
         # Telegram 消息长度限制为 4096 字符
         if len(formatted_result) > 4000:
-            formatted_result = formatted_result[:4000] + "\n\n... (输出过长已截断)"
+            formatted_result = formatted_result[:4000] + _t(
+                "result.output_truncated_suffix"
+            )
 
         await bot.edit_message_text(
             formatted_result,
@@ -146,14 +156,20 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
 
     except asyncio.TimeoutError:
         await bot.edit_message_text(
-            f"❌ 跟踪路由到 {target} 超时，已执行 {MAX_TOTAL_TIMEOUT} 秒",
+            _t(
+                "error.trace_timeout",
+                target=target,
+                timeout=MAX_TOTAL_TIMEOUT,
+            ),
             message.chat.id,
             status_message.message_id,
         )
     except Exception as e:
         logger.error(f"Traceroute error: {str(e)}")
         await bot.edit_message_text(
-            f"❌ 跟踪路由失败: {str(e)}", message.chat.id, status_message.message_id
+            _t("error.trace_failed", reason=str(e)),
+            message.chat.id,
+            status_message.message_id,
         )
 
 
@@ -210,14 +226,16 @@ async def run_nexttrace(target: str, protocol: str = None, port: int = None) -> 
         raise
 
 
-def format_nexttrace_output(target: str, protocol: str, port: int, output: str) -> str:
+def format_nexttrace_output(
+    target: str, protocol: str, port: int, output: str, _t
+) -> str:
     """格式化 nexttrace 输出"""
-    header = "📡 *路由追踪结果*\n\n"
-    header += f"目标: `{target}`\n"
-    header += f"协议: {protocol}"
+    header = _t("result.header")
+    header += _t("result.target", target=target)
+    header += _t("result.protocol", protocol=protocol)
 
     if port:
-        header += f" 端口: {port}"
+        header += _t("result.port", port=port)
 
     header += "\n\n```\n"
 
@@ -242,7 +260,7 @@ def format_nexttrace_output(target: str, protocol: str, port: int, output: str) 
 
     # 如果找到 MapTrace URL，添加到代码块后面
     if maptrace_url:
-        footer += f"\n\n🗺️ [查看可视化路由图]({maptrace_url})"
+        footer += _t("result.maptrace_link", url=maptrace_url)
 
     return header + clean_output + footer
 

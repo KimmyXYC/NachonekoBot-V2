@@ -7,5 +7,21 @@
   "command.help.dragon": "/dragon - Dragon King leaderboard\n",
   "prompt.stats_usage": "Usage: /stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD] e.g. /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225",
   "error.stats_group_only": "This statistics command is only available in groups.",
-  "dragon.empty": "Dragon King Leaderboard\n\nNo Dragon King statistics yet"
+  "dragon.empty": "Dragon King Leaderboard\n\nNo Dragon King statistics yet",
+  "title.today_activity": "Today's Activity Leaderboard",
+  "title.date_activity": "{date} Activity Leaderboard",
+  "title.range_hours": "Last {n} Hours Activity Leaderboard",
+  "title.range_weeks": "Last {n} Weeks Activity Leaderboard",
+  "title.range_months": "Last {n} Months Activity Leaderboard",
+  "title.range_years": "Last {n} Years Activity Leaderboard",
+  "title.range_days": "Last {n} Days Activity Leaderboard",
+  "title.dragon_leaderboard": "Dragon King Leaderboard",
+  "label.stats_range": "Time range: {range_text}",
+  "result.stats_empty": "{title}\nTime range: {range_text}\n\nNo statistics data",
+  "result.stats_row": "{rank}. {name} - {count}",
+  "result.total_messages": "Total messages: {total}",
+  "result.dragon_row": "{rank}. {name} - Total wins {total_wins}, Max streak {max_streak} days",
+  "result.total_settlement_days": "Total settled days: {total_days}",
+  "result.leaderboard_user_count": "Users on leaderboard: {user_count}",
+  "result.dragon_congrats": "Congratulations {display_name} for becoming the 🐉 Dragon King (streak {streak_days} days)"
 }

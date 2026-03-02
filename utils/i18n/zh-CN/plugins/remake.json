@@ -5,5 +5,7 @@
   "command.help.remake": "/remake - 开始转生",
   "command.help.remake_data": "/remake_data - 查看转生数据",
   "prompt.remake_not_started": "你还没有转生记录，快试试 /remake 吧。",
-  "error.query_failed_retry": "查询失败，请稍后重试。"
+  "error.query_failed_retry": "查询失败，请稍后重试。",
+  "result.remake_success": "转生成功！您现在是 {country} 的 {gender} 了。",
+  "result.remake_data": "您现在是 {country} 的 {gender}，已转生 {count} 次。"
 }

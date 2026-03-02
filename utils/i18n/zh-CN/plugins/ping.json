@@ -3,5 +3,16 @@
   "command.description.ping": "执行 Ping 测试",
   "command.help.ping": "/ping [IP/Domain] - Ping 测试",
   "error.invalid_target_address": "❌ 目标地址无效，请提供有效域名或 IP 地址。",
-  "prompt.ping_target_required": "请提供要 Ping 的目标地址，例如：/ping example.com"
+  "prompt.ping_target_required": "请提供要 Ping 的目标地址，例如：/ping example.com",
+  "status.pinging": "⏳ 正在 ping {target}...",
+  "error.ping_command_error": "执行 ping 命令出错: {reason}",
+  "error.ping_command_exception": "执行 ping 命令异常: {reason}",
+  "error.parse_ping_result_exception": "解析 ping 结果异常: {reason}\n\n原始结果:\n```\n{raw_result}\n```",
+  "result.unreachable_or_timeout": "❌ Ping 失败：目标主机不可达或网络超时",
+  "value.unknown": "未知",
+  "result.target": "🎯 目标: {hostname} ({ip})\n",
+  "result.latency": "⏱ 延迟: 平均 {avg}ms (最小 {minimum}ms, 最大 {maximum}ms)\n",
+  "result.packet_loss": "📊 丢包率: {loss_rate}%\n",
+  "result.unparseable": "⚠️ 无法解析 ping 结果",
+  "result.raw_block": "\n原始结果:\n```\n{raw_result}\n```"
 }

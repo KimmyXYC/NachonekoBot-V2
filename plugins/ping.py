@@ -66,7 +66,7 @@ def is_valid_target(target):
     return is_valid_hostname(target) or is_valid_ip(target)
 
 
-async def execute_ping_command(target, count=4, timeout=2):
+async def execute_ping_command(target, _t, count=4, timeout=2):
     """
     执行 ping 命令并返回结果
     :param target: 目标地址（IP 或域名）
@@ -77,7 +77,7 @@ async def execute_ping_command(target, count=4, timeout=2):
     try:
         # 验证目标是否合法
         if not is_valid_target(target):
-            return "error.invalid_target_address"
+            return _t("error.invalid_target_address")
 
         # 验证ping次数，避免过大的数值
         if not isinstance(count, int) or count <= 0 or count > 10:
@@ -103,7 +103,10 @@ async def execute_ping_command(target, count=4, timeout=2):
 
         if stderr:
             logger.error(f"Ping error: {stderr.decode('utf-8', errors='replace')}")
-            return f"执行 ping 命令出错: {stderr.decode('utf-8', errors='replace')}"
+            return _t(
+                "error.ping_command_error",
+                reason=stderr.decode("utf-8", errors="replace"),
+            )
 
         # 根据操作系统使用不同的编码解码
         if platform.system().lower() == "windows":
@@ -129,10 +132,10 @@ async def execute_ping_command(target, count=4, timeout=2):
 
     except Exception as e:
         logger.exception(f"执行 ping 命令异常: {str(e)}")
-        return f"执行 ping 命令异常: {str(e)}"
+        return _t("error.ping_command_exception", reason=str(e))
 
 
-async def parse_ping_result(result):
+async def parse_ping_result(result, _t):
     """
     解析 ping 结果，提取关键信息
     :param result: ping 命令原始输出
@@ -141,13 +144,16 @@ async def parse_ping_result(result):
     summary = ""
 
     # 检查是否包含错误信息
+    if isinstance(result, str) and result.startswith("❌"):
+        return result
+
     if (
         "请求找不到主机" in result
         or "请求超时" in result
         or "unknown host" in result
         or "100% packet loss" in result
     ):
-        return "❌ Ping 失败：目标主机不可达或网络超时"
+        return _t("result.unreachable_or_timeout")
 
     try:
         # 提取 IP 地址
@@ -161,8 +167,8 @@ async def parse_ping_result(result):
             elif groups[2] and groups[3]:  # Unix 格式
                 hostname, ip = groups[2], groups[3]
             else:
-                hostname = ip = "未知"
-            summary += f"🎯 目标: {hostname} ({ip})\n"
+                hostname = ip = _t("value.unknown")
+            summary += _t("result.target", hostname=hostname, ip=ip)
 
         # 提取往返时间
         if platform.system().lower() == "windows":
@@ -171,7 +177,12 @@ async def parse_ping_result(result):
             )
             if time_match:
                 min_time, max_time, avg_time = time_match.groups()
-                summary += f"⏱ 延迟: 平均 {avg_time}ms (最小 {min_time}ms, 最大 {max_time}ms)\n"
+                summary += _t(
+                    "result.latency",
+                    avg=avg_time,
+                    minimum=min_time,
+                    maximum=max_time,
+                )
         else:
             time_match = re.search(
                 r"min/avg/max/mdev\s*=\s*([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)\s*ms",
@@ -179,27 +190,36 @@ async def parse_ping_result(result):
             )
             if time_match:
                 min_time, avg_time, max_time, mdev = time_match.groups()
-                summary += f"⏱ 延迟: 平均 {avg_time}ms (最小 {min_time}ms, 最大 {max_time}ms)\n"
+                summary += _t(
+                    "result.latency",
+                    avg=avg_time,
+                    minimum=min_time,
+                    maximum=max_time,
+                )
 
         # 提取丢包率
         loss_match = re.search(r"(\d+)%\s*(丢失|packet loss)", result)
         if loss_match:
             loss_rate = loss_match.group(1)
-            summary += f"📊 丢包率: {loss_rate}%\n"
+            summary += _t("result.packet_loss", loss_rate=loss_rate)
 
         if not summary:
-            summary = "⚠️ 无法解析 ping 结果"
+            summary = _t("result.unparseable")
 
         # 添加原始结果的简短版本
         if len(result) > 300:
             result = result[:300] + "..."
-        summary += f"\n原始结果:\n```\n{result}\n```"
+        summary += _t("result.raw_block", raw_result=result)
 
         return summary
 
     except Exception as e:
         logger.exception(f"解析 ping 结果异常: {str(e)}")
-        return f"解析 ping 结果异常: {str(e)}\n\n原始结果:\n```\n{result[:300]}...\n```"
+        return _t(
+            "error.parse_ping_result_exception",
+            reason=str(e),
+            raw_result=result[:300] + "...",
+        )
 
 
 async def handle_ping_command(bot, message: types.Message, target=None):
@@ -209,15 +229,14 @@ async def handle_ping_command(bot, message: types.Message, target=None):
     :param message: 消息对象
     :param target: 目标地址，如果为 None 则从消息中提取
     """
+    _t = bot.t
     # 如果没有提供目标，提示用户
     if not target:
         command_args = message.text.split()
         if len(command_args) >= 2:
             target = command_args[1]
         else:
-            await bot.reply_to(
-                message, "prompt.ping_target_required"
-            )
+            await bot.reply_to(message, "prompt.ping_target_required")
             return
 
     # 清理和验证目标地址，防止命令注入
@@ -230,13 +249,13 @@ async def handle_ping_command(bot, message: types.Message, target=None):
         return
 
     # 发送正在处理的消息
-    processing_msg = await bot.reply_to(message, f"⏳ 正在 ping {target}...")
+    processing_msg = await bot.reply_to(message, _t("status.pinging", target=target))
 
     # 执行 ping 命令
-    result = await execute_ping_command(target)
+    result = await execute_ping_command(target, _t)
 
     # 解析结果
-    summary = await parse_ping_result(result)
+    summary = await parse_ping_result(result, _t)
 
     # 发送结果
     await bot.edit_message_text(

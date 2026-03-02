@@ -8,5 +8,20 @@
   "inline.usage_description": "Usage: bc [Amount] [Currency_From] [Currency_To]",
   "inline.send_result_description": "Send conversion result",
   "prompt.bc_usage": "Usage: /bc <amount> <currency_from> <currency_to>\nExample: /bc 100 USD EUR - convert 100 USD to EUR\nExample: /bc 1 BTC USD - convert 1 BTC to USD\nExample: /bc 0.5 ETH BTC - convert 0.5 ETH to BTC",
-  "status.bc_converting": "Converting {amount} {source_currency} to {target_currency}..."
+  "status.bc_converting": "Converting {amount} {source_currency} to {target_currency}...",
+  "error.init_failed": "Initialization failed: {reason}",
+  "error.fetch_price_failed": "Failed to fetch prices: {reason}",
+  "error.pair_not_found": "Trading pair not found: {pair}",
+  "error.pair_not_found_both": "Trading pairs not found: {pair_a} or {pair_b}",
+  "error.convert_failed": "Conversion failed: {reason}",
+  "source.eu": "EU",
+  "source.unionpay": "UnionPay",
+  "source.mastercard": "Mastercard",
+  "source.visa": "Visa",
+  "result.spot_prices": "{timestamp} UTC\n1 BTC = {btc_price} USDT\n1 ETH = {eth_price} USDT",
+  "result.fiat_source_success": "{source}: {amount} {source_currency} ≈ {converted_amount} {target_currency} (rate: {rate})",
+  "result.fiat_source_error": "{source}: {error}",
+  "result.fiat_to_crypto": "{amount} {source_currency} = {crypto_amount} {target_currency}\n{amount} {source_currency} = {usd_amount} USD",
+  "result.crypto_to_fiat": "{amount} {source_currency} = {fiat_amount} {target_currency}\n1 {source_currency} = {unit_usd_price} USD",
+  "result.crypto_pair": "{amount} {source_currency} = {converted_amount} {target_currency}"
 }

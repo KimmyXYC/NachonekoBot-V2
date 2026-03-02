@@ -122,6 +122,7 @@ async def translate_chinese_to_english(text):
 
 
 async def handle_weather_command(bot, message: types.Message, city: str):
+    _t = bot.t
     try:
         # 检查城市名是否为中文，如果是则翻译
         if is_chinese(city):
@@ -143,11 +144,13 @@ async def handle_weather_command(bot, message: types.Message, city: str):
                         if resp.status == 404:
                             return {
                                 "status": 404,
-                                "message": f"出错了呜呜呜 ~ 无法找到城市「{city}」的天气信息",
+                                "message": _t("error.city_not_found", city=city),
                             }
                         return {
                             "status": resp.status,
-                            "message": f"获取天气数据失败，状态码: {resp.status}",
+                            "message": _t(
+                                "error.weather_api_failed", status_code=resp.status
+                            ),
                         }
                     return {"status": 200, "data": await resp.json()}
 
@@ -194,7 +197,21 @@ async def handle_weather_command(bot, message: types.Message, city: str):
             tempInF = round((1.8 * tempInC) + 32, 2)
             icon = data["weather"][0]["icon"]
             desc = data["weather"][0]["description"]
-            res = f"{cityName} {icons[icon]}{desc} 💨{windDirection} {windSpeed}m/s\n大气🌡 {tempInC}℃ ({tempInF}℉) 💦 {humidity}% \n体感🌡 {fellsTemp}℃\n气压 {pressure}hpa\n🌅{sunriseTime} 🌇{sunsetTime} "
+            res = _t(
+                "result.weather_summary",
+                city_name=cityName,
+                icon=icons[icon],
+                description=desc,
+                wind_direction=windDirection,
+                wind_speed=windSpeed,
+                temp_c=tempInC,
+                temp_f=tempInF,
+                humidity=humidity,
+                feels_like=fellsTemp,
+                pressure=pressure,
+                sunrise=sunriseTime,
+                sunset=sunsetTime,
+            )
 
             # 尝试发送图片和文本
             try:
@@ -216,7 +233,7 @@ async def handle_weather_command(bot, message: types.Message, city: str):
     except Exception as e:
         await bot.send_message(
             chat_id=message.chat.id,
-            text=f"出错了呜呜呜 ~ 无法获取天气信息。错误信息: {str(e)}",
+            text=_t("error.weather_unavailable", reason=str(e)),
         )
 
 

@@ -7,5 +7,14 @@
   "error.nexttrace_not_found": "❌ nexttrace command not found, please install nexttrace first",
   "error.port_out_of_range": "❌ Port number must be between 1 and 65535",
   "error.port_not_numeric": "❌ Port must be numeric",
-  "prompt.trace_usage": "Usage: /trace <target> [T/U] [port]\nT = TCP, U = UDP, ICMP is used if omitted\nExample: /trace 1.1.1.1\n      /trace example.com T 443"
+  "prompt.trace_usage": "Usage: /trace <target> [T/U] [port]\nT = TCP, U = UDP, ICMP is used if omitted\nExample: /trace 1.1.1.1\n      /trace example.com T 443",
+  "status.tracing_route": "⏳ Tracing route to {target} with {protocol_name}...",
+  "error.trace_timeout": "❌ Tracing route to {target} timed out after {timeout} seconds",
+  "error.trace_failed": "❌ Trace failed: {reason}",
+  "result.output_truncated_suffix": "\n\n... (output too long, truncated)",
+  "result.header": "📡 *Traceroute Result*\n\n",
+  "result.target": "Target: `{target}`\n",
+  "result.protocol": "Protocol: {protocol}",
+  "result.port": " Port: {port}",
+  "result.maptrace_link": "\n\n🗺️ [View route map]({url})"
 }

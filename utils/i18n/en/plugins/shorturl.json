@@ -2,5 +2,9 @@
   "meta.description": "Short URL generator",
   "command.description.short": "Generate short URLs",
   "command.help.short": "/short [URL] - Generate short URL",
-  "error.backend_url_not_configured": "Generation failed, backend URL is not configured"
+  "error.backend_url_not_configured": "Generation failed, backend URL is not configured",
+  "status.generating_short_url": "Generating short URL: `{url}`",
+  "result.short_url": "Short URL: `{short_url}`",
+  "error.generate_failed_backend_invalid": "Generation failed, please check whether backend address is valid: `{reason}`",
+  "error.generate_failed_invalid_url": "Generation failed, please check whether URL is valid: `{reason}`"
 }

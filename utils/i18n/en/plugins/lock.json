@@ -10,5 +10,8 @@
   "error.sender_unrecognized": "Unable to identify message sender",
   "lock.list.empty": "No commands are locked in this group",
   "error.bot_id_invalid": "Bot configuration error: bot_id is invalid",
-  "error.bot_delete_permission_required": "Please make the bot an admin and grant delete message permission first"
+  "error.bot_delete_permission_required": "Please make the bot an admin and grant delete message permission first",
+  "result.batch_add": "Batch add result: Added `{added}`, already existed `{already_exist}`, non-lockable `{not_lockable}`, invalid format `{invalid_format}`",
+  "result.batch_remove": "Batch remove result: Removed `{removed}`, not found `{not_found}`, invalid format `{invalid_format}`",
+  "result.list_header": "The following commands are locked in this group:\n"
 }

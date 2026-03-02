@@ -8,5 +8,20 @@
   "inline.usage_description": "用法：bc [Amount] [Currency_From] [Currency_To]",
   "inline.send_result_description": "发送转换结果",
   "prompt.bc_usage": "使用方法: /bc <数量> <币种1> <币种2>\n例如: /bc 100 USD EUR - 将100美元转换为欧元\n例如: /bc 1 BTC USD - 将1比特币转换为美元\n例如: /bc 0.5 ETH BTC - 将0.5以太坊转换为比特币",
-  "status.bc_converting": "正在转换 {amount} {source_currency} 到 {target_currency}..."
+  "status.bc_converting": "正在转换 {amount} {source_currency} 到 {target_currency}...",
+  "error.init_failed": "初始化失败: {reason}",
+  "error.fetch_price_failed": "获取价格失败: {reason}",
+  "error.pair_not_found": "找不到交易对 {pair}",
+  "error.pair_not_found_both": "找不到交易对 {pair_a} 或 {pair_b}",
+  "error.convert_failed": "转换失败: {reason}",
+  "source.eu": "欧盟",
+  "source.unionpay": "银联",
+  "source.mastercard": "Mastercard",
+  "source.visa": "Visa",
+  "result.spot_prices": "{timestamp} UTC\n1 BTC = {btc_price} USDT\n1 ETH = {eth_price} USDT",
+  "result.fiat_source_success": "{source}: {amount} {source_currency} ≈ {converted_amount} {target_currency} (汇率: {rate})",
+  "result.fiat_source_error": "{source}: {error}",
+  "result.fiat_to_crypto": "{amount} {source_currency} = {crypto_amount} {target_currency}\n{amount} {source_currency} = {usd_amount} USD",
+  "result.crypto_to_fiat": "{amount} {source_currency} = {fiat_amount} {target_currency}\n1 {source_currency} = {unit_usd_price} USD",
+  "result.crypto_pair": "{amount} {source_currency} = {converted_amount} {target_currency}"
 }

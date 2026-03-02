@@ -3,5 +3,16 @@
   "command.description.ping": "Ping test",
   "command.help.ping": "/ping [IP/Domain] - Ping test",
   "error.invalid_target_address": "❌ Invalid target address. Please provide a valid domain or IP address.",
-  "prompt.ping_target_required": "Please provide a target to ping, for example: /ping example.com"
+  "prompt.ping_target_required": "Please provide a target to ping, for example: /ping example.com",
+  "status.pinging": "⏳ Pinging {target}...",
+  "error.ping_command_error": "Ping command error: {reason}",
+  "error.ping_command_exception": "Ping command exception: {reason}",
+  "error.parse_ping_result_exception": "Failed to parse ping result: {reason}\n\nRaw result:\n```\n{raw_result}\n```",
+  "result.unreachable_or_timeout": "❌ Ping failed: host unreachable or timeout",
+  "value.unknown": "unknown",
+  "result.target": "🎯 Target: {hostname} ({ip})\n",
+  "result.latency": "⏱ Latency: avg {avg}ms (min {minimum}ms, max {maximum}ms)\n",
+  "result.packet_loss": "📊 Packet loss: {loss_rate}%\n",
+  "result.unparseable": "⚠️ Unable to parse ping result",
+  "result.raw_block": "\nRaw result:\n```\n{raw_result}\n```"
 }
