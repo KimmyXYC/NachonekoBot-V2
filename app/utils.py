@@ -5,6 +5,8 @@
 # @Software: PyCharm
 import re
 
+from utils.i18n.service import t as framework_t
+
 
 def parse_command(command):
     if not command:
@@ -37,16 +39,24 @@ def markdown_to_telegram_html(markdown_text):
     return html_text
 
 
-def command_error_msg(command="", args="", optional_args="", reason=""):
+def command_error_msg(command="", args="", optional_args="", reason="", lang=None):
     if not command:
-        return "命令格式错误"
+        return framework_t("error.command_format", lang)
 
     if reason == "invalid_type":
-        return "查询类型无效，请检查输入参数"
+        return framework_t("error.invalid_query_type", lang)
 
     if args:
         if optional_args:
-            return f"格式错误，格式应为 /{command} [{args}] ({optional_args})"
-        return f"格式错误，格式应为 /{command} [{args}]"
+            return framework_t(
+                "error.command_format_with_optional",
+                lang,
+                command=command,
+                args=args,
+                optional_args=optional_args,
+            )
+        return framework_t(
+            "error.command_format_with_args", lang, command=command, args=args
+        )
     else:
-        return f"格式错误，格式应为 /{command}"
+        return framework_t("error.command_format_simple", lang, command=command)

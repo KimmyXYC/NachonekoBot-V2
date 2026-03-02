@@ -34,5 +34,11 @@
   "language.group_admin_required": "Only group admins can change the group language.",
   "language.set_success_group": "Group language set to {language}.",
   "language.set_success_user": "Your language has been set to {language}.",
-  "language.unsupported": "Unsupported language."
+  "language.unsupported": "Unsupported language.",
+  "error.command_format": "Invalid command format",
+  "error.invalid_query_type": "Invalid query type, please check your input parameters",
+  "error.command_format_with_optional": "Invalid format, expected /{command} [{args}] ({optional_args})",
+  "error.command_format_with_args": "Invalid format, expected /{command} [{args}]",
+  "error.command_format_simple": "Invalid format, expected /{command}",
+  "inline.help_hint": "See /help for inline commands"
 }

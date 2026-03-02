@@ -247,7 +247,12 @@ async def register_handlers(bot, middleware, plugin_name):
     async def weather_handler(bot, message: types.Message):
         command_args = message.text.split()
         if len(command_args) == 1:
-            await bot.reply_to(message, command_error_msg("weather", "City_Name"))
+            await bot.reply_to(
+                message,
+                command_error_msg(
+                    "weather", "City_Name", lang=getattr(bot, "_lang", None)
+                ),
+            )
         else:
             city = " ".join(command_args[1:])
             await handle_weather_command(bot, message, city)

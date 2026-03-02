@@ -121,7 +121,10 @@ async def register_handlers(bot, middleware, plugin_name):
             url = command_args[1]
             await handle_short_command(bot, message, url)
         else:
-            await bot.reply_to(message, command_error_msg("short", "URL"))
+            await bot.reply_to(
+                message,
+                command_error_msg("short", "URL", lang=getattr(bot, "_lang", None)),
+            )
 
     middleware.register_command_handler(
         commands=["short"],

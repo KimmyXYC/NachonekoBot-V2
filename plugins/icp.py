@@ -148,7 +148,10 @@ async def register_handlers(bot, middleware, plugin_name):
         if len(command_args) == 2:
             await handle_icp_command(bot, message)
         else:
-            await bot.reply_to(message, command_error_msg("icp", "Domain"))
+            await bot.reply_to(
+                message,
+                command_error_msg("icp", "Domain", lang=getattr(bot, "_lang", None)),
+            )
 
     middleware.register_command_handler(
         commands=["icp"],

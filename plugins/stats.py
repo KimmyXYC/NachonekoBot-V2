@@ -69,12 +69,10 @@ def _get_display_name(user: types.User) -> str:
     return name or "Unknown"
 
 
-def _parse_stats_args(text: str):
-    t = bot_instance.t if bot_instance and hasattr(bot_instance, "t") else None
-
+def _parse_stats_args(text: str, t_func=None):
     def _lt(key: str, **kwargs):
-        if t:
-            return t(key, **kwargs)
+        if t_func:
+            return t_func(key, **kwargs)
         return key
 
     parts = (text or "").split()
@@ -378,7 +376,7 @@ async def handle_stats_command(bot, message: types.Message):
         await bot.reply_to(message, "error.stats_group_only")
         return
 
-    parsed = _parse_stats_args(message.text or "")
+    parsed = _parse_stats_args(message.text or "", _t)
     if not parsed:
         await bot.reply_to(
             message,
@@ -528,9 +526,6 @@ async def handle_dragon_king_schedule(bot):
 # ==================== 插件注册 ====================
 async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
-    global bot_instance
-    bot_instance = bot
-
     middleware.register_message_handler(
         callback=handle_stats_message,
         plugin_name=plugin_name,
@@ -581,6 +576,3 @@ def get_plugin_info() -> dict:
         "description": __description__,
         "commands": __commands__,
     }
-
-
-bot_instance = None

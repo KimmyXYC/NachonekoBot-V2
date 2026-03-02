@@ -34,5 +34,11 @@
   "language.group_admin_required": "仅群组管理员可修改群语言。",
   "language.set_success_group": "群语言已设置为 {language}。",
   "language.set_success_user": "你的语言已设置为 {language}。",
-  "language.unsupported": "不支持的语言。"
+  "language.unsupported": "不支持的语言。",
+  "error.command_format": "命令格式错误",
+  "error.invalid_query_type": "查询类型无效，请检查输入参数",
+  "error.command_format_with_optional": "格式错误，格式应为 /{command} [{args}] ({optional_args})",
+  "error.command_format_with_args": "格式错误，格式应为 /{command} [{args}]",
+  "error.command_format_simple": "格式错误，格式应为 /{command}",
+  "inline.help_hint": "inline 命令请查阅 /help"
 }

@@ -280,7 +280,10 @@ async def register_handlers(bot, middleware, plugin_name):
         if len(command_args) == 2:
             await handle_whois_command(bot, message)
         else:
-            await bot.reply_to(message, command_error_msg("whois", "Domain"))
+            await bot.reply_to(
+                message,
+                command_error_msg("whois", "Domain", lang=getattr(bot, "_lang", None)),
+            )
 
     middleware.register_command_handler(
         commands=["whois"],

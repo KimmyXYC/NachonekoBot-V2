@@ -412,7 +412,12 @@ async def register_handlers(bot, middleware, plugin_name):
         if len(command_args) == 2:
             await handle_rdap_command(bot, message)
         else:
-            await bot.reply_to(message, command_error_msg("rdap", "Domain/IP/ASN"))
+            await bot.reply_to(
+                message,
+                command_error_msg(
+                    "rdap", "Domain/IP/ASN", lang=getattr(bot, "_lang", None)
+                ),
+            )
 
     middleware.register_command_handler(
         commands=["rdap"],

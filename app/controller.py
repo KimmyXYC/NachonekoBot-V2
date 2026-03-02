@@ -23,7 +23,13 @@ from app.plugin_system.plugin_settings import (
 )
 from app.security.permissions import is_bot_admin
 from app.scheduler import scheduler
-from utils.i18n import get_message_language, language_name, normalize_language, t
+from utils.i18n import (
+    get_inline_query_language,
+    get_message_language,
+    language_name,
+    normalize_language,
+    t,
+)
 
 StepCache = StateMemoryStorage()
 
@@ -617,6 +623,7 @@ class BotRunner:
             # 用户仅输入 @Bot（query 为空）时，返回占位图片
             if not query:
                 logger.debug("Received empty inline query, returning placeholder image")
+                lang = await get_inline_query_language(inline_query)
                 placeholder_url = BotConfig.get("inline", {}).get(
                     "empty_placeholder_image",
                     "https://pbs.twimg.com/media/HAckcxubgAARphg?format=jpg&name=4096x4096",
@@ -625,7 +632,7 @@ class BotRunner:
                     id="1",
                     photo_url=placeholder_url,
                     thumbnail_url=placeholder_url,
-                    caption="inline 命令请查阅 /help",
+                    caption=t("inline.help_hint", lang),
                 )
                 await bot.answer_inline_query(
                     inline_query.id, [result], cache_time=1, is_personal=True

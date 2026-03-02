@@ -291,7 +291,10 @@ async def register_handlers(bot, middleware, plugin_name):
     async def lock_handler(bot, message: types.Message):
         command_args = (message.text or "").split()
         if len(command_args) == 1:
-            await bot.reply_to(message, command_error_msg("lock", "Command"))
+            await bot.reply_to(
+                message,
+                command_error_msg("lock", "Command", lang=getattr(bot, "_lang", None)),
+            )
         else:
             lock_list = command_args[1:]
             await handle_lock_command(bot, message, lock_list)
@@ -299,7 +302,12 @@ async def register_handlers(bot, middleware, plugin_name):
     async def unlock_handler(bot, message: types.Message):
         command_args = (message.text or "").split()
         if len(command_args) == 1:
-            await bot.reply_to(message, command_error_msg("unlock", "Command"))
+            await bot.reply_to(
+                message,
+                command_error_msg(
+                    "unlock", "Command", lang=getattr(bot, "_lang", None)
+                ),
+            )
         else:
             unlock_list = command_args[1:]
             await handle_unlock_command(bot, message, unlock_list)

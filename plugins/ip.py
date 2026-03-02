@@ -179,7 +179,14 @@ async def register_handlers(bot, middleware, plugin_name):
         if len(command_args) == 2:
             await handle_ip_command(bot, message)
         else:
-            await bot.reply_to(message, command_error_msg("ip", "IP Address or Domain"))
+            await bot.reply_to(
+                message,
+                command_error_msg(
+                    "ip",
+                    "IP Address or Domain",
+                    lang=getattr(bot, "_lang", None),
+                ),
+            )
 
     middleware.register_command_handler(
         commands=["ip"],
