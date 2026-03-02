@@ -4,6 +4,7 @@
 # @File    : event.py
 # @Software: PyCharm
 from telebot import types, formatting
+from utils.i18n import t
 
 
 CATEGORY_TITLES = {
@@ -24,9 +25,21 @@ async def set_bot_commands(bot, plugin_manager):
     """
     # 核心命令（不属于任何插件）
     commands = [
-        types.BotCommand("help", "获取帮助信息"),
-        types.BotCommand("plugin", "全局插件管理（仅 Bot 管理员）"),
-        types.BotCommand("plugin_settings", "群组插件设置（仅群组管理员）"),
+        types.BotCommand("help", t("core.command.help", "en")),
+        types.BotCommand("plugin", t("core.command.plugin", "en")),
+        types.BotCommand("plugin_settings", t("core.command.plugin_settings", "en")),
+        types.BotCommand("language", t("core.command.language", "en")),
+    ]
+    private_commands = [
+        types.BotCommand("help", t("core.command.help", "en")),
+        types.BotCommand("plugin", t("core.command.plugin", "en")),
+        types.BotCommand("language", t("core.command.language", "en")),
+    ]
+    group_commands = [
+        types.BotCommand("help", t("core.command.help", "en")),
+        types.BotCommand("plugin", t("core.command.plugin", "en")),
+        types.BotCommand("plugin_settings", t("core.command.plugin_settings", "en")),
+        types.BotCommand("language", t("core.command.language", "en")),
     ]
 
     # 从插件收集命令
@@ -38,27 +51,35 @@ async def set_bot_commands(bot, plugin_manager):
             commands.append(
                 types.BotCommand(cmd_info["command"], cmd_info["description"])
             )
+            private_commands.append(
+                types.BotCommand(cmd_info["command"], cmd_info["description"])
+            )
+            group_commands.append(
+                types.BotCommand(cmd_info["command"], cmd_info["description"])
+            )
 
     await bot.set_my_commands(commands, scope=types.BotCommandScopeDefault())
-    await bot.set_my_commands(commands, scope=types.BotCommandScopeAllPrivateChats())
-    await bot.set_my_commands(commands, scope=types.BotCommandScopeAllGroupChats())
+    await bot.set_my_commands(
+        private_commands, scope=types.BotCommandScopeAllPrivateChats()
+    )
+    await bot.set_my_commands(
+        group_commands, scope=types.BotCommandScopeAllGroupChats()
+    )
 
 
-async def listen_help_command(bot, message: types.Message, plugin_manager):
+async def listen_help_command(bot, message: types.Message, plugin_manager, lang: str):
     """
     动态构建并显示帮助信息
     从插件管理器收集所有插件的帮助文本
     """
     # 构建帮助文本列表
-    help_lines = [formatting.mbold("🥕 Help")]
+    help_lines = [formatting.mbold(t("help.title", lang))]
 
     # 核心命令帮助
-    help_lines.append(formatting.mcite("/help - 获取帮助信息"))
+    help_lines.append(formatting.mcite(t("help.line.help", lang)))
     help_lines.append(formatting.mcite(""))  # 添加空行分隔
-    help_lines.append(formatting.mcite("/plugin - 全局插件管理（仅 Bot 管理员）"))
-    help_lines.append(
-        formatting.mcite("/plugin_settings - 群组插件设置（仅群组管理员）")
-    )
+    help_lines.append(formatting.mcite(t("help.line.plugin", lang)))
+    help_lines.append(formatting.mcite(t("help.line.language", lang)))
     help_lines.append(formatting.mcite(""))  # 添加空行分隔
 
     # 从插件收集帮助信息
@@ -81,10 +102,8 @@ async def listen_help_command(bot, message: types.Message, plugin_manager):
 
     # 添加特殊功能说明
     help_lines.append("")
-    help_lines.append(formatting.mitalic("特殊功能："))
-    help_lines.append(
-        formatting.mcite("喜报/悲报/通报/警报 [内容] - 生成对应类型的报告图片")
-    )
+    help_lines.append(formatting.mitalic(t("help.special", lang)))
+    help_lines.append(formatting.mcite(t("help.special.report", lang)))
 
     # 添加 GitHub 链接
     help_lines.append("")

@@ -17,11 +17,13 @@ from app.plugin_system.manager import plugin_manager
 from app.plugin_system.plugin_settings import (
     has_change_info_permission,
     build_keyboard_and_text,
+    build_language_keyboard,
     get_toggleable_plugins,
     get_toggleable_jobs,
 )
 from app.security.permissions import is_bot_admin
 from app.scheduler import scheduler
+from utils.i18n import get_message_language, language_name, normalize_language, t
 
 StepCache = StateMemoryStorage()
 
@@ -79,7 +81,37 @@ class BotRunner:
         # ==================== 核心命令(保留在这里) ====================
         @bot.message_handler(commands=["start", "help"], chat_types=["private"])
         async def listen_help_command(message: types.Message):
-            await event.listen_help_command(bot, message, plugin_manager)
+            lang = await get_message_language(message)
+            await event.listen_help_command(bot, message, plugin_manager, lang)
+
+        async def build_settings_items(chat_id: int):
+            plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
+            job_list = await get_toggleable_jobs(plugin_manager.middleware)
+            items = []
+
+            for name, display_name in plugin_list:
+                enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
+                items.append(
+                    {
+                        "kind": "plugin",
+                        "key": name,
+                        "label": display_name,
+                        "enabled": enabled,
+                    }
+                )
+
+            for job_name, display_name in job_list:
+                enabled = await BotDatabase.get_scheduled_job_enabled(chat_id, job_name)
+                items.append(
+                    {
+                        "kind": "job",
+                        "key": job_name,
+                        "label": display_name,
+                        "enabled": enabled,
+                    }
+                )
+
+            return items
 
         # ==================== 插件管理命令 ====================
         @bot.message_handler(
@@ -165,53 +197,65 @@ class BotRunner:
             try:
                 user_id = message.from_user.id
                 chat_id = message.chat.id
+                lang = normalize_language(await BotDatabase.get_group_language(chat_id))
 
                 if not await has_change_info_permission(bot, chat_id, user_id):
                     await bot.reply_to(
-                        message, "你没有权限使用该功能（需要“更改群信息”权限）。"
+                        message, t("plugin_settings.permission_required", lang)
                     )
                     return
 
-                plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
-                job_list = await get_toggleable_jobs(plugin_manager.middleware)
-                items = []
+                items = await build_settings_items(chat_id)
 
-                if not plugin_list and not job_list:
-                    await bot.reply_to(message, "当前没有支持开关的插件或定时任务。")
+                if not items:
+                    await bot.reply_to(message, t("plugin_settings.empty", lang))
                     return
 
                 await BotDatabase.ensure_group_row(chat_id)
-                for name, display_name in plugin_list:
-                    enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
-                    items.append(
-                        {
-                            "kind": "plugin",
-                            "key": name,
-                            "label": display_name,
-                            "enabled": enabled,
-                        }
-                    )
-                for job_name, display_name in job_list:
-                    enabled = await BotDatabase.get_scheduled_job_enabled(
-                        chat_id, job_name
-                    )
-                    items.append(
-                        {
-                            "kind": "job",
-                            "key": job_name,
-                            "label": display_name,
-                            "enabled": enabled,
-                        }
-                    )
-
-                text, kb = build_keyboard_and_text(items)
+                text, kb = build_keyboard_and_text(items, lang)
                 await bot.reply_to(message, text, reply_markup=kb)
             except Exception as e:
                 logger.error(f"/plugin_settings 处理失败: {e}")
                 try:
-                    await bot.reply_to(message, f"获取插件设置失败：{e}")
+                    lang = await get_message_language(message)
+                    await bot.reply_to(
+                        message, t("plugin_settings.fetch_failed", lang, error=e)
+                    )
                 except Exception:
                     pass
+
+        # ==================== 语言设置命令（私聊和群组） ====================
+        @bot.message_handler(commands=["language"], chat_types=["private"])
+        async def core_private_language(message: types.Message):
+            user_id = message.from_user.id
+            current = normalize_language(await BotDatabase.get_user_language(user_id))
+            text, kb = build_language_keyboard(
+                lang=current,
+                callback_prefix="lang_set_user",
+                include_back=False,
+                include_close=True,
+                close_callback_data="lang_close",
+            )
+            await bot.reply_to(message, text, reply_markup=kb)
+
+        @bot.message_handler(commands=["language"], chat_types=["group", "supergroup"])
+        async def core_group_language(message: types.Message):
+            user_id = message.from_user.id
+            chat_id = message.chat.id
+            current = normalize_language(await BotDatabase.get_group_language(chat_id))
+
+            if not await has_change_info_permission(bot, chat_id, user_id):
+                await bot.reply_to(message, t("language.group_admin_required", current))
+                return
+
+            text, kb = build_language_keyboard(
+                lang=current,
+                callback_prefix="lang_set_group",
+                include_back=False,
+                include_close=True,
+                close_callback_data="lang_close",
+            )
+            await bot.reply_to(message, text, reply_markup=kb)
 
         # 回调：处理插件开关切换（核心处理，不经中间件）
         @bot.callback_query_handler(
@@ -222,14 +266,19 @@ class BotRunner:
                 chat = call.message.chat
                 chat_id = chat.id
                 user_id = call.from_user.id
+                lang = normalize_language(await BotDatabase.get_group_language(chat_id))
 
                 if not await has_change_info_permission(bot, chat_id, user_id):
-                    await bot.answer_callback_query(call.id, "无权限")
+                    await bot.answer_callback_query(
+                        call.id, t("common.no_permission", lang)
+                    )
                     return
 
                 parts = call.data.split(":", 2)
                 if len(parts) < 3:
-                    await bot.answer_callback_query(call.id, "无效操作")
+                    await bot.answer_callback_query(
+                        call.id, t("common.invalid_action", lang)
+                    )
                     return
                 target_kind = parts[1]
                 target_key = parts[2]
@@ -249,38 +298,18 @@ class BotRunner:
                         chat_id, target_key, new_state
                     )
                 else:
-                    await bot.answer_callback_query(call.id, "无效操作")
+                    await bot.answer_callback_query(
+                        call.id, t("common.invalid_action", lang)
+                    )
                     return
                 if not ok:
-                    await bot.answer_callback_query(call.id, "更新失败")
+                    await bot.answer_callback_query(
+                        call.id, t("common.update_failed", lang)
+                    )
                     return
 
-                plugin_list = await get_toggleable_plugins(plugin_manager.middleware)
-                job_list = await get_toggleable_jobs(plugin_manager.middleware)
-                items = []
-                for name, display_name in plugin_list:
-                    enabled = await BotDatabase.get_plugin_enabled(chat_id, name)
-                    items.append(
-                        {
-                            "kind": "plugin",
-                            "key": name,
-                            "label": display_name,
-                            "enabled": enabled,
-                        }
-                    )
-                for job_name, display_name in job_list:
-                    enabled = await BotDatabase.get_scheduled_job_enabled(
-                        chat_id, job_name
-                    )
-                    items.append(
-                        {
-                            "kind": "job",
-                            "key": job_name,
-                            "label": display_name,
-                            "enabled": enabled,
-                        }
-                    )
-                text, kb = build_keyboard_and_text(items)
+                items = await build_settings_items(chat_id)
+                text, kb = build_keyboard_and_text(items, lang)
 
                 await bot.edit_message_text(
                     text=text,
@@ -288,13 +317,181 @@ class BotRunner:
                     message_id=call.message.message_id,
                     reply_markup=kb,
                 )
-                await bot.answer_callback_query(call.id, "已更新")
+                await bot.answer_callback_query(call.id, t("common.updated", lang))
             except Exception as e:
                 logger.error(f"切换插件失败: {e}")
                 try:
-                    await bot.answer_callback_query(call.id, f"失败: {e}")
+                    chat_id = call.message.chat.id
+                    lang = normalize_language(
+                        await BotDatabase.get_group_language(chat_id)
+                    )
+                    await bot.answer_callback_query(
+                        call.id, t("plugin_settings.toggle_failed", lang, error=e)
+                    )
                 except Exception:
                     pass
+
+        # 回调：打开 plugin_settings 语言二级菜单
+        @bot.callback_query_handler(func=lambda c: c.data and c.data == "plg_lang_menu")
+        async def core_handle_plugin_language_menu(call: types.CallbackQuery):
+            chat_id = call.message.chat.id
+            user_id = call.from_user.id
+            lang = normalize_language(await BotDatabase.get_group_language(chat_id))
+
+            if not await has_change_info_permission(bot, chat_id, user_id):
+                await bot.answer_callback_query(
+                    call.id, t("common.no_permission", lang)
+                )
+                return
+
+            text, kb = build_language_keyboard(
+                lang=lang,
+                callback_prefix="plg_lang_set",
+                include_back=True,
+                back_callback_data="plg_lang_back",
+                include_close=False,
+            )
+            await bot.edit_message_text(
+                text=t("plugin_settings.lang_title", lang) + "\n\n" + text,
+                chat_id=chat_id,
+                message_id=call.message.message_id,
+                reply_markup=kb,
+            )
+            await bot.answer_callback_query(call.id)
+
+        # 回调：plugin_settings 内设置群语言
+        @bot.callback_query_handler(
+            func=lambda c: c.data and c.data.startswith("plg_lang_set:")
+        )
+        async def core_handle_plugin_language_set(call: types.CallbackQuery):
+            chat_id = call.message.chat.id
+            user_id = call.from_user.id
+            old_lang = normalize_language(await BotDatabase.get_group_language(chat_id))
+
+            if not await has_change_info_permission(bot, chat_id, user_id):
+                await bot.answer_callback_query(
+                    call.id, t("common.no_permission", old_lang)
+                )
+                return
+
+            selected = normalize_language(call.data.split(":", 1)[1])
+            await BotDatabase.set_group_language(chat_id, selected)
+            lang = normalize_language(await BotDatabase.get_group_language(chat_id))
+            items = await build_settings_items(chat_id)
+            text, kb = build_keyboard_and_text(items, lang)
+            await bot.edit_message_text(
+                text=text,
+                chat_id=chat_id,
+                message_id=call.message.message_id,
+                reply_markup=kb,
+            )
+            await bot.answer_callback_query(
+                call.id,
+                t(
+                    "language.set_success_group",
+                    lang,
+                    language=language_name(lang),
+                ),
+            )
+
+        # 回调：plugin_settings 语言二级菜单返回主菜单
+        @bot.callback_query_handler(func=lambda c: c.data and c.data == "plg_lang_back")
+        async def core_handle_plugin_language_back(call: types.CallbackQuery):
+            chat_id = call.message.chat.id
+            user_id = call.from_user.id
+            lang = normalize_language(await BotDatabase.get_group_language(chat_id))
+
+            if not await has_change_info_permission(bot, chat_id, user_id):
+                await bot.answer_callback_query(
+                    call.id, t("common.no_permission", lang)
+                )
+                return
+
+            items = await build_settings_items(chat_id)
+            text, kb = build_keyboard_and_text(items, lang)
+            await bot.edit_message_text(
+                text=text,
+                chat_id=chat_id,
+                message_id=call.message.message_id,
+                reply_markup=kb,
+            )
+            await bot.answer_callback_query(call.id)
+
+        # 回调：/language 快速设置（私聊用户）
+        @bot.callback_query_handler(
+            func=lambda c: c.data and c.data.startswith("lang_set_user:")
+        )
+        async def core_handle_user_language_set(call: types.CallbackQuery):
+            if call.message.chat.type != "private":
+                lang = normalize_language(
+                    await BotDatabase.get_group_language(call.message.chat.id)
+                )
+                await bot.answer_callback_query(
+                    call.id, t("language.private_only", lang)
+                )
+                return
+
+            user_id = call.from_user.id
+            selected = normalize_language(call.data.split(":", 1)[1])
+            await BotDatabase.set_user_language(user_id, selected)
+            lang = normalize_language(await BotDatabase.get_user_language(user_id))
+            text, kb = build_language_keyboard(
+                lang=lang,
+                callback_prefix="lang_set_user",
+                include_back=False,
+                include_close=True,
+                close_callback_data="lang_close",
+            )
+            await bot.edit_message_text(
+                text=text,
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                reply_markup=kb,
+            )
+            await bot.answer_callback_query(
+                call.id,
+                t("language.set_success_user", lang, language=language_name(lang)),
+            )
+
+        # 回调：/language 快速设置（群语言）
+        @bot.callback_query_handler(
+            func=lambda c: c.data and c.data.startswith("lang_set_group:")
+        )
+        async def core_handle_group_language_set(call: types.CallbackQuery):
+            chat_id = call.message.chat.id
+            user_id = call.from_user.id
+            current = normalize_language(await BotDatabase.get_group_language(chat_id))
+
+            if not await has_change_info_permission(bot, chat_id, user_id):
+                await bot.answer_callback_query(
+                    call.id, t("language.group_admin_required", current)
+                )
+                return
+
+            selected = normalize_language(call.data.split(":", 1)[1])
+            await BotDatabase.set_group_language(chat_id, selected)
+            lang = normalize_language(await BotDatabase.get_group_language(chat_id))
+            text, kb = build_language_keyboard(
+                lang=lang,
+                callback_prefix="lang_set_group",
+                include_back=False,
+                include_close=True,
+                close_callback_data="lang_close",
+            )
+            await bot.edit_message_text(
+                text=text,
+                chat_id=chat_id,
+                message_id=call.message.message_id,
+                reply_markup=kb,
+            )
+            await bot.answer_callback_query(
+                call.id,
+                t(
+                    "language.set_success_group",
+                    lang,
+                    language=language_name(lang),
+                ),
+            )
 
         # 回调：处理关闭按钮（删除消息）
         @bot.callback_query_handler(func=lambda c: c.data and c.data == "plg_close")
@@ -303,19 +500,59 @@ class BotRunner:
                 chat_id = call.message.chat.id
                 message_id = call.message.message_id
                 user_id = call.from_user.id
+                lang = normalize_language(await BotDatabase.get_group_language(chat_id))
 
                 # 检查权限
                 if not await has_change_info_permission(bot, chat_id, user_id):
-                    await bot.answer_callback_query(call.id, "无权限")
+                    await bot.answer_callback_query(
+                        call.id, t("common.no_permission", lang)
+                    )
                     return
 
                 # 删除消息
                 await bot.delete_message(chat_id, message_id)
-                await bot.answer_callback_query(call.id, "已关闭")
+                await bot.answer_callback_query(call.id, t("common.closed", lang))
             except Exception as e:
                 logger.error(f"关闭插件面板失败: {e}")
                 try:
-                    await bot.answer_callback_query(call.id, f"关闭失败: {e}")
+                    chat_id = call.message.chat.id
+                    lang = normalize_language(
+                        await BotDatabase.get_group_language(chat_id)
+                    )
+                    await bot.answer_callback_query(
+                        call.id, t("plugin_settings.close_failed", lang, error=e)
+                    )
+                except Exception:
+                    pass
+
+        @bot.callback_query_handler(func=lambda c: c.data and c.data == "lang_close")
+        async def core_handle_language_close_callback(call: types.CallbackQuery):
+            try:
+                chat_id = call.message.chat.id
+                message_id = call.message.message_id
+                chat_type = call.message.chat.type
+                user_id = call.from_user.id
+
+                if chat_type in ("group", "supergroup"):
+                    lang = normalize_language(
+                        await BotDatabase.get_group_language(chat_id)
+                    )
+                    if not await has_change_info_permission(bot, chat_id, user_id):
+                        await bot.answer_callback_query(
+                            call.id, t("common.no_permission", lang)
+                        )
+                        return
+                else:
+                    lang = normalize_language(
+                        await BotDatabase.get_user_language(user_id)
+                    )
+
+                await bot.delete_message(chat_id, message_id)
+                await bot.answer_callback_query(call.id, t("common.closed", lang))
+            except Exception as e:
+                logger.error(f"关闭语言面板失败: {e}")
+                try:
+                    await bot.answer_callback_query(call.id)
                 except Exception:
                     pass
 
@@ -351,7 +588,19 @@ class BotRunner:
 
         # 回调分发器（除核心前缀外，其余交由中间件处理）
         @bot.callback_query_handler(
-            func=lambda c: not (c.data and c.data.startswith("plg_toggle:"))
+            func=lambda c: not (
+                c.data
+                and (
+                    c.data.startswith("plg_toggle:")
+                    or c.data == "plg_close"
+                    or c.data == "plg_lang_menu"
+                    or c.data == "plg_lang_back"
+                    or c.data.startswith("plg_lang_set:")
+                    or c.data.startswith("lang_set_user:")
+                    or c.data.startswith("lang_set_group:")
+                    or c.data == "lang_close"
+                )
+            )
         )
         async def callback_dispatcher(call: types.CallbackQuery):
             executed = await plugin_manager.middleware.dispatch_callback(bot, call)

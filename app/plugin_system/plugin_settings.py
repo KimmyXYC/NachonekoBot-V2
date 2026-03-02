@@ -14,6 +14,7 @@ from typing import List, Tuple, Dict
 from loguru import logger
 from telebot import types
 from app.security.permissions import has_group_admin_permission
+from utils.i18n import language_button_label, supported_languages, t
 
 
 async def has_change_info_permission(bot, chat_id: int, user_id: int) -> bool:
@@ -33,10 +34,10 @@ async def has_change_info_permission(bot, chat_id: int, user_id: int) -> bool:
 
 
 def build_keyboard_and_text(
-    items: List[Dict[str, object]],
+    items: List[Dict[str, object]], lang: str = "en"
 ) -> Tuple[str, types.InlineKeyboardMarkup]:
     """根据项目列表与状态构造文本与 InlineKeyboard。"""
-    text_lines = ["🔧 插件/定时任务开关状态："]
+    text_lines = [t("plugin_settings.title", lang)]
     kb = types.InlineKeyboardMarkup(row_width=2)
     buttons = []
     for item in items:
@@ -56,9 +57,55 @@ def build_keyboard_and_text(
             kb.add(buttons[i], buttons[i + 1])
         else:
             kb.add(buttons[i])
+
+    lang_btn = types.InlineKeyboardButton(
+        text=t("plugin_settings.lang_entry", lang), callback_data="plg_lang_menu"
+    )
+    kb.add(lang_btn)
+
     # 添加关闭按钮（单独一行）
-    close_btn = types.InlineKeyboardButton(text="❌ 关闭", callback_data="plg_close")
+    close_btn = types.InlineKeyboardButton(
+        text=t("plugin_settings.close", lang), callback_data="plg_close"
+    )
     kb.add(close_btn)
+    return "\n".join(text_lines), kb
+
+
+def build_language_keyboard(
+    lang: str = "en",
+    callback_prefix: str = "lang_set",
+    include_back: bool = False,
+    back_callback_data: str = "plg_lang_back",
+    include_close: bool = False,
+    close_callback_data: str = "lang_close",
+) -> Tuple[str, types.InlineKeyboardMarkup]:
+    text_lines = [t("common.select_language", lang)]
+    kb = types.InlineKeyboardMarkup(row_width=2)
+
+    for code in supported_languages().keys():
+        mark = "✅" if code == lang else ""
+        prefix = f"{mark} " if mark else ""
+        kb.add(
+            types.InlineKeyboardButton(
+                text=f"{prefix}{language_button_label(code)}",
+                callback_data=f"{callback_prefix}:{code}",
+            )
+        )
+
+    if include_back:
+        kb.add(
+            types.InlineKeyboardButton(
+                text=t("common.back", lang), callback_data=back_callback_data
+            )
+        )
+
+    if include_close:
+        kb.add(
+            types.InlineKeyboardButton(
+                text=t("common.close", lang), callback_data=close_callback_data
+            )
+        )
+
     return "\n".join(text_lines), kb
 
 

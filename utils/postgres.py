@@ -9,6 +9,7 @@ from loguru import logger
 import re
 
 from utils.yaml import BotConfig
+from utils.i18n.config import DEFAULT_LANGUAGE
 
 
 class AsyncPostgresDB:
@@ -42,6 +43,8 @@ class AsyncPostgresDB:
             await self.ensure_tables_exist()
             # Ensure plugin setting table exists
             await self.ensure_settings_table()
+            # Ensure user settings table exists
+            await self.ensure_user_settings_table()
             # Ensure scheduled jobs table exists
             await self.ensure_scheduled_jobs_table()
         except Exception as e:
@@ -131,18 +134,42 @@ class AsyncPostgresDB:
     # ==================== Settings helpers ====================
     async def ensure_settings_table(self):
         """
-        Ensure the `setting` table exists with at least one column: group_id BIGINT PRIMARY KEY.
+        Ensure the `setting` table exists with group-level language and plugin toggles.
         """
         try:
             async with self.conn.acquire() as connection:
                 await connection.execute("""
                     CREATE TABLE IF NOT EXISTS setting (
-                        group_id BIGINT PRIMARY KEY
+                        group_id BIGINT PRIMARY KEY,
+                        language TEXT NOT NULL DEFAULT 'en'
                     )
+                """)
+                await connection.execute("""
+                    ALTER TABLE setting
+                    ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en'
                 """)
             logger.success("Settings table ensured (setting)")
         except Exception as e:
             logger.error(f"Error ensuring settings table: {e}")
+            raise
+
+    async def ensure_user_settings_table(self):
+        """Ensure the `user_setting` table exists for per-user language preference."""
+        try:
+            async with self.conn.acquire() as connection:
+                await connection.execute("""
+                    CREATE TABLE IF NOT EXISTS user_setting (
+                        user_id BIGINT PRIMARY KEY,
+                        language TEXT NOT NULL DEFAULT 'en'
+                    )
+                """)
+                await connection.execute("""
+                    ALTER TABLE user_setting
+                    ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en'
+                """)
+            logger.success("User settings table ensured (user_setting)")
+        except Exception as e:
+            logger.error(f"Error ensuring user settings table: {e}")
             raise
 
     async def ensure_scheduled_jobs_table(self):
@@ -192,6 +219,85 @@ class AsyncPostgresDB:
         except Exception as e:
             logger.error(f"Error ensuring group row {group_id}: {e}")
             raise
+
+    async def ensure_user_row(self, user_id: int):
+        """Ensure a row exists for the given user_id in user_setting table."""
+        try:
+            async with self.conn.acquire() as connection:
+                await connection.execute(
+                    """
+                    INSERT INTO user_setting (user_id) VALUES ($1)
+                    ON CONFLICT (user_id) DO NOTHING
+                    """,
+                    int(user_id),
+                )
+        except Exception as e:
+            logger.error(f"Error ensuring user row {user_id}: {e}")
+            raise
+
+    async def get_group_language(self, group_id: int) -> str:
+        """Get language of a group. Defaults to DEFAULT_LANGUAGE."""
+        try:
+            await self.ensure_group_row(group_id)
+            async with self.conn.acquire() as connection:
+                val = await connection.fetchval(
+                    "SELECT language FROM setting WHERE group_id = $1",
+                    int(group_id),
+                )
+                if not val:
+                    return DEFAULT_LANGUAGE
+                return str(val)
+        except Exception as e:
+            logger.error(f"Error getting group language for group {group_id}: {e}")
+            return DEFAULT_LANGUAGE
+
+    async def set_group_language(self, group_id: int, language: str) -> bool:
+        """Set language for a group."""
+        try:
+            await self.ensure_group_row(group_id)
+            async with self.conn.acquire() as connection:
+                await connection.execute(
+                    "UPDATE setting SET language = $1 WHERE group_id = $2",
+                    str(language),
+                    int(group_id),
+                )
+            logger.info(f"Set group {group_id} language={language}")
+            return True
+        except Exception as e:
+            logger.error(f"Error setting group language for group {group_id}: {e}")
+            return False
+
+    async def get_user_language(self, user_id: int) -> str:
+        """Get language of a user. Defaults to DEFAULT_LANGUAGE."""
+        try:
+            await self.ensure_user_row(user_id)
+            async with self.conn.acquire() as connection:
+                val = await connection.fetchval(
+                    "SELECT language FROM user_setting WHERE user_id = $1",
+                    int(user_id),
+                )
+                if not val:
+                    return DEFAULT_LANGUAGE
+                return str(val)
+        except Exception as e:
+            logger.error(f"Error getting user language for user {user_id}: {e}")
+            return DEFAULT_LANGUAGE
+
+    async def set_user_language(self, user_id: int, language: str) -> bool:
+        """Set language for a user."""
+        try:
+            await self.ensure_user_row(user_id)
+            async with self.conn.acquire() as connection:
+                await connection.execute(
+                    "UPDATE user_setting SET language = $1 WHERE user_id = $2",
+                    str(language),
+                    int(user_id),
+                )
+            logger.info(f"Set user {user_id} language={language}")
+            return True
+        except Exception as e:
+            logger.error(f"Error setting user language for user {user_id}: {e}")
+            return False
 
     async def ensure_plugin_column(self, plugin_name: str):
         """

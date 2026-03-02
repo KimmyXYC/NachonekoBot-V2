@@ -70,6 +70,20 @@ CREATE TABLE IF NOT EXISTS scheduled_jobs (
 CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_job_enabled
 ON scheduled_jobs (job_name, enabled);
 
+-- Create setting table
+-- This table stores per-group framework settings (language and plugin toggles)
+CREATE TABLE IF NOT EXISTS setting (
+    group_id BIGINT PRIMARY KEY,
+    language TEXT NOT NULL DEFAULT 'en'
+);
+
+-- Create user_setting table
+-- This table stores per-user framework settings (language)
+CREATE TABLE IF NOT EXISTS user_setting (
+    user_id BIGINT PRIMARY KEY,
+    language TEXT NOT NULL DEFAULT 'en'
+);
+
 -- Add indexes for performance (if needed)
 -- CREATE INDEX IF NOT EXISTS idx_remake_user_id ON remake(user_id);
 -- CREATE INDEX IF NOT EXISTS idx_xiatou_time ON xiatou(time);
@@ -81,6 +95,8 @@ ON scheduled_jobs (job_name, enabled);
 -- GRANT ALL PRIVILEGES ON TABLE speech_stats TO your_user;
 -- GRANT ALL PRIVILEGES ON TABLE dragon_king_daily TO your_user;
 -- GRANT ALL PRIVILEGES ON TABLE scheduled_jobs TO your_user;
+-- GRANT ALL PRIVILEGES ON TABLE setting TO your_user;
+-- GRANT ALL PRIVILEGES ON TABLE user_setting TO your_user;
 
 -- Add comments to tables and columns for documentation
 COMMENT ON TABLE remake IS 'Stores user remake information';
@@ -115,5 +131,13 @@ COMMENT ON COLUMN scheduled_jobs.job_name IS 'Scheduled job name';
 COMMENT ON COLUMN scheduled_jobs.enabled IS 'Whether job is enabled';
 COMMENT ON COLUMN scheduled_jobs.timezone IS 'Cron timezone';
 COMMENT ON COLUMN scheduled_jobs.cron_expr IS 'Cron expression';
+
+COMMENT ON TABLE setting IS 'Stores per-group framework settings';
+COMMENT ON COLUMN setting.group_id IS 'Telegram group ID';
+COMMENT ON COLUMN setting.language IS 'Framework language code';
+
+COMMENT ON TABLE user_setting IS 'Stores per-user framework settings';
+COMMENT ON COLUMN user_setting.user_id IS 'Telegram user ID';
+COMMENT ON COLUMN user_setting.language IS 'Framework language code';
 
 -- End of script
