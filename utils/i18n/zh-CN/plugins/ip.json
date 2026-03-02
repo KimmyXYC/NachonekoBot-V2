@@ -1,5 +1,5 @@
 {
   "meta.description": "IP 地址查询",
-  "command.description.ip": "查询 IP 或域名信息",
+  "command.description.ip": "查询 IP/域名信息",
   "command.help.ip": "/ip [IP/Domain] - 查询 IP 或域名信息\nInline: @NachoNekoX_bot ip [IP/Domain]"
 }

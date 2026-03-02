@@ -1,5 +1,5 @@
 {
-  "meta.description": "呼叫医生、MTF、警察等趣味功能",
+  "meta.description": "趣味呼叫功能（医生 / MTF / 警察）",
   "command.description.calldoctor": "呼叫医生",
   "command.description.callmtf": "呼叫 MTF",
   "command.description.callpolice": "呼叫警察",

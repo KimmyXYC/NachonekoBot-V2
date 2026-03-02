@@ -1,5 +1,5 @@
 {
-  "meta.description": "RDAP 域名、IP和ASN查询",
+  "meta.description": "RDAP 查询（域名/IP/ASN）",
   "command.description.rdap": "查询 RDAP 信息",
-  "command.help.rdap": "/rdap [Domain/IP/ASN] - 查询 RDAP 信息\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\n支持格式：域名(example.com)、IP地址(1.1.1.1)、ASN(AS13335或13335)"
+  "command.help.rdap": "/rdap [Domain/IP/ASN] - 查询 RDAP 信息\nInline: @NachoNekoX_bot rdap [Domain/IP/ASN]\n支持格式：域名(example.com)、IP(1.1.1.1)、ASN(AS13335 或 13335)"
 }

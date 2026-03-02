@@ -1,15 +1,15 @@
 {
-  "meta.description": "Keybox 检查工具",
-  "command.description.check": "检查 keybox.xml 文件",
-  "command.help.check": "/check - 检查 keybox.xml 文件",
-  "Banned successfully.": "Banned successfully.",
-  "File size is too large": "File size is too large",
-  "Local Bot API enabled but file path is not accessible.": "Local Bot API enabled but file path is not accessible.",
-  "No keybox has been banned.": "No keybox has been banned.",
-  "Please reply to a keybox.xml file.": "Please reply to a keybox.xml file.",
-  "This keybox has been banned.": "This keybox has been banned.",
-  "This keybox has not been banned.": "This keybox has not been banned.",
-  "Unbanned successfully.": "Unbanned successfully.",
-  "Usage: /ban_keybox <serial_number>\nExample: /ban_keybox 1a2b3c4d5e6f": "Usage: /ban_keybox <serial_number>\nExample: /ban_keybox 1a2b3c4d5e6f",
-  "Usage: /unban_keybox <serial_number>\nExample: /unban_keybox 1a2b3c4d5e6f": "Usage: /unban_keybox <serial_number>\nExample: /unban_keybox 1a2b3c4d5e6f"
+  "meta.description": "Keybox 校验工具",
+  "command.description.check": "校验 keybox.xml 文件",
+  "command.help.check": "/check - 校验 keybox.xml 文件",
+  "Banned successfully.": "封禁成功。",
+  "File size is too large": "文件大小超限。",
+  "Local Bot API enabled but file path is not accessible.": "已启用本地 Bot API，但文件路径不可访问。",
+  "No keybox has been banned.": "当前没有被封禁的 keybox。",
+  "Please reply to a keybox.xml file.": "请回复一份 keybox.xml 文件。",
+  "This keybox has been banned.": "该 keybox 已被封禁。",
+  "This keybox has not been banned.": "该 keybox 未被封禁。",
+  "Unbanned successfully.": "解除封禁成功。",
+  "Usage: /ban_keybox <serial_number>\nExample: /ban_keybox 1a2b3c4d5e6f": "用法：/ban_keybox <serial_number>\n示例：/ban_keybox 1a2b3c4d5e6f",
+  "Usage: /unban_keybox <serial_number>\nExample: /unban_keybox 1a2b3c4d5e6f": "用法：/unban_keybox <serial_number>\n示例：/unban_keybox 1a2b3c4d5e6f"
 }

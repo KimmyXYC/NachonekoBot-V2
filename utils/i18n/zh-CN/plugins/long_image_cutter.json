@@ -1,5 +1,5 @@
 {
-  "meta.description": "长图自动裁切为多个 19.5:9，并带 3:19.5 重叠；切片高度以 19.5:9 为标准可微调，保证所有切片大小一致（仅对以文件形式发送的图片生效）",
+  "meta.description": "自动将长图裁切为多张 19.5:9 图片，并保留 3:19.5 纵向重叠；裁片高度基于 19.5:9，可微调以保证尺寸一致（仅对以文件方式发送的图片生效）。",
   "meta.display_name": "长图裁切器",
-  "Local Bot API enabled but file path is not accessible.": "Local Bot API enabled but file path is not accessible."
+  "Local Bot API enabled but file path is not accessible.": "已启用本地 Bot API，但文件路径不可访问。"
 }
