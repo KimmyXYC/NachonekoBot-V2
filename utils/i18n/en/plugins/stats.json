@@ -5,7 +5,7 @@
   "command.description.dragon": "View Dragon King leaderboard",
   "command.help.stats": "/stats - Today\n/stats 5h - Last 5 hours\n/stats 4d - Last 4 days\n/stats 3w - Last 3 weeks\n/stats 2m - Last 2 months\n/stats 1y - Last 1 year\n/stats 2026-02-25 - Specific date\n/stats 2026/02/25 - Specific date\n/stats 20260225 - Specific date\n",
   "command.help.dragon": "/dragon - Dragon King leaderboard\n",
-  "prompt.stats_usage": "Usage: /stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD] e.g. /stats 1h /stats 4d /stats 3w /stats 2m /stats 4y /stats 2026-02-25 /stats 2026/02/25 /stats 20260225",
+  "prompt.stats_usage": "Usage: /stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD]\n\nExamples:\n/stats\n/stats 1h\n/stats 4d\n/stats 3w\n/stats 2m\n/stats 4y\n/stats 2026-02-25\n/stats 2026/02/25\n/stats 20260225",
   "error.stats_group_only": "This statistics command is only available in groups.",
   "dragon.empty": "Dragon King Leaderboard\n\nNo Dragon King statistics yet",
   "title.today_activity": "Today's Activity Leaderboard",
