@@ -7,14 +7,14 @@ from telebot import types, formatting
 from utils.i18n import t
 
 
-CATEGORY_TITLES = {
-    "network": "Network",
-    "query": "Query",
-    "tool": "Tools",
-    "admin": "Admin",
-    "fun": "Fun",
-    "utility": "Utility",
-    "misc": "Misc",
+CATEGORY_KEYS = {
+    "network": "category.title.network",
+    "query": "category.title.query",
+    "tool": "category.title.tool",
+    "admin": "category.title.admin",
+    "fun": "category.title.fun",
+    "utility": "category.title.utility",
+    "misc": "category.title.misc",
 }
 
 
@@ -93,7 +93,10 @@ async def listen_help_command(bot, message: types.Message, plugin_manager, lang:
 
         category = cmd_info.get("category", "misc")
         if category != last_category:
-            title = CATEGORY_TITLES.get(category, category.title())
+            title_key = CATEGORY_KEYS.get(category, f"category.title.{category}")
+            title = t(title_key, lang)
+            if title == title_key:
+                title = category.title()
             help_lines.append(formatting.mitalic(f"{title}:"))
             last_category = category
 
@@ -108,7 +111,9 @@ async def listen_help_command(bot, message: types.Message, plugin_manager, lang:
     # 添加 GitHub 链接
     help_lines.append("")
     help_lines.append(
-        formatting.mlink("🍀 Github", "https://github.com/KimmyXYC/NachonekoBot-V2")
+        formatting.mlink(
+            t("help.github", lang), "https://github.com/KimmyXYC/NachonekoBot-V2"
+        )
     )
 
     _message = await bot.reply_to(

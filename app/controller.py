@@ -128,17 +128,11 @@ class BotRunner:
         )
         async def handle_plugin_command(message: types.Message):
             """插件管理命令"""
-            args = message.text.split()
+            lang = await get_message_language(message)
+            args = (message.text or "").split()
 
             if len(args) < 2:
-                help_text = (
-                    "📦 *插件管理命令*\n\n"
-                    "`/plugin list` - 列出所有插件\n"
-                    "`/plugin enable <name>` - 启用插件\n"
-                    "`/plugin disable <name>` - 禁用插件\n"
-                    "`/plugin reload` - 重载所有插件\n"
-                    "`/plugin remove <name>` - 删除插件\n"
-                )
+                help_text = t("plugin.command.help", lang)
                 await bot.reply_to(message, help_text, parse_mode="Markdown")
                 return
 
@@ -146,11 +140,26 @@ class BotRunner:
 
             if action == "list":
                 plugin_manager.load_local_plugins()
-                plugins_text = "📋 *已安装的插件:*\n\n"
+                plugins_text = t("plugin.list.title", lang)
                 for p in plugin_manager.plugins:
-                    status = "✅ 启用" if p.status else "❌ 禁用"
-                    version = f"v{p.version}" if p.version else "未知版本"
-                    plugins_text += f"• `{p.name}` - {status} ({version})\n"
+                    status = t(
+                        "plugin.status.enabled"
+                        if p.status
+                        else "plugin.status.disabled",
+                        lang,
+                    )
+                    version = (
+                        f"v{p.version}"
+                        if p.version
+                        else t("plugin.version.unknown", lang)
+                    )
+                    plugins_text += t(
+                        "plugin.list.row",
+                        lang,
+                        plugin_name=p.name,
+                        status=status,
+                        version=version,
+                    )
                 await bot.reply_to(message, plugins_text, parse_mode="Markdown")
 
             elif action == "enable" and len(args) == 3:
@@ -158,30 +167,38 @@ class BotRunner:
                 if plugin_manager.enable_plugin(plugin_name):
                     await bot.reply_to(
                         message,
-                        f"✅ 插件 `{plugin_name}` 已启用",
+                        t("plugin.enable.success", lang, plugin_name=plugin_name),
                         parse_mode="Markdown",
                     )
                     await plugin_manager.reload_all_plugins(bot)
                 else:
-                    await bot.reply_to(message, "❌ 启用失败", parse_mode="Markdown")
+                    await bot.reply_to(
+                        message,
+                        t("plugin.enable.failed", lang),
+                        parse_mode="Markdown",
+                    )
 
             elif action == "disable" and len(args) == 3:
                 plugin_name = args[2]
                 if plugin_manager.disable_plugin(plugin_name):
                     await bot.reply_to(
                         message,
-                        f"✅ 插件 `{plugin_name}` 已禁用",
+                        t("plugin.disable.success", lang, plugin_name=plugin_name),
                         parse_mode="Markdown",
                     )
                     await plugin_manager.reload_all_plugins(bot)
                 else:
-                    await bot.reply_to(message, "❌ 禁用失败", parse_mode="Markdown")
+                    await bot.reply_to(
+                        message,
+                        t("plugin.disable.failed", lang),
+                        parse_mode="Markdown",
+                    )
 
             elif action == "reload":
-                msg = await bot.reply_to(message, "🔄 正在重载插件...")
+                msg = await bot.reply_to(message, t("plugin.reload.processing", lang))
                 await plugin_manager.reload_all_plugins(bot)
                 await bot.edit_message_text(
-                    "✅ 插件重载完成", msg.chat.id, msg.message_id
+                    t("plugin.reload.done", lang), msg.chat.id, msg.message_id
                 )
 
             elif action == "remove" and len(args) == 3:
@@ -189,11 +206,15 @@ class BotRunner:
                 if plugin_manager.remove_plugin(plugin_name):
                     await bot.reply_to(
                         message,
-                        f"✅ 插件 `{plugin_name}` 已删除",
+                        t("plugin.remove.success", lang, plugin_name=plugin_name),
                         parse_mode="Markdown",
                     )
                 else:
-                    await bot.reply_to(message, "❌ 删除失败", parse_mode="Markdown")
+                    await bot.reply_to(
+                        message,
+                        t("plugin.remove.failed", lang),
+                        parse_mode="Markdown",
+                    )
 
         # ==================== 插件设置面板（核心命令） ====================
         @bot.message_handler(
