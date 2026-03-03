@@ -2,6 +2,7 @@
   "meta.description": "Weather query",
   "command.description.weather": "Query weather information",
   "command.help.weather": "/weather [City_Name] - Query weather information",
+  "status.weather_querying": "Fetching weather data, please wait…",
   "error.city_not_found": "Oops, cannot find weather information for city '{city}'",
   "error.weather_api_failed": "Failed to fetch weather data, status code: {status_code}",
   "error.weather_unavailable": "Oops, unable to fetch weather information. Error: {reason}",

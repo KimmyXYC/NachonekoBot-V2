@@ -2,6 +2,7 @@
   "meta.description": "天気情報照会",
   "command.description.weather": "天気情報を照会",
   "command.help.weather": "/weather [City_Name] - 天気情報を照会",
+  "status.weather_querying": "天気データを取得中です、しばらくお待ちください……",
   "error.city_not_found": "エラーが発生しました～ 都市「{city}」の天気情報が見つかりません",
   "error.weather_api_failed": "天気データの取得に失敗しました。ステータスコード: {status_code}",
   "error.weather_unavailable": "エラーが発生しました～ 天気情報を取得できません。エラー内容: {reason}",

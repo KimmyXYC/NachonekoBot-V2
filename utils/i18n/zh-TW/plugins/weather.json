@@ -2,6 +2,7 @@
   "meta.description": "天氣查詢",
   "command.description.weather": "查詢天氣資訊",
   "command.help.weather": "/weather [City_Name] - 查詢天氣資訊",
+  "status.weather_querying": "正在請求天氣資料，請稍候……",
   "error.city_not_found": "出錯了嗚嗚嗚 ~ 無法找到城市「{city}」的天氣資訊",
   "error.weather_api_failed": "取得天氣資料失敗，狀態碼: {status_code}",
   "error.weather_unavailable": "出錯了嗚嗚嗚 ~ 無法取得天氣資訊。錯誤訊息: {reason}",

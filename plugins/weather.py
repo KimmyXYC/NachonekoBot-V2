@@ -7,7 +7,6 @@ import datetime
 import aiohttp
 import re
 import uuid
-import asyncio  # 添加 asyncio 模块用于并行处理
 from telebot import types
 from loguru import logger
 from utils.yaml import BotConfig
@@ -128,6 +127,8 @@ async def handle_weather_command(bot, message: types.Message, city: str):
         if is_chinese(city):
             city = await translate_chinese_to_english(city)
 
+        msg = await bot.reply_to(message, _t("status.weather_querying"))
+
         url = "http://api.openweathermap.org/data/2.5/weather"
         params = {
             "appid": "973e8a21e358ee9d30b47528b43a8746",
@@ -137,99 +138,52 @@ async def handle_weather_command(bot, message: types.Message, city: str):
         }
 
         async with aiohttp.ClientSession() as session:
-            # 创建获取天气数据的异步任务
-            async def get_weather_data():
-                async with session.get(url, params=params) as resp:
-                    if resp.status != 200:
-                        if resp.status == 404:
-                            return {
-                                "status": 404,
-                                "message": _t("error.city_not_found", city=city),
-                            }
-                        return {
-                            "status": resp.status,
-                            "message": _t(
-                                "error.weather_api_failed", status_code=resp.status
-                            ),
-                        }
-                    return {"status": 200, "data": await resp.json()}
-
-            # 创建获取天气图片的异步任务
-            async def get_weather_image():
-                try:
-                    wttr_url = f"https://zh.wttr.in/{city}.png"
-                    async with session.get(wttr_url) as img_resp:
-                        if img_resp.status == 200:
-                            # 如果成功获取图片，则下载图片数据
-                            return await img_resp.read()
-                        return None
-                except Exception as e:
-                    # 图片获取失败但不影响继续执行
-                    logger.error(f"获取天气图片失败: {str(e)}")
-                    return None
-
-            # 并行执行获取天气数据和天气图片的任务
-            weather_result, img_data = await asyncio.gather(
-                get_weather_data(), get_weather_image()
-            )
-
-            # 处理天气数据结果
-            if weather_result["status"] != 200:
-                await bot.send_message(
-                    chat_id=message.chat.id, text=weather_result["message"]
-                )
-                return
-
-            # 处理天气数据
-            data = weather_result["data"]
-            cityName = f"{data['name']}, {data['sys']['country']}"
-            timeZoneShift = data["timezone"]
-            pressure = data["main"]["pressure"]
-            humidity = data["main"]["humidity"]
-            windSpeed = data["wind"]["speed"]
-            windDirection = calcWindDirection(data["wind"]["deg"])
-            sunriseTimeunix = data["sys"]["sunrise"]
-            sunriseTime = timestamp_to_time(sunriseTimeunix, timeZoneShift)
-            sunsetTimeunix = data["sys"]["sunset"]
-            sunsetTime = timestamp_to_time(sunsetTimeunix, timeZoneShift)
-            fellsTemp = data["main"]["feels_like"]
-            tempInC = round(data["main"]["temp"], 2)
-            tempInF = round((1.8 * tempInC) + 32, 2)
-            icon = data["weather"][0]["icon"]
-            desc = data["weather"][0]["description"]
-            res = _t(
-                "result.weather_summary",
-                city_name=cityName,
-                icon=icons[icon],
-                description=desc,
-                wind_direction=windDirection,
-                wind_speed=windSpeed,
-                temp_c=tempInC,
-                temp_f=tempInF,
-                humidity=humidity,
-                feels_like=fellsTemp,
-                pressure=pressure,
-                sunrise=sunriseTime,
-                sunset=sunsetTime,
-            )
-
-            # 尝试发送图片和文本
-            try:
-                if img_data:
-                    await bot.send_photo(
-                        chat_id=message.chat.id, photo=img_data, caption=res
+            async with session.get(url, params=params) as resp:
+                if resp.status != 200:
+                    if resp.status == 404:
+                        error_msg = _t("error.city_not_found", city=city)
+                    else:
+                        error_msg = _t(
+                            "error.weather_api_failed", status_code=resp.status
+                        )
+                    await bot.edit_message_text(
+                        error_msg, message.chat.id, msg.message_id
                     )
-                else:
-                    # 如果没有图片，则发送纯文本
-                    await bot.send_message(chat_id=message.chat.id, text=res)
-            except Exception as send_error:
-                # 如果发送图片和文本失败，但我们有图片，尝试只发送图片
-                if img_data:
-                    try:
-                        await bot.send_photo(chat_id=message.chat.id, photo=img_data)
-                    except Exception:
-                        # 如果所有尝试都失败，打印错误但不中断程序
-                        logger.error(f"发送天气信息完全失败: {str(send_error)}")
+                    return
+                data = await resp.json()
+
+        cityName = f"{data['name']}, {data['sys']['country']}"
+        timeZoneShift = data["timezone"]
+        pressure = data["main"]["pressure"]
+        humidity = data["main"]["humidity"]
+        windSpeed = data["wind"]["speed"]
+        windDirection = calcWindDirection(data["wind"]["deg"])
+        sunriseTimeunix = data["sys"]["sunrise"]
+        sunriseTime = timestamp_to_time(sunriseTimeunix, timeZoneShift)
+        sunsetTimeunix = data["sys"]["sunset"]
+        sunsetTime = timestamp_to_time(sunsetTimeunix, timeZoneShift)
+        fellsTemp = data["main"]["feels_like"]
+        tempInC = round(data["main"]["temp"], 2)
+        tempInF = round((1.8 * tempInC) + 32, 2)
+        icon = data["weather"][0]["icon"]
+        desc = data["weather"][0]["description"]
+        res = _t(
+            "result.weather_summary",
+            city_name=cityName,
+            icon=icons[icon],
+            description=desc,
+            wind_direction=windDirection,
+            wind_speed=windSpeed,
+            temp_c=tempInC,
+            temp_f=tempInF,
+            humidity=humidity,
+            feels_like=fellsTemp,
+            pressure=pressure,
+            sunrise=sunriseTime,
+            sunset=sunsetTime,
+        )
+
+        await bot.edit_message_text(res, message.chat.id, msg.message_id)
     except Exception as e:
         await bot.send_message(
             chat_id=message.chat.id,
