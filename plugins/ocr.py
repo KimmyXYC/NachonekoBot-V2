@@ -216,7 +216,7 @@ async def _process_ocr(
 
     image_bytes = await _download_image_bytes(bot, source_message)
     if not image_bytes:
-        await _update_result("获取图片失败，请检查是否为图片或图片文件。")
+        await _update_result(_t("error.image_download_failed"))
         return
 
     mime_type = _guess_mime_type(source_message)
@@ -224,11 +224,11 @@ async def _process_ocr(
     try:
         result = await _call_ocr_api(image_bytes, mime_type, final_prompt, conf)
         if not result:
-            result = "识别完成，但未提取到文本内容。"
+            result = _t("error.ocr_empty_result")
         await _update_result(result)
     except Exception as e:
         logger.error(f"[OCR] 识别失败: {e}")
-        await _update_result(f"OCR 识别失败：{e}")
+        await _update_result(_t("error.ocr_failed", reason=str(e)))
 
 
 async def register_handlers(bot, middleware, plugin_name):

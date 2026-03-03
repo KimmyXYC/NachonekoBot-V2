@@ -37,10 +37,10 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
 
     # 检查长度限制
     if len(data) > 255:
-        return False, "输入过长，域名或IP地址不应超过255个字符"
+        return False, _t("error.input_too_long")
 
     if not data:
-        return False, "输入不能为空"
+        return False, _t("error.input_empty")
 
     # 检查是否包含命令注入常见字符（在转换前检查）
     dangerous_chars = [
@@ -61,7 +61,7 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
     ]
     for char in dangerous_chars:
         if char in data:
-            return False, f"输入包含危险字符: {char}"
+            return False, _t("error.dangerous_char", char=char)
 
     # 尝试处理国际化域名（IDN）转换为 Punycode
     try:
@@ -81,15 +81,15 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
                     data = encoded_domain
                 logger.info(f"国际化域名已转换: {domain_part} -> {encoded_domain}")
             except idna.IDNAError as e:
-                return False, f"无效的国际化域名格式: {str(e)}"
+                return False, _t("error.invalid_idn_format", reason=str(e))
     except Exception as e:
         logger.error(f"IDN转换错误: {e}")
-        return False, f"域名转换失败: {str(e)}"
+        return False, _t("error.domain_conversion_failed", reason=str(e))
 
     # 现在检查转换后的ASCII字符
     # 只允许字母、数字、点、连字符、冒号（IPv6）、斜杠（CIDR）
     if not re.match(r"^[a-zA-Z0-9.\-:/]+$", data):
-        return False, "输入包含非法字符，只允许字母、数字、点、连字符、冒号和斜杠"
+        return False, _t("error.illegal_chars")
 
     # 验证域名格式（简单验证）
     # 域名标签不能以连字符开头或结尾，不能连续点
@@ -99,7 +99,7 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
         or data.startswith("-")
         or data.endswith("-")
     ):
-        return False, "域名格式不正确"
+        return False, _t("error.invalid_domain_format")
 
     # IPv4 格式验证
     ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}$"
@@ -109,24 +109,24 @@ def validate_whois_input(data: str) -> tuple[bool, str]:
             if all(0 <= int(part) <= 255 for part in parts):
                 return True, data
             else:
-                return False, "无效的IPv4地址"
+                return False, _t("error.invalid_ipv4")
         except ValueError:
-            return False, "无效的IPv4地址格式"
+            return False, _t("error.invalid_ipv4_format")
 
     # IPv6 格式简单验证
     if ":" in data and "." not in data:  # 排除IPv4:port的情况
         # 基本的IPv6格式检查
         if data.count("::") > 1:
-            return False, "无效的IPv6地址格式"
+            return False, _t("error.invalid_ipv6_format")
         return True, data
 
     # 域名长度和格式检查
     labels = data.split(".")
     for label in labels:
         if len(label) > 63:
-            return False, "域名标签不能超过63个字符"
+            return False, _t("error.label_too_long")
         if not label:
-            return False, "域名标签不能为空"
+            return False, _t("error.label_empty")
 
     return True, data
 
@@ -135,7 +135,7 @@ async def query_whois_text(data: str) -> str:
     """生成与 `/whois` 命令一致的输出文本，用于命令与 Inline 复用（MarkdownV2）。"""
     status, result = await whois_check(data)
     if not status:
-        return f"请求失败: `{result}`"
+        return _t("error.request_failed", reason=result)
     return f"`{result}`"
 
 
@@ -200,7 +200,7 @@ async def whois_check(data):
     # 验证输入，防止命令注入
     is_valid, validated_data = validate_whois_input(data)
     if not is_valid:
-        return False, f"输入验证失败: {validated_data}"
+        return False, _t("error.validation_failed", reason=validated_data)
 
     try:
         # Run whois command asynchronously with validated input
@@ -216,13 +216,16 @@ async def whois_check(data):
             error_msg = stderr.decode("utf-8", errors="ignore").strip()
             return (
                 False,
-                f"Whois command failed: {error_msg if error_msg else 'Unknown error'}",
+                _t(
+                    "error.whois_command_failed",
+                    reason=error_msg if error_msg else "Unknown error",
+                ),
             )
 
         result = stdout.decode("utf-8", errors="ignore").strip()
 
         if not result or "No match" in result or "NOT FOUND" in result:
-            return False, "No WHOIS data found."
+            return False, _t("error.no_whois_data")
 
         # Clean up the result - remove redacted info and common footer text
         lines = result.splitlines()
@@ -261,10 +264,10 @@ async def whois_check(data):
         return True, cleaned.strip()
 
     except FileNotFoundError:
-        return False, "Whois command not found. Please install whois tool."
+        return False, _t("error.whois_not_installed")
     except Exception as e:
         logger.error(f"Whois query error: {e}")
-        return False, f"Error executing whois: {str(e)}"
+        return False, _t("error.whois_exec_failed", reason=str(e))
 
 
 # ==================== 插件注册 ====================

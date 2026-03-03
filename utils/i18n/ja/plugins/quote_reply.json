@@ -1,4 +1,6 @@
 {
   "meta.description": "/$ と \\$ アクション引用プラグイン",
-  "meta.display_name": "アクション引用"
+  "meta.display_name": "アクション引用",
+  "command.description.$": "アクション引用",
+  "command.help.$": "/$アクション [@ユーザー] [追加テキスト] - アクション引用"
 }

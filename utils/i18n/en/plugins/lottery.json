@@ -11,5 +11,9 @@
   "error.lottery_in_progress": "A lottery is currently running, please try again later",
   "error.no_active_lottery": "No ongoing lottery in this group.",
   "error.group_only": "Please use this command in a group.",
-  "prompt.lottery_usage": "Please enter parameters like prize count/participants, or use force draw\n\nExample: `/lottery 1/10 join test`"
+  "prompt.lottery_usage": "Please enter parameters like prize count/participants, or use force draw\n\nExample: `/lottery 1/10 join test`",
+  "lottery.created": "Lottery <b>{title}</b> has been created\nPrize count: <b>{win}</b>\nDraw when <b>{num}</b> participants joined\n\nSend <code>{keyword}</code> to participate",
+  "lottery.joined": "Thanks for joining the <b>{title}</b> lottery\nPrize count: <b>{win}</b>\nDraw when <b>{num}</b> participants joined\nCurrent participants: <b>{current}</b>",
+  "lottery.ended": "<b>{title}</b> lottery drawn, winners:\n\n{winners}\n\nPlease DM the organizer to claim your prize. Thanks to all participants.",
+  "lottery.ended_empty": "<b>{title}</b> lottery drawn, no winners"
 }

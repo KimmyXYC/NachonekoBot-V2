@@ -1,4 +1,6 @@
 {
   "meta.description": "/$ 与 \\$ 动作引用插件",
-  "meta.display_name": "动作引用"
+  "meta.display_name": "动作引用",
+  "command.description.$": "动作引用",
+  "command.help.$": "/$动作 [@用户] [附加语句] - 动作引用"
 }

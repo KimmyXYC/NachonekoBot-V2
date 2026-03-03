@@ -35,27 +35,6 @@ _lotteries: Dict[int, dict] = {}
 _locks: Dict[int, asyncio.Lock] = {}
 
 
-create_text = (
-    "抽奖活动 <b>{}</b> 已经创建\n"
-    "奖品数量：<b>{}</b>\n"
-    "参与人数达到 <b>{}</b> 人，即可开奖\n\n"
-    "发送 <code>{}</code> 即可参与抽奖"
-)
-
-join_text = (
-    "感谢参与 <b>{}</b> 抽奖活动\n"
-    "奖品数量：<b>{}</b>\n"
-    "参与人数达到 <b>{}</b> 人，即可开奖\n"
-    "当前参与人数：<b>{}</b> 人"
-)
-
-end_text = (
-    "<b>{}</b> 已开奖，中奖用户：\n\n{}\n\n请私聊发起者领奖，感谢其他用户的参与。"
-)
-
-end_empty_text = "<b>{}</b> 已开奖，没有中奖用户"
-
-
 def _get_lock(chat_id: int) -> asyncio.Lock:
     if chat_id not in _locks:
         _locks[chat_id] = asyncio.Lock()
@@ -98,9 +77,9 @@ async def _lottery_end(bot, chat_id: int):
         winners_text = "\n".join(
             f'<a href="tg://user?id={uid}">@{uid}</a>' for uid in win_user
         )
-        win_text = end_text.format(state["title"], winners_text)
+        win_text = _t("lottery.ended", title=state["title"], winners=winners_text)
     else:
-        win_text = end_empty_text.format(state["title"])
+        win_text = _t("lottery.ended_empty", title=state["title"])
 
     # 在发送开奖结果之前，先尝试取消之前的置顶
     try:
@@ -147,7 +126,9 @@ async def _create_lottery(
 
     try:
         msg = await bot.send_message(
-            chat_id, create_text.format(title, win, num, keyword), parse_mode="HTML"
+            chat_id,
+            _t("lottery.created", title=title, win=win, num=num, keyword=keyword),
+            parse_mode="HTML",
         )
         # 记录创建消息的 message_id，便于开奖后取消置顶
         _lotteries[chat_id]["pin_message_id"] = msg.message_id
@@ -236,7 +217,13 @@ async def process_lottery_message(bot, message: types.Message):
         try:
             reply_msg = await bot.reply_to(
                 message,
-                join_text.format(state["title"], state["win"], state["num"], all_join),
+                _t(
+                    "lottery.joined",
+                    title=state["title"],
+                    win=state["win"],
+                    num=state["num"],
+                    current=all_join,
+                ),
                 parse_mode="HTML",
             )
             # 15 秒后删除提示

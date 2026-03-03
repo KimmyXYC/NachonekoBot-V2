@@ -132,7 +132,7 @@ async def icp_record_check(domain, retries=5):
             except Exception as e:
                 logger.error(f"Attempt {attempt + 1} failed with exception: {e}")
 
-    return False, "All retry attempts failed"
+    return False, _t("error.all_retries_failed")
 
 
 # ==================== 插件注册 ====================

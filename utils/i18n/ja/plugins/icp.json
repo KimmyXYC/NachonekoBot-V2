@@ -10,5 +10,6 @@
   "inline.usage_title": "ICP 備案照会",
   "inline.usage_description": "使い方：icp [Domain]",
   "inline.result_title": "ICP：{domain}",
-  "inline.send_result_description": "照会結果を送信"
+  "inline.send_result_description": "照会結果を送信",
+  "error.all_retries_failed": "すべてのリトライが失敗しました"
 }

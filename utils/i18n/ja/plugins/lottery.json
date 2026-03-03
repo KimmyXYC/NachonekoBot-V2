@@ -11,5 +11,9 @@
   "error.lottery_in_progress": "現在抽選が進行中です。しばらくしてからお試しください。",
   "error.no_active_lottery": "このグループには現在進行中の抽選はありません。",
   "error.group_only": "グループ内でこのコマンドを使用してください。",
-  "prompt.lottery_usage": "賞品数、参加者数などのパラメータを入力するか、「強制抽選」を使用してください。\n\n例：`/lottery 1/10 参加 テスト`"
+  "prompt.lottery_usage": "賞品数、参加者数などのパラメータを入力するか、「強制抽選」を使用してください。\n\n例：`/lottery 1/10 参加 テスト`",
+  "lottery.created": "抽選 <b>{title}</b> が作成されました\n賞品数：<b>{win}</b>\n参加者が <b>{num}</b> 人に達すると抽選開始\n\n<code>{keyword}</code> を送信して参加",
+  "lottery.joined": "<b>{title}</b> 抽選にご参加ありがとうございます\n賞品数：<b>{win}</b>\n参加者が <b>{num}</b> 人に達すると抽選開始\n現在の参加者数：<b>{current}</b> 人",
+  "lottery.ended": "<b>{title}</b> の抽選結果、当選者：\n\n{winners}\n\n主催者にDMで賞品を受け取ってください。ご参加ありがとうございました。",
+  "lottery.ended_empty": "<b>{title}</b> の抽選結果、当選者はいません"
 }

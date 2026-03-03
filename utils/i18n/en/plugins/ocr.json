@@ -4,5 +4,8 @@
   "command.help.ocr": "/ocr [Custom Prompt] - OCR image text; reply to an image/image file, or use in image caption",
   "status.ocr_processing": "Running OCR...",
   "error.ocr_invalid_format": "Invalid format. Use: /ocr [Custom Prompt]",
-  "prompt.ocr_reply_image_first": "Please reply to an image or image file, then use /ocr [Custom Prompt]."
+  "prompt.ocr_reply_image_first": "Please reply to an image or image file, then use /ocr [Custom Prompt].",
+  "error.image_download_failed": "Failed to download image. Please check if it is a valid image file.",
+  "error.ocr_empty_result": "OCR completed, but no text was extracted.",
+  "error.ocr_failed": "OCR recognition failed: {reason}"
 }

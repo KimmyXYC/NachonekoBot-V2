@@ -4,5 +4,8 @@
   "command.help.ocr": "/ocr [カスタムプロンプト] - 画像の文字をOCR認識。画像/画像ファイルに返信するか、画像のcaptionで使用",
   "status.ocr_processing": "OCR 認識中...",
   "error.ocr_invalid_format": "形式エラー。期待される形式：/ocr [カスタムプロンプト]",
-  "prompt.ocr_reply_image_first": "先に画像または画像ファイルに返信してから、/ocr [カスタムプロンプト] を使用してください。"
+  "prompt.ocr_reply_image_first": "先に画像または画像ファイルに返信してから、/ocr [カスタムプロンプト] を使用してください。",
+  "error.image_download_failed": "画像の取得に失敗しました。有効な画像ファイルか確認してください。",
+  "error.ocr_empty_result": "認識完了しましたが、テキストは抽出されませんでした。",
+  "error.ocr_failed": "OCR 認識に失敗: {reason}"
 }

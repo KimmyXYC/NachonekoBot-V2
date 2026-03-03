@@ -4,5 +4,8 @@
   "command.help.ocr": "/ocr [自定义提示词] - OCR 识别图片文字，回复图片/图片文件，或在图片 caption 中使用",
   "status.ocr_processing": "OCR 识别中...",
   "error.ocr_invalid_format": "格式错误，应为：/ocr [自定义提示词]",
-  "prompt.ocr_reply_image_first": "请先回复一张图片或图片文件，再使用 /ocr [自定义提示词]。"
+  "prompt.ocr_reply_image_first": "请先回复一张图片或图片文件，再使用 /ocr [自定义提示词]。",
+  "error.image_download_failed": "获取图片失败，请检查是否为图片或图片文件。",
+  "error.ocr_empty_result": "识别完成，但未提取到文本内容。",
+  "error.ocr_failed": "OCR 识别失败：{reason}"
 }

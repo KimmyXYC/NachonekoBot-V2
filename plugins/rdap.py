@@ -41,10 +41,10 @@ def validate_rdap_input(data: str) -> tuple[bool, str]:
 
     # 检查长度限制
     if len(data) > 255:
-        return False, "输入过长，域名、IP地址或ASN不应超过255个字符"
+        return False, _t("error.input_too_long")
 
     if not data:
-        return False, "输入不能为空"
+        return False, _t("error.input_empty")
 
     # 检查ASN格式（AS123456 或 123456）
     asn_pattern = r"^[Aa][Ss](\d+)$"
@@ -56,9 +56,9 @@ def validate_rdap_input(data: str) -> tuple[bool, str]:
             if 0 <= asn_int <= 4294967295:  # 32位ASN范围
                 return True, f"AS{asn_number}"
             else:
-                return False, "ASN号码超出有效范围（0-4294967295）"
+                return False, _t("error.asn_out_of_range")
         except ValueError:
-            return False, "无效的ASN格式"
+            return False, _t("error.invalid_asn_format")
 
     # 纯数字也可能是ASN
     if data.isdigit():
@@ -67,7 +67,7 @@ def validate_rdap_input(data: str) -> tuple[bool, str]:
             if 0 <= asn_int <= 4294967295:
                 return True, f"AS{data}"
             else:
-                return False, "ASN号码超出有效范围（0-4294967295）"
+                return False, _t("error.asn_out_of_range")
         except ValueError:
             pass
 
@@ -90,7 +90,7 @@ def validate_rdap_input(data: str) -> tuple[bool, str]:
     ]
     for char in dangerous_chars:
         if char in data:
-            return False, f"输入包含危险字符: {char}"
+            return False, _t("error.dangerous_char", char=char)
 
     # 尝试处理国际化域名（IDN）转换为 Punycode
     try:
@@ -105,15 +105,15 @@ def validate_rdap_input(data: str) -> tuple[bool, str]:
                 data = encoded_domain
                 logger.info(f"国际化域名已转换: {domain_part} -> {encoded_domain}")
             except idna.IDNAError as e:
-                return False, f"无效的国际化域名格式: {str(e)}"
+                return False, _t("error.invalid_idn_format", reason=str(e))
     except Exception as e:
         logger.error(f"IDN转换错误: {e}")
-        return False, f"域名转换失败: {str(e)}"
+        return False, _t("error.domain_conversion_failed", reason=str(e))
 
     # 现在检查转换后的ASCII字符
     # 只允许字母、数字、点、连字符、冒号（IPv6）
     if not re.match(r"^[a-zA-Z0-9.\-:]+$", data):
-        return False, "输入包含非法字符，只允许字母、数字、点、连字符和冒号"
+        return False, _t("error.illegal_chars")
 
     # 验证域名格式（简单验证）
     if (
@@ -122,7 +122,7 @@ def validate_rdap_input(data: str) -> tuple[bool, str]:
         or data.startswith("-")
         or data.endswith("-")
     ):
-        return False, "域名格式不正确"
+        return False, _t("error.invalid_domain_format")
 
     # IPv4 格式验证
     ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}$"
@@ -132,23 +132,23 @@ def validate_rdap_input(data: str) -> tuple[bool, str]:
             if all(0 <= int(part) <= 255 for part in parts):
                 return True, data
             else:
-                return False, "无效的IPv4地址"
+                return False, _t("error.invalid_ipv4")
         except ValueError:
-            return False, "无效的IPv4地址格式"
+            return False, _t("error.invalid_ipv4_format")
 
     # IPv6 格式简单验证
     if ":" in data and "." not in data:
         if data.count("::") > 1:
-            return False, "无效的IPv6地址格式"
+            return False, _t("error.invalid_ipv6_format")
         return True, data
 
     # 域名长度和格式检查
     labels = data.split(".")
     for label in labels:
         if len(label) > 63:
-            return False, "域名标签不能超过63个字符"
+            return False, _t("error.label_too_long")
         if not label:
-            return False, "域名标签不能为空"
+            return False, _t("error.label_empty")
 
     return True, data
 
@@ -293,7 +293,7 @@ async def rdap_query(data: str) -> tuple[bool, str]:
     # 验证输入
     is_valid, validated_data = validate_rdap_input(data)
     if not is_valid:
-        return False, f"输入验证失败: {validated_data}"
+        return False, _t("error.validation_failed", reason=validated_data)
 
     try:
         # 判断查询类型
@@ -318,9 +318,9 @@ async def rdap_query(data: str) -> tuple[bool, str]:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(query_url) as response:
                 if response.status == 404:
-                    return False, "未找到RDAP记录"
+                    return False, _t("error.no_rdap_record")
                 elif response.status != 200:
-                    return False, f"RDAP查询失败: HTTP {response.status}"
+                    return False, _t("error.rdap_http_failed", status=response.status)
 
                 # 解析JSON响应
                 rdap_data = await response.json()
@@ -331,20 +331,20 @@ async def rdap_query(data: str) -> tuple[bool, str]:
 
     except aiohttp.ClientError as e:
         logger.error(f"RDAP查询网络错误: {e}")
-        return False, f"网络请求失败: {str(e)}"
+        return False, _t("error.network_failed", reason=str(e))
     except json.JSONDecodeError as e:
         logger.error(f"RDAP响应解析错误: {e}")
-        return False, "无法解析RDAP响应"
+        return False, _t("error.rdap_parse_failed")
     except Exception as e:
         logger.error(f"RDAP查询错误: {e}")
-        return False, f"查询失败: {str(e)}"
+        return False, _t("error.query_failed", reason=str(e))
 
 
 async def query_rdap_text(data: str) -> str:
     """生成与 `/rdap` 命令一致的输出文本，用于命令与 Inline 复用（MarkdownV2）。"""
     status, result = await rdap_query(data)
     if not status:
-        return f"请求失败: `{result}`"
+        return _t("error.request_failed", reason=result)
     return f"```\n{result}\n```"
 
 

@@ -10,5 +10,6 @@
   "inline.usage_title": "ICP Lookup",
   "inline.usage_description": "Usage: icp [Domain]",
   "inline.result_title": "ICP: {domain}",
-  "inline.send_result_description": "Send lookup result"
+  "inline.send_result_description": "Send lookup result",
+  "error.all_retries_failed": "All retry attempts failed"
 }

@@ -10,5 +10,6 @@
   "inline.usage_title": "ICP 备案查询",
   "inline.usage_description": "用法：icp [Domain]",
   "inline.result_title": "ICP：{domain}",
-  "inline.send_result_description": "发送查询结果"
+  "inline.send_result_description": "发送查询结果",
+  "error.all_retries_failed": "所有重试均失败"
 }

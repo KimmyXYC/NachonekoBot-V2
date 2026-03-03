@@ -11,5 +11,9 @@
   "error.lottery_in_progress": "目前有抽獎活動正在進行，請稍後再試。",
   "error.no_active_lottery": "本群暫無正在進行的抽獎活動。",
   "error.group_only": "請在群組中使用該命令。",
-  "prompt.lottery_usage": "請輸入獎品數、人數等參數，或使用「強制開獎」。\n\n例如：`/lottery 1/10 參加 測試`"
+  "prompt.lottery_usage": "請輸入獎品數、人數等參數，或使用「強制開獎」。\n\n例如：`/lottery 1/10 參加 測試`",
+  "lottery.created": "抽獎活動 <b>{title}</b> 已建立\n獎品數量：<b>{win}</b>\n參與人數達到 <b>{num}</b> 人即可開獎\n\n發送 <code>{keyword}</code> 即可參與抽獎",
+  "lottery.joined": "感謝參與 <b>{title}</b> 抽獎活動\n獎品數量：<b>{win}</b>\n參與人數達到 <b>{num}</b> 人即可開獎\n目前參與人數：<b>{current}</b> 人",
+  "lottery.ended": "<b>{title}</b> 已開獎，中獎用戶：\n\n{winners}\n\n請私訊發起者領獎，感謝其他用戶的參與。",
+  "lottery.ended_empty": "<b>{title}</b> 已開獎，沒有中獎用戶"
 }

@@ -10,5 +10,6 @@
   "inline.usage_title": "ICP 備案查詢",
   "inline.usage_description": "用法：icp [Domain]",
   "inline.result_title": "ICP：{domain}",
-  "inline.send_result_description": "傳送查詢結果"
+  "inline.send_result_description": "傳送查詢結果",
+  "error.all_retries_failed": "所有重試均失敗"
 }

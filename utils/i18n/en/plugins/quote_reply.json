@@ -1,4 +1,6 @@
 {
   "meta.description": "Action quote plugin starting with /$ and \\$",
-  "meta.display_name": "Quote Reply"
+  "meta.display_name": "Quote Reply",
+  "command.description.$": "Action quote",
+  "command.help.$": "/$action [@user] [extra text] - Action quote"
 }
