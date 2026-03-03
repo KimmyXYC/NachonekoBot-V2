@@ -1,5 +1,7 @@
 {
   "meta.description": "自动将长图裁切为多张 19.5:9 图片，并保留 3:19.5 纵向重叠；裁片高度基于 19.5:9，可微调以保证尺寸一致（仅对以文件方式发送的图片生效）。",
   "meta.display_name": "长图裁切器",
-  "error.local_botapi_path_inaccessible": "已启用本地 Bot API，但文件路径不可访问。"
+  "error.local_botapi_path_inaccessible": "已启用本地 Bot API，但文件路径不可访问。",
+  "label.slice_range": "第 {start}–{end} 张 / 共 {total} 张",
+  "label.slice_single": "第 {current} 张 / 共 {total} 张"
 }

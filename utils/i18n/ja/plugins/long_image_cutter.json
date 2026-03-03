@@ -1,5 +1,7 @@
 {
   "meta.description": "長い画像を19.5:9の複数枚に自動カット、3:19.5の縦方向重複を保持；カット高さは19.5:9に基づき、サイズ統一のため微調整可能（ファイルとして送信した画像のみ有効）。",
   "meta.display_name": "長画像カッター",
-  "error.local_botapi_path_inaccessible": "ローカルBot APIが有効ですが、ファイルパスにアクセスできません。"
+  "error.local_botapi_path_inaccessible": "ローカルBot APIが有効ですが、ファイルパスにアクセスできません。",
+  "label.slice_range": "{start}–{end} 枚目 / 全 {total} 枚",
+  "label.slice_single": "{current} 枚目 / 全 {total} 枚"
 }
