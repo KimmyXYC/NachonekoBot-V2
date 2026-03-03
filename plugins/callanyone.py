@@ -7,6 +7,7 @@
 import random
 from telebot import types
 from loguru import logger
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "callanyone"
@@ -78,7 +79,6 @@ async def handle_call_command(bot, message):
 
 async def handle_call_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot calldoctor/callmtf/callpolice"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 

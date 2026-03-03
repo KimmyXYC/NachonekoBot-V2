@@ -12,6 +12,7 @@ from loguru import logger
 from telebot import types
 from utils.yaml import BotConfig
 from utils.postgres import BotDatabase
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "xiatou"
@@ -197,7 +198,6 @@ async def handle_inb_command(bot, message: types.Message):
 
 async def handle_inb_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot inb"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 

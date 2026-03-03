@@ -17,6 +17,7 @@ from loguru import logger
 from telebot import types
 from PIL import Image
 from utils.yaml import BotConfig
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "long_image_cutter"
@@ -183,9 +184,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                 logger.error(
                     f"[LongImageCutter][{message.chat.id}] local file not found: {local_path}"
                 )
-                await bot.reply_to(
-                    message, bot.t("error.local_botapi_path_inaccessible")
-                )
+                await bot.reply_to(message, _t("error.local_botapi_path_inaccessible"))
                 return
             with open(local_path, "rb") as f:
                 file_bytes = f.read()
@@ -242,7 +241,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         l, t, r, b = batch[0]
                         crop = im.crop((l, t, r, b))
                         bio = image_to_bytes(crop, preferred_fmt=preferred_fmt)
-                        caption = bot.t(
+                        caption = _t(
                             "label.slice_single", current=start_idx + 1, total=total
                         )
                         await _send_with_retry(
@@ -264,7 +263,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         # 仅给本组第一张添加简短说明，避免多条 caption 干扰
                         if j == 0:
                             end_no = start_idx + len(batch)
-                            cap = bot.t(
+                            cap = _t(
                                 "label.slice_range",
                                 start=start_idx + 1,
                                 end=end_no,
@@ -292,7 +291,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
     except Exception as e:
         logger.error(f"[LongImageCutter][{message.chat.id}] error: {e}")
         try:
-            await bot.reply_to(message, bot.t("error.cut_failed", reason=str(e)))
+            await bot.reply_to(message, _t("error.cut_failed", reason=str(e)))
         except Exception:
             pass
 

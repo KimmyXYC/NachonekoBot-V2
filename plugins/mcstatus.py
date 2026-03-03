@@ -7,6 +7,7 @@ import asyncio
 from mcstatus import JavaServer, BedrockServer
 from telebot import types
 from loguru import logger
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "mcstatus"
@@ -29,7 +30,7 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_java_server(address: str, _t) -> str:
+async def query_java_server(address: str) -> str:
     """查询 Minecraft Java 版服务器状态"""
     try:
         # 在异步环境中运行同步的 mcstatus 代码
@@ -91,7 +92,7 @@ async def query_java_server(address: str, _t) -> str:
             return _t("error.query_failed", reason=error_msg)
 
 
-async def query_bedrock_server(address: str, _t) -> str:
+async def query_bedrock_server(address: str) -> str:
     """查询 Minecraft 基岩版服务器状态"""
     try:
         # 在异步环境中运行同步的 mcstatus 代码
@@ -144,7 +145,7 @@ async def query_bedrock_server(address: str, _t) -> str:
             return _t("error.query_failed", reason=error_msg)
 
 
-async def query_auto_server(address: str, _t) -> str:
+async def query_auto_server(address: str) -> str:
     """自动识别并查询 Minecraft 服务器状态（先尝试 Java 版，失败后尝试基岩版）"""
     try:
         # 先尝试 Java 版查询
@@ -249,11 +250,10 @@ async def handle_mcstatus_command(
     :return:
     """
     command_args = message.text.split()
-    _t = bot.t
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            bot.t("prompt.server_address_required"),
+            _t("prompt.server_address_required"),
         )
         return
 
@@ -264,9 +264,9 @@ async def handle_mcstatus_command(
     )
 
     if server_type == "bedrock":
-        result_text = await query_bedrock_server(server_address, _t)
+        result_text = await query_bedrock_server(server_address)
     else:
-        result_text = await query_java_server(server_address, _t)
+        result_text = await query_java_server(server_address)
 
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
@@ -284,11 +284,10 @@ async def handle_mcbe_command(bot, message: types.Message):
 async def handle_mcstatus_auto_command(bot, message: types.Message):
     """处理自动识别服务器类型的查询命令"""
     command_args = message.text.split()
-    _t = bot.t
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            bot.t("prompt.server_address_required"),
+            _t("prompt.server_address_required"),
         )
         return
 
@@ -298,14 +297,13 @@ async def handle_mcstatus_auto_command(bot, message: types.Message):
         message, _t("status.querying_server", address=server_address)
     )
 
-    result_text = await query_auto_server(server_address, _t)
+    result_text = await query_auto_server(server_address)
 
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
 
 async def handle_mcstatus_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot mcstatus/mcje/mcbe [服务器地址]"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     args = query.split()
 
@@ -327,13 +325,13 @@ async def handle_mcstatus_inline_query(bot, inline_query: types.InlineQuery):
 
     # 确定服务器类型和查询方式
     if command == "mcbe":
-        result_text = await query_bedrock_server(server_address, _t)
+        result_text = await query_bedrock_server(server_address)
         title_prefix = _t("inline.prefix_bedrock")
     elif command == "mcje":
-        result_text = await query_java_server(server_address, _t)
+        result_text = await query_java_server(server_address)
         title_prefix = _t("inline.prefix_java")
     else:  # mcstatus - 自动识别
-        result_text = await query_auto_server(server_address, _t)
+        result_text = await query_auto_server(server_address)
         title_prefix = _t("inline.prefix_auto")
 
     result = types.InlineQueryResultArticle(

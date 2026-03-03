@@ -12,6 +12,7 @@ from loguru import logger
 from telebot import types
 
 from utils.yaml import BotConfig
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "ocr"
@@ -174,7 +175,7 @@ async def _process_ocr(
 ):
     progress_msg = None
     try:
-        progress_msg = await bot.reply_to(message, bot.t("status.ocr_processing"))
+        progress_msg = await bot.reply_to(message, _t("status.ocr_processing"))
     except Exception as e:
         logger.warning(f"[OCR] 发送占位消息失败: {e}")
 
@@ -234,14 +235,14 @@ async def register_handlers(bot, middleware, plugin_name):
     async def ocr_command_handler(bot, message: types.Message):
         prompt = _extract_prompt(message.text or "")
         if prompt is None:
-            await bot.reply_to(message, bot.t("error.ocr_invalid_format"))
+            await bot.reply_to(message, _t("error.ocr_invalid_format"))
             return
 
         reply = getattr(message, "reply_to_message", None)
         if not reply or not _is_image_message(reply):
             await bot.reply_to(
                 message,
-                bot.t("prompt.ocr_reply_image_first"),
+                _t("prompt.ocr_reply_image_first"),
             )
             return
 

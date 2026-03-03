@@ -10,6 +10,7 @@ import shutil
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 from loguru import logger
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "trace"
@@ -68,13 +69,12 @@ def validate_port(port: int) -> bool:
 
 async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
     """处理 trace 命令"""
-    _t = bot.t
     command_args = message.text.split()
 
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            bot.t("prompt.trace_usage"),
+            _t("prompt.trace_usage"),
         )
         return
 
@@ -82,7 +82,7 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
 
     # 验证目标地址，防止注入
     if not validate_target(target):
-        await bot.reply_to(message, bot.t("error.trace_invalid_target"))
+        await bot.reply_to(message, _t("error.trace_invalid_target"))
         return
 
     protocol = None  # 默认使用ICMP
@@ -96,22 +96,22 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
         elif protocol_arg in ["U", "UDP"]:
             protocol = "U"
         else:
-            await bot.reply_to(message, bot.t("error.invalid_protocol_type"))
+            await bot.reply_to(message, _t("error.invalid_protocol_type"))
             return
 
     # 解析端口参数
     if len(command_args) >= 4:
         if not command_args[3].isdigit():
-            await bot.reply_to(message, bot.t("error.port_not_numeric"))
+            await bot.reply_to(message, _t("error.port_not_numeric"))
             return
         port = int(command_args[3])
         if not validate_port(port):
-            await bot.reply_to(message, bot.t("error.port_out_of_range"))
+            await bot.reply_to(message, _t("error.port_out_of_range"))
             return
 
     # 检查 nexttrace 是否安装
     if not shutil.which("nexttrace"):
-        await bot.reply_to(message, bot.t("error.nexttrace_not_found"))
+        await bot.reply_to(message, _t("error.nexttrace_not_found"))
         return
 
     # 发送初始消息
@@ -137,9 +137,7 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
         )
 
         # 格式化并发送结果
-        formatted_result = format_nexttrace_output(
-            target, protocol_name, port, result, _t
-        )
+        formatted_result = format_nexttrace_output(target, protocol_name, port, result)
 
         # Telegram 消息长度限制为 4096 字符
         if len(formatted_result) > 4000:
@@ -226,9 +224,7 @@ async def run_nexttrace(target: str, protocol: str = None, port: int = None) -> 
         raise
 
 
-def format_nexttrace_output(
-    target: str, protocol: str, port: int, output: str, _t
-) -> str:
+def format_nexttrace_output(target: str, protocol: str, port: int, output: str) -> str:
     """格式化 nexttrace 输出"""
     header = _t("result.header")
     header += _t("result.target", target=target)

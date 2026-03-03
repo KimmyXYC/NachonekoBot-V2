@@ -11,6 +11,7 @@ from loguru import logger
 from telebot import types
 
 from utils.postgres import BotDatabase
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "remake"
@@ -38,7 +39,6 @@ def get_csv_data_list():
 
 
 async def handle_remake_command(bot, message):
-    _t = bot.t
     rd_data, rd_weights = get_csv_data_list()
     country_choice = np.random.choice(rd_data, p=np.array(rd_weights) / sum(rd_weights))
     sex_choice = random.choice(
@@ -89,7 +89,6 @@ async def handle_remake_command(bot, message):
 
 
 async def handle_remake_data_command(bot, message):
-    _t = bot.t
     conn = BotDatabase.conn
     try:
         result = await conn.fetch(
@@ -110,10 +109,10 @@ async def handle_remake_data_command(bot, message):
                 ),
             )
         else:
-            await bot.reply_to(message, bot.t("prompt.remake_not_started"))
+            await bot.reply_to(message, _t("prompt.remake_not_started"))
     except Exception as e:
         logger.error(f"Database error: {e}")
-        await bot.reply_to(message, bot.t("error.query_failed_retry"))
+        await bot.reply_to(message, _t("error.query_failed_retry"))
 
 
 # ==================== 插件注册 ====================

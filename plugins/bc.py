@@ -9,6 +9,7 @@ import aiohttp
 from typing import Any, cast
 from telebot import types
 from loguru import logger
+from utils.i18n import _t
 from binance.spot import Spot
 from binance.error import ClientError
 import xmltodict
@@ -530,7 +531,7 @@ def _normalize_bc_tokens(tokens: list[str]) -> list[str]:
     return tokens
 
 
-async def query_bc_text(raw_tokens: list[str], _t) -> str:
+async def query_bc_text(raw_tokens: list[str]) -> str:
     """生成与 `/bc` 命令一致的输出文本，用于命令与 Inline 复用。"""
     args = _normalize_bc_tokens(raw_tokens)
 
@@ -750,7 +751,6 @@ async def query_bc_text(raw_tokens: list[str], _t) -> str:
 
 async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot bc [Amount] [Currency_From] [Currency_To]"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
@@ -782,7 +782,7 @@ async def handle_bc_inline_query(bot, inline_query: types.InlineQuery):
         )
         return
 
-    result_text = await query_bc_text(tokens, _t)
+    result_text = await query_bc_text(tokens)
     title = "bc"
     result_id = "bc_prices"
     if len(args) == 3:
@@ -808,12 +808,11 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     :return:
     """
     command_args = (message.text or "").split()
-    _t = bot.t
     args = _normalize_bc_tokens(command_args)
 
     # 无参数时显示BTC和ETH的价格
     if len(args) == 0:
-        response_text = await query_bc_text(command_args, _t)
+        response_text = await query_bc_text(command_args)
         await bot.reply_to(message, response_text)
         return
 
@@ -827,7 +826,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     try:
         number = float(args[0])
     except ValueError:
-        await bot.reply_to(message, bot.t("error.amount_invalid"))
+        await bot.reply_to(message, _t("error.amount_invalid"))
         return
 
     _from = args[1].upper().strip()
@@ -843,7 +842,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
         ),
     )
 
-    result_text = await query_bc_text(command_args, _t)
+    result_text = await query_bc_text(command_args)
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
 

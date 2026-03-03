@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 from telebot import types
 from io import BytesIO
 from loguru import logger
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "xibao"
@@ -37,7 +38,7 @@ async def good_news(bot, message: types.Message, news_type):
         fill_color = "white"
         font_size = 90
     else:
-        await bot.reply_to(message, bot.t("error.unknown"))
+        await bot.reply_to(message, _t("error.unknown"))
         return
     img = Image.open(pic_dir).convert("RGB")
     text = message.text[2:]

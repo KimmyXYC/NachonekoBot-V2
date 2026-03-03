@@ -11,6 +11,7 @@ from loguru import logger
 from telebot import types
 
 from utils.yaml import BotConfig
+from utils.i18n import _t
 from app.utils import command_error_msg
 
 # ==================== 插件元数据 ====================
@@ -34,7 +35,6 @@ async def handle_short_command(bot, message: types.Message, url):
     :param url: URL 地址
     :return:
     """
-    _t = bot.t
     server = BotConfig["shorturl"]["api"]
     reply = await bot.reply_to(
         message,
@@ -45,7 +45,7 @@ async def handle_short_command(bot, message: types.Message, url):
     if server == "":
         logger.error(f"[Short URL][{message.chat.id}]: Backend Address Not Set")
         await bot.edit_message_text(
-            bot.t("error.backend_url_not_configured"),
+            _t("error.backend_url_not_configured"),
             message.chat.id,
             reply.message_id,
             disable_web_page_preview=True,
@@ -123,7 +123,7 @@ async def register_handlers(bot, middleware, plugin_name):
         else:
             await bot.reply_to(
                 message,
-                command_error_msg("short", "URL", lang=bot.lang),
+                command_error_msg("short", "URL"),
             )
 
     middleware.register_command_handler(

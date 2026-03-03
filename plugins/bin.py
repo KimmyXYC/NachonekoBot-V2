@@ -8,6 +8,7 @@ import aiohttp
 from json.decoder import JSONDecodeError
 from telebot import types
 from loguru import logger
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "bin"
@@ -24,7 +25,7 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_bin_text(card_bin: str, _t) -> str:
+async def query_bin_text(card_bin: str) -> str:
     """查询 BIN"""
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
         return _t("error.invalid_bin_parameter")
@@ -89,14 +90,13 @@ async def handle_bin_command(bot, message: types.Message):
     :return:
     """
     command_args = message.text.split()
-    _t = bot.t
     if len(command_args) != 2:
-        await bot.reply_to(message, bot.t("prompt.valid_bin_required"))
+        await bot.reply_to(message, _t("prompt.valid_bin_required"))
         return
 
     card_bin = command_args[1]
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
-        await bot.reply_to(message, bot.t("error.invalid_bin_parameter"))
+        await bot.reply_to(message, _t("error.invalid_bin_parameter"))
         return
 
     msg = await bot.reply_to(
@@ -104,13 +104,12 @@ async def handle_bin_command(bot, message: types.Message):
         _t("status.querying_bin", card_bin=card_bin),
     )
 
-    result_text = await query_bin_text(card_bin, _t)
+    result_text = await query_bin_text(card_bin)
     await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
 
 
 async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot bin [Card_BIN]"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     args = query.split()
 
@@ -129,7 +128,7 @@ async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     card_bin = args[1]
-    result_text = await query_bin_text(card_bin, _t)
+    result_text = await query_bin_text(card_bin)
 
     result = types.InlineQueryResultArticle(
         id=f"bin_{card_bin}",

@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import padding, ec
 from app.utils import markdown_to_telegram_html
 from utils.elaradb import BotElara
 from utils.yaml import BotConfig
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "keybox"
@@ -46,7 +47,7 @@ async def handle_keybox_check(bot, message: types.Message, document: types.Docum
     if document.mime_type != "application/xml" and document.mime_type != "text/xml":
         return
     if document.file_size > 20 * 1024:
-        await bot.reply_to(message, bot.t("error.file_too_large"))
+        await bot.reply_to(message, _t("error.file_too_large"))
         return
     await keybox_check(bot, message, document)
 
@@ -205,7 +206,7 @@ async def keybox_check(bot, message, document):
             logger.error(
                 f"[Keybox Check][{message.chat.id}]: local file not found: {temp_path}"
             )
-            await bot.reply_to(message, bot.t("error.local_botapi_path_inaccessible"))
+            await bot.reply_to(message, _t("error.local_botapi_path_inaccessible"))
             return
     else:
         downloaded_file = await bot.download_file(file_info.file_path)
@@ -410,11 +411,11 @@ async def ban_keybox(bot, message, sn):
     """
     banned_sn = BotElara.get("banned_sn", [])
     if sn in banned_sn:
-        await bot.reply_to(message, bot.t("keybox.ban.already_banned"))
+        await bot.reply_to(message, _t("keybox.ban.already_banned"))
     else:
         banned_sn.append(sn)
         BotElara.set("banned_sn", banned_sn)
-        await bot.reply_to(message, bot.t("keybox.ban.success"))
+        await bot.reply_to(message, _t("keybox.ban.success"))
 
 
 async def unban_keybox(bot, message, sn):
@@ -427,14 +428,14 @@ async def unban_keybox(bot, message, sn):
     """
     banned_sn = BotElara.get("banned_sn")
     if banned_sn is None:
-        await bot.reply_to(message, bot.t("keybox.ban.empty"))
+        await bot.reply_to(message, _t("keybox.ban.empty"))
     else:
         if sn in banned_sn:
             banned_sn.remove(sn)
             BotElara.set("banned_sn", banned_sn)
-            await bot.reply_to(message, bot.t("keybox.unban.success"))
+            await bot.reply_to(message, _t("keybox.unban.success"))
         else:
-            await bot.reply_to(message, bot.t("keybox.ban.not_found"))
+            await bot.reply_to(message, _t("keybox.ban.not_found"))
 
 
 # ==================== 插件注册 ====================
@@ -447,7 +448,7 @@ async def register_handlers(bot, middleware, plugin_name):
     # 命令处理器 - 需要回复一个文件
     async def check_command_handler(bot, message: types.Message):
         if not (message.reply_to_message and message.reply_to_message.document):
-            await bot.reply_to(message, bot.t("prompt.reply_keybox_xml"))
+            await bot.reply_to(message, _t("prompt.reply_keybox_xml"))
             return
         document = message.reply_to_message.document
         await handle_keybox_check(bot, message, document)
@@ -486,7 +487,7 @@ async def register_handlers(bot, middleware, plugin_name):
         else:
             await bot.reply_to(
                 message,
-                bot.t("prompt.ban_keybox_usage"),
+                _t("prompt.ban_keybox_usage"),
             )
 
     middleware.register_command_handler(
@@ -507,7 +508,7 @@ async def register_handlers(bot, middleware, plugin_name):
         else:
             await bot.reply_to(
                 message,
-                bot.t("prompt.unban_keybox_usage"),
+                _t("prompt.unban_keybox_usage"),
             )
 
     middleware.register_command_handler(

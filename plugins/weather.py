@@ -12,6 +12,7 @@ from telebot import types
 from loguru import logger
 from utils.yaml import BotConfig
 from app.utils import command_error_msg
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "weather"
@@ -122,7 +123,6 @@ async def translate_chinese_to_english(text):
 
 
 async def handle_weather_command(bot, message: types.Message, city: str):
-    _t = bot.t
     try:
         # 检查城市名是否为中文，如果是则翻译
         if is_chinese(city):
@@ -249,7 +249,7 @@ async def register_handlers(bot, middleware, plugin_name):
         if len(command_args) == 1:
             await bot.reply_to(
                 message,
-                command_error_msg("weather", "City_Name", lang=bot.lang),
+                command_error_msg("weather", "City_Name"),
             )
         else:
             city = " ".join(command_args[1:])

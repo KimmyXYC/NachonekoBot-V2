@@ -16,6 +16,12 @@ from utils.i18n.runtime import (
     make_localized_bot,
     make_localized_bot_for_chat,
 )
+from utils.i18n.context import (
+    _t,
+    _ft,
+    _current_lang,
+    _current_plugin,
+)
 
 __all__ = [
     "get_message_language",
@@ -30,4 +36,8 @@ __all__ = [
     "LocalizedBot",
     "make_localized_bot",
     "make_localized_bot_for_chat",
+    "_t",
+    "_ft",
+    "_current_lang",
+    "_current_plugin",
 ]

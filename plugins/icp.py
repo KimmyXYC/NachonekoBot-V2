@@ -8,6 +8,7 @@ from telebot import types
 from loguru import logger
 
 from app.utils import markdown_to_telegram_html, command_error_msg
+from utils.i18n import _t
 from utils.yaml import BotConfig
 
 # ==================== 插件元数据 ====================
@@ -25,7 +26,7 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_icp_text(domain: str, _t) -> str:
+async def query_icp_text(domain: str) -> str:
     """生成与 `/icp` 命令一致的输出文本，用于命令与 Inline 复用（HTML）。"""
     status, data = await icp_record_check(domain)
     if not status:
@@ -58,13 +59,12 @@ async def handle_icp_command(bot, message: types.Message):
     :return:
     """
     domain = message.text.split()[1]
-    _t = bot.t
     msg = await bot.reply_to(
         message,
         _t("status.icp_querying", domain=domain),
         disable_web_page_preview=True,
     )
-    text = await query_icp_text(domain, _t)
+    text = await query_icp_text(domain)
     await bot.edit_message_text(
         text, message.chat.id, msg.message_id, parse_mode="HTML"
     )
@@ -72,7 +72,6 @@ async def handle_icp_command(bot, message: types.Message):
 
 async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot icp [Domain]"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
@@ -90,7 +89,7 @@ async def handle_icp_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     domain = tokens[1]
-    result_text = await query_icp_text(domain, _t)
+    result_text = await query_icp_text(domain)
     result = types.InlineQueryResultArticle(
         id=f"icp_{domain}",
         title=_t("inline.result_title", domain=domain),
@@ -150,7 +149,7 @@ async def register_handlers(bot, middleware, plugin_name):
         else:
             await bot.reply_to(
                 message,
-                command_error_msg("icp", "Domain", lang=bot.lang),
+                command_error_msg("icp", "Domain"),
             )
 
     middleware.register_command_handler(

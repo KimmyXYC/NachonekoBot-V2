@@ -12,57 +12,91 @@ Plugin language files are reserved under:
 
 Supported languages: `en`, `zh-CN`, `zh-TW`, `ja`
 
-## Core API
+## Core API — `_t` and `_ft`
 
-### `LocalizedBot` (replaces `LocalizedBotProxy`)
-
-Plugins receive a `LocalizedBot` wrapper as their `bot` parameter. It carries i18n context (language + plugin name) and provides explicit translation methods. **No implicit/automatic translation** is performed on `reply_to`, `send_message`, etc.
+The recommended way to do translations in plugin code is via the global `_t()` and `_ft()` functions, powered by `contextvars`:
 
 ```python
-# Plugin-level translation (from plugins/{plugin_name}.json)
-text = bot.t("error.invalid_target")
-text = bot.t("status.querying", target=target)
+from utils.i18n import _t, _ft
 
-# Framework-level translation (from framework.json)
-text = bot.ft("error.command_format_with_args", command="ip", args="target")
+async def handle_command(bot, message):
+    # Plugin-level translation (from plugins/{plugin_name}.json)
+    await bot.reply_to(message, _t("error.invalid_target"))
+    await bot.reply_to(message, _t("status.querying", target=target))
 
-# Access language code directly
-lang = bot.lang           # e.g. "zh-CN"
-plugin = bot.plugin_name  # e.g. "ping"
+    # Framework-level translation (from framework.json)
+    msg = _ft("error.command_format_with_args", command="ip", args="target")
 ```
 
-All bot methods (`reply_to`, `send_message`, `edit_message_text`, etc.) are transparently proxied to the underlying bot instance.
+### How it works
 
-### Service functions
+The middleware automatically sets `ContextVar` values (language + plugin name) before calling any handler. `_t()` and `_ft()` read from these `ContextVar`s, so they always know the current request's language and plugin — no parameter passing needed.
 
-- `t(key, lang, **kwargs)` for framework keys
-- `plugin_t(plugin_name, key, lang, **kwargs)` for plugin keys
+### `LocalizedBot` (still available)
+
+Plugins receive a `LocalizedBot` wrapper as their `bot` parameter. It still provides `bot.t()`, `bot.ft()`, `bot.lang`, and `bot.plugin_name` — but `_t()` / `_ft()` are the preferred shorthand:
+
+```python
+# These are equivalent:
+_t("error.invalid_target")
+bot.t("error.invalid_target")
+
+# These are equivalent:
+_ft("error.command_format")
+bot.ft("error.command_format")
+
+# Access language code
+lang = bot.lang  # e.g. "zh-CN"
+```
+
+### Sub-functions don't need `_t` as a parameter
+
+Since `_t` reads from `ContextVar`, deeply nested functions can use it directly:
+
+```python
+from utils.i18n import _t
+
+async def query_ip_text(target: str) -> str:
+    # No need to receive _t as a parameter — just import and use
+    return _t("error.request_failed")
+
+async def handle_ip_command(bot, message):
+    result = await query_ip_text(target)  # Clean — no _t passing
+```
 
 ### For scheduled jobs / non-handler contexts
 
 ```python
+from utils.i18n import _t
 from utils.i18n.runtime import make_localized_bot_for_chat
 
 lbot = await make_localized_bot_for_chat(bot, plugin_name, chat_id)
-await bot.send_message(chat_id, lbot.t("result.some_key", arg=val))
+# ContextVar is set automatically — _t() works
+await bot.send_message(chat_id, _t("result.some_key", arg=val))
+```
+
+### For framework code (controller.py, event.py)
+
+Code that is NOT dispatched through the middleware (e.g., `controller.py`, `event.py`) should use the explicit `t(key, lang)` function since `ContextVar` is not set:
+
+```python
+from utils.i18n import t
+
+lang = await get_message_language(message)
+text = t("plugin.command.help", lang)
 ```
 
 ## Translation key conventions
 
-Plugin locale value behavior:
+- `command.description.<command>` / `command.help.<command>` — command metadata
+- `meta.description` / `meta.display_name` — plugin metadata
+- `error.*` — error messages
+- `prompt.*` — user prompts
+- `status.*` — processing status
+- `result.*` — results
+- `label.*` — labels
 
-- For command metadata, use keys like:
-  - `command.description.<command>`
-  - `command.help.<command>`
-  - `meta.description`, `meta.display_name`
-- For runtime message text, use semantic keys:
-  - `error.*` for error messages
-  - `prompt.*` for user prompts
-  - `status.*` for processing status
-  - `result.*` for results
-  - `label.*` for labels
-
-JSON format example:
+JSON format:
 
 ```json
 {
@@ -83,37 +117,16 @@ Call `validate_translations()` from `utils/i18n/validator.py` at startup to chec
 - Missing keys compared to the `en` baseline
 - Placeholder (`{var}`) mismatches between languages
 
-## Language config
-
-- `utils/i18n/config.py` (`DEFAULT_LANGUAGE`, `SUPPORTED_LANGUAGES`)
-
-## Add a new language (fixed template flow)
-
-1. Run scaffold command:
+## Add a new language
 
 ```bash
 python tools/add_i18n_language.py --code ja --label "日本語"
 ```
 
-2. Edit generated file:
-
-- `utils/i18n/ja/framework.json`
-
-3. (Optional) add plugin locales:
-
-- `utils/i18n/ja/plugins/<plugin_name>.json`
-
-Notes:
-
-- Use `--force` to overwrite existing `framework.json` from template.
-- The command also updates `utils/i18n/config.py` automatically.
-
-## Scaffold all plugin locale files
-
-Generate locale skeletons for every plugin:
+## Scaffold plugin locale files
 
 ```bash
 python tools/scaffold_plugin_locales.py
 ```
 
-This script scans `plugins/*.py` and merges extracted metadata and static outbound texts into locale files for all supported languages (`en`, `zh-CN`, `zh-TW`, `ja`).
+Generates locale skeletons for every plugin across all supported languages.

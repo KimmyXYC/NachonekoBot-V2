@@ -9,6 +9,7 @@ import aiohttp
 from telebot import types
 from loguru import logger
 from app.utils import escape_md_v2_text, command_error_msg
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "ip"
@@ -25,7 +26,7 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_ip_text(raw_target: str, _t) -> str:
+async def query_ip_text(raw_target: str) -> str:
     """生成与 `/ip` 命令一致的输出文本，用于命令与 Inline 复用（MarkdownV2）。"""
     url = convert_to_punycode(raw_target)
 
@@ -78,14 +79,13 @@ async def query_ip_text(raw_target: str, _t) -> str:
 
 async def handle_ip_command(bot, message: types.Message):
     """处理 IP 查询命令"""
-    _t = bot.t
     target = message.text.split()[1]
     msg = await bot.reply_to(
         message,
         _t("status.ip_querying", target=target),
         disable_web_page_preview=True,
     )
-    ip_info = await query_ip_text(target, _t)
+    ip_info = await query_ip_text(target)
     await bot.edit_message_text(
         ip_info,
         message.chat.id,
@@ -97,7 +97,6 @@ async def handle_ip_command(bot, message: types.Message):
 
 async def handle_ip_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot ip [IP/Domain]"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
@@ -115,7 +114,7 @@ async def handle_ip_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     target = tokens[1]
-    result_text = await query_ip_text(target, _t)
+    result_text = await query_ip_text(target)
 
     result = types.InlineQueryResultArticle(
         id=f"ip_{target}",
@@ -184,7 +183,6 @@ async def register_handlers(bot, middleware, plugin_name):
                 command_error_msg(
                     "ip",
                     "IP Address or Domain",
-                    lang=bot.lang,
                 ),
             )
 

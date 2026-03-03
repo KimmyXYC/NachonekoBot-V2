@@ -10,6 +10,7 @@ import platform
 import ipaddress
 from telebot import types
 from loguru import logger
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "ping"
@@ -66,7 +67,7 @@ def is_valid_target(target):
     return is_valid_hostname(target) or is_valid_ip(target)
 
 
-async def execute_ping_command(target, _t, count=4, timeout=2):
+async def execute_ping_command(target, count=4, timeout=2):
     """
     执行 ping 命令并返回结果
     :param target: 目标地址（IP 或域名）
@@ -135,7 +136,7 @@ async def execute_ping_command(target, _t, count=4, timeout=2):
         return _t("error.ping_command_exception", reason=str(e))
 
 
-async def parse_ping_result(result, _t):
+async def parse_ping_result(result):
     """
     解析 ping 结果，提取关键信息
     :param result: ping 命令原始输出
@@ -229,14 +230,13 @@ async def handle_ping_command(bot, message: types.Message, target=None):
     :param message: 消息对象
     :param target: 目标地址，如果为 None 则从消息中提取
     """
-    _t = bot.t
     # 如果没有提供目标，提示用户
     if not target:
         command_args = message.text.split()
         if len(command_args) >= 2:
             target = command_args[1]
         else:
-            await bot.reply_to(message, bot.t("prompt.ping_target_required"))
+            await bot.reply_to(message, _t("prompt.ping_target_required"))
             return
 
     # 清理和验证目标地址，防止命令注入
@@ -245,17 +245,17 @@ async def handle_ping_command(bot, message: types.Message, target=None):
 
     # 检查目标是否合法
     if not is_valid_target(target):
-        await bot.reply_to(message, bot.t("error.invalid_target_address"))
+        await bot.reply_to(message, _t("error.invalid_target_address"))
         return
 
     # 发送正在处理的消息
     processing_msg = await bot.reply_to(message, _t("status.pinging", target=target))
 
     # 执行 ping 命令
-    result = await execute_ping_command(target, _t)
+    result = await execute_ping_command(target)
 
     # 解析结果
-    summary = await parse_ping_result(result, _t)
+    summary = await parse_ping_result(result)
 
     # 发送结果
     await bot.edit_message_text(

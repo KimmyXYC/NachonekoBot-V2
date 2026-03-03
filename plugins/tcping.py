@@ -9,6 +9,7 @@ import asyncio
 import ipaddress
 from telebot import types
 from loguru import logger
+from utils.i18n import _t
 
 __plugin_name__ = "tcping"
 __version__ = "1.1.0"
@@ -76,7 +77,7 @@ def is_valid_target(target):
     return is_valid_hostname(target) or is_valid_ip(target)
 
 
-async def execute_tcping_command(target, port, _t, count=4, timeout=3):
+async def execute_tcping_command(target, port, count=4, timeout=3):
     """
     执行 tcping 命令并返回结果
     :param target: 目标地址（IP 或域名）
@@ -142,7 +143,7 @@ async def execute_tcping_command(target, port, _t, count=4, timeout=3):
         return _t("error.tcping_command_exception", reason=str(e))
 
 
-async def parse_tcping_result(result, _t):
+async def parse_tcping_result(result):
     """
     解析 tcping 结果，提取关键信息
     :param result: tcping 命令原始输出
@@ -222,11 +223,10 @@ async def handle_tcping_command(bot, message: types.Message):
     :param bot: 机器人实例
     :param message: 消息对象
     """
-    _t = bot.t
     command_args = message.text.split()
 
     if len(command_args) < 2:
-        await bot.reply_to(message, bot.t("prompt.tcping_host_port_required"))
+        await bot.reply_to(message, _t("prompt.tcping_host_port_required"))
         return
 
     # 解析目标和端口
@@ -236,7 +236,7 @@ async def handle_tcping_command(bot, message: types.Message):
         try:
             port = int(port)
         except ValueError:
-            await bot.reply_to(message, bot.t("error.invalid_port_number"))
+            await bot.reply_to(message, _t("error.invalid_port_number"))
             return
     else:
         target = target_arg
@@ -249,10 +249,10 @@ async def handle_tcping_command(bot, message: types.Message):
 
     try:
         # 执行 tcping 命令
-        result = await execute_tcping_command(target, port, _t)
+        result = await execute_tcping_command(target, port)
 
         # 解析结果
-        summary = await parse_tcping_result(result, _t)
+        summary = await parse_tcping_result(result)
 
         # 更新消息
         await bot.edit_message_text(

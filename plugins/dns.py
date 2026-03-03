@@ -10,6 +10,7 @@ import dns.exception
 from telebot import types
 from loguru import logger
 from app.utils import command_error_msg
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "dns"
@@ -26,9 +27,9 @@ __command_help__ = {
 
 
 # ==================== 核心功能 ====================
-async def query_dns_text(domain: str, record_type: str, _t) -> str:
+async def query_dns_text(domain: str, record_type: str) -> str:
     """生成与 `/dns` 命令一致的输出文本，用于命令与 Inline 复用（HTML）。"""
-    return await dns_lookup(domain, record_type, _t)
+    return await dns_lookup(domain, record_type)
 
 
 async def handle_dns_command(bot, message: types.Message, record_type):
@@ -41,7 +42,6 @@ async def handle_dns_command(bot, message: types.Message, record_type):
     """
     command_args = message.text.split()
     domain = command_args[1]
-    _t = bot.t
 
     # 向用户发送处理中的消息
     msg = await bot.reply_to(
@@ -51,7 +51,7 @@ async def handle_dns_command(bot, message: types.Message, record_type):
     )
 
     # 进行 DNS 查询
-    result = await query_dns_text(domain, record_type, _t)
+    result = await query_dns_text(domain, record_type)
 
     # 更新消息内容为查询结果
     await bot.edit_message_text(
@@ -61,7 +61,6 @@ async def handle_dns_command(bot, message: types.Message, record_type):
 
 async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot dns [Domain] [Record_Type]"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
@@ -111,7 +110,7 @@ async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
         )
         return
 
-    result_text = await query_dns_text(domain, record_type, _t)
+    result_text = await query_dns_text(domain, record_type)
     result = types.InlineQueryResultArticle(
         id=f"dns_{domain}_{record_type}",
         title=_t("inline.result_title", domain=domain, record_type=record_type),
@@ -125,7 +124,7 @@ async def handle_dns_inline_query(bot, inline_query: types.InlineQuery):
     )
 
 
-async def dns_lookup(domain, record_type, _t):
+async def dns_lookup(domain, record_type):
     """
     使用 dnspython 执行 DNS 查询
     :param domain: 要查询的域名或 IP
@@ -227,7 +226,7 @@ async def register_handlers(bot, middleware, plugin_name):
             if command_args[2].upper() not in record_types:
                 await bot.reply_to(
                     message,
-                    command_error_msg(reason="invalid_type", lang=bot.lang),
+                    command_error_msg(reason="invalid_type"),
                 )
                 return
             await handle_dns_command(bot, message, command_args[2])
@@ -238,7 +237,6 @@ async def register_handlers(bot, middleware, plugin_name):
                     "dns",
                     "Domain",
                     "Record_Type",
-                    lang=bot.lang,
                 ),
             )
 

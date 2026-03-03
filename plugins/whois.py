@@ -9,6 +9,7 @@ import idna
 from telebot import types
 from loguru import logger
 from app.utils import command_error_msg
+from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "whois"
@@ -146,7 +147,6 @@ async def handle_whois_command(bot, message: types.Message):
     :return:
     """
     data = message.text.split()[1]
-    _t = bot.t
     msg = await bot.reply_to(
         message,
         _t("status.whois_querying", target=data),
@@ -160,7 +160,6 @@ async def handle_whois_command(bot, message: types.Message):
 
 async def handle_whois_inline_query(bot, inline_query: types.InlineQuery):
     """处理 Inline Query：@Bot whois [Domain]"""
-    _t = bot.t
     query = (inline_query.query or "").strip()
     tokens = query.split()
 
@@ -282,7 +281,7 @@ async def register_handlers(bot, middleware, plugin_name):
         else:
             await bot.reply_to(
                 message,
-                command_error_msg("whois", "Domain", lang=bot.lang),
+                command_error_msg("whois", "Domain"),
             )
 
     middleware.register_command_handler(

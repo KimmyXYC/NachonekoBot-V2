@@ -5,7 +5,7 @@
 # @Software: PyCharm
 import re
 
-from utils.i18n.service import t as framework_t
+from utils.i18n.context import _ft
 
 
 def parse_command(command):
@@ -39,24 +39,21 @@ def markdown_to_telegram_html(markdown_text):
     return html_text
 
 
-def command_error_msg(command="", args="", optional_args="", reason="", lang=None):
+def command_error_msg(command="", args="", optional_args="", reason=""):
     if not command:
-        return framework_t("error.command_format", lang)
+        return _ft("error.command_format")
 
     if reason == "invalid_type":
-        return framework_t("error.invalid_query_type", lang)
+        return _ft("error.invalid_query_type")
 
     if args:
         if optional_args:
-            return framework_t(
+            return _ft(
                 "error.command_format_with_optional",
-                lang,
                 command=command,
                 args=args,
                 optional_args=optional_args,
             )
-        return framework_t(
-            "error.command_format_with_args", lang, command=command, args=args
-        )
+        return _ft("error.command_format_with_args", command=command, args=args)
     else:
-        return framework_t("error.command_format_simple", lang, command=command)
+        return _ft("error.command_format_simple", command=command)
