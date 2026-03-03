@@ -4,11 +4,20 @@
 # @File    : event.py
 # @Software: PyCharm
 import re
+from loguru import logger
 from telebot import types, formatting
 from utils.i18n import t
 
 # Telegram bot command: 1-32 lowercase letters, digits, underscores
 _VALID_BOT_COMMAND_RE = re.compile(r"^[a-z0-9_]{1,32}$")
+
+# 我们的 i18n 语言代码 → Telegram language_code (ISO 639-1) 映射
+# en 作为默认（不带 language_code），不在此映射中
+# zh-TW 与 zh-CN 共用 "zh"（Telegram 不支持区分简繁），优先使用 zh-CN
+_LANG_TO_TELEGRAM = {
+    "zh-CN": "zh",
+    "ja": "ja",
+}
 
 
 CATEGORY_KEYS = {
@@ -24,51 +33,73 @@ CATEGORY_KEYS = {
 
 async def set_bot_commands(bot, plugin_manager):
     """
-    动态构建并设置机器人命令
-    从插件管理器收集所有插件的命令信息
+    动态构建并设置机器人命令。
+    默认（无 language_code）使用 en，
+    然后为 _LANG_TO_TELEGRAM 中的每种语言额外注册本地化的命令描述。
     """
-    # 核心命令（不属于任何插件）
-    commands = [
-        types.BotCommand("help", t("core.command.help", "en")),
-        types.BotCommand("plugin", t("core.command.plugin", "en")),
-        types.BotCommand("plugin_settings", t("core.command.plugin_settings", "en")),
-        types.BotCommand("language", t("core.command.language", "en")),
-    ]
-    private_commands = [
-        types.BotCommand("help", t("core.command.help", "en")),
-        types.BotCommand("plugin", t("core.command.plugin", "en")),
-        types.BotCommand("language", t("core.command.language", "en")),
-    ]
-    group_commands = [
-        types.BotCommand("help", t("core.command.help", "en")),
-        types.BotCommand("plugin", t("core.command.plugin", "en")),
-        types.BotCommand("plugin_settings", t("core.command.plugin_settings", "en")),
-        types.BotCommand("language", t("core.command.language", "en")),
-    ]
 
-    # 从插件收集命令
-    plugin_commands_info = plugin_manager.get_plugin_commands_info("en")
+    async def _register_commands_for_lang(lang: str, language_code: str = None):
+        """为指定语言构建命令列表并注册到 Telegram (3 个 scope)。"""
+        all_cmds = [
+            types.BotCommand("help", t("core.command.help", lang)),
+            types.BotCommand("plugin", t("core.command.plugin", lang)),
+            types.BotCommand(
+                "plugin_settings", t("core.command.plugin_settings", lang)
+            ),
+            types.BotCommand("language", t("core.command.language", lang)),
+        ]
+        private_cmds = [
+            types.BotCommand("help", t("core.command.help", lang)),
+            types.BotCommand("plugin", t("core.command.plugin", lang)),
+            types.BotCommand("language", t("core.command.language", lang)),
+        ]
+        group_cmds = [
+            types.BotCommand("help", t("core.command.help", lang)),
+            types.BotCommand("plugin", t("core.command.plugin", lang)),
+            types.BotCommand(
+                "plugin_settings", t("core.command.plugin_settings", lang)
+            ),
+            types.BotCommand("language", t("core.command.language", lang)),
+        ]
 
-    # 添加插件命令
-    for cmd_info in plugin_commands_info:
-        if cmd_info["description"] and _VALID_BOT_COMMAND_RE.match(cmd_info["command"]):
-            commands.append(
-                types.BotCommand(cmd_info["command"], cmd_info["description"])
-            )
-            private_commands.append(
-                types.BotCommand(cmd_info["command"], cmd_info["description"])
-            )
-            group_commands.append(
-                types.BotCommand(cmd_info["command"], cmd_info["description"])
-            )
+        plugin_commands_info = plugin_manager.get_plugin_commands_info(lang)
+        for cmd_info in plugin_commands_info:
+            if cmd_info["description"] and _VALID_BOT_COMMAND_RE.match(
+                cmd_info["command"]
+            ):
+                bot_cmd = types.BotCommand(cmd_info["command"], cmd_info["description"])
+                all_cmds.append(bot_cmd)
+                private_cmds.append(bot_cmd)
+                group_cmds.append(bot_cmd)
 
-    await bot.set_my_commands(commands, scope=types.BotCommandScopeDefault())
-    await bot.set_my_commands(
-        private_commands, scope=types.BotCommandScopeAllPrivateChats()
-    )
-    await bot.set_my_commands(
-        group_commands, scope=types.BotCommandScopeAllGroupChats()
-    )
+        await bot.set_my_commands(
+            all_cmds,
+            scope=types.BotCommandScopeDefault(),
+            language_code=language_code,
+        )
+        await bot.set_my_commands(
+            private_cmds,
+            scope=types.BotCommandScopeAllPrivateChats(),
+            language_code=language_code,
+        )
+        await bot.set_my_commands(
+            group_cmds,
+            scope=types.BotCommandScopeAllGroupChats(),
+            language_code=language_code,
+        )
+
+    # 默认（en）— 不带 language_code，作为 fallback
+    await _register_commands_for_lang("en")
+
+    # 为每种支持的语言额外注册
+    for our_lang, tg_lang_code in _LANG_TO_TELEGRAM.items():
+        try:
+            await _register_commands_for_lang(our_lang, tg_lang_code)
+        except Exception as e:
+            logger.warning(
+                f"Failed to set bot commands for language {our_lang} "
+                f"(telegram code: {tg_lang_code}): {e}"
+            )
 
 
 async def listen_help_command(bot, message: types.Message, plugin_manager, lang: str):
