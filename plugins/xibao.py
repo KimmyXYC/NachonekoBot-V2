@@ -16,6 +16,9 @@ __version__ = "1.0.0"
 __author__ = "KimmyXYC"
 __description__ = "喜报/悲报/通报/警报生成器"
 __commands__ = []  # 这个插件通过自定义过滤器触发，不是命令
+__command_category__ = "fun"
+__command_order__ = {"_xibao": 400}
+__extra_help__ = {"_xibao": "喜报/悲报/通报/警报 [内容] - 生成对应类型的报告图片"}
 __toggleable__ = True  # 支持在群组中开关
 
 

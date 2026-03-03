@@ -18,8 +18,6 @@
   "help.line.plugin": "/plugin - 全局插件管理（仅 Bot 管理员）",
   "help.line.plugin_settings": "/plugin_settings - 群组插件设置（仅群组管理员）",
   "help.line.language": "/language - 语言设置",
-  "help.special": "特殊功能：",
-  "help.special.report": "喜报/悲报/通报/警报 [内容] - 生成对应类型的报告图片",
   "help.github": "🍀 Github",
   "category.title.network": "网络",
   "category.title.query": "查询",

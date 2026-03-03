@@ -18,8 +18,6 @@
   "help.line.plugin": "/plugin - グローバルプラグイン管理（Bot管理者のみ）",
   "help.line.plugin_settings": "/plugin_settings - グループプラグイン設定（グループ管理者のみ）",
   "help.line.language": "/language - 言語設定",
-  "help.special": "特殊機能：",
-  "help.special.report": "xibao/beibao/tongbao/jingbao [内容] - 対応タイプのレポート画像を生成",
   "help.github": "🍀 Github",
   "category.title.network": "ネットワーク",
   "category.title.query": "クエリ",

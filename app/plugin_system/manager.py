@@ -459,6 +459,29 @@ class PluginManager:
                             }
                         )
 
+                    # 收集非命令的额外帮助条目（如 xibao 等通过 message handler 触发的插件）
+                    extra_help = getattr(module, "__extra_help__", None)
+                    if extra_help:
+                        for key, fallback_text in extra_help.items():
+                            help_key = f"command.help.{key}"
+                            i18n_help = plugin_t(plugin.name, help_key, lang)
+                            help_text = (
+                                i18n_help if i18n_help != help_key else fallback_text
+                            )
+                            commands_info.append(
+                                {
+                                    "command": key,
+                                    "description": "",
+                                    "help_text": help_text,
+                                    "plugin": plugin.name,
+                                    "category": category,
+                                    "category_priority": COMMAND_CATEGORY_PRIORITY[
+                                        category
+                                    ],
+                                    "command_order": int(command_orders.get(key, 0)),
+                                }
+                            )
+
             except Exception as e:
                 logger.error(f"收集插件 {plugin.name} 命令信息时出错: {e}")
 

@@ -1,5 +1,6 @@
 {
   "meta.description": "おめでとう/残念/通報/警告 画像ジェネレーター",
   "meta.display_name": "レポート画像ジェネレーター",
-  "error.unknown": "不明なエラーが発生しました。"
+  "error.unknown": "不明なエラーが発生しました。",
+  "command.help._xibao": "喜报/悲报/通报/警报 [内容] - 対応タイプのレポート画像を生成"
 }

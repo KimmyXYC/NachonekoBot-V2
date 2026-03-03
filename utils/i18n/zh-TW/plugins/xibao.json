@@ -1,5 +1,6 @@
 {
   "meta.description": "喜報/悲報/通報/警報 生成器",
   "meta.display_name": "報告圖片生成器",
-  "error.unknown": "發生未知錯誤。"
+  "error.unknown": "發生未知錯誤。",
+  "command.help._xibao": "喜报/悲报/通报/警报 [內容] - 生成對應類型的報告圖片"
 }

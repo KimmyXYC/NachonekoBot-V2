@@ -18,8 +18,6 @@
   "help.line.plugin": "/plugin - Global plugin management (Bot admin only)",
   "help.line.plugin_settings": "/plugin_settings - Group plugin settings (group admin only)",
   "help.line.language": "/language - Language settings",
-  "help.special": "Special:",
-  "help.special.report": "xibao/beibao/tongbao/jingbao [content] - Generate report image",
   "help.github": "🍀 Github",
   "category.title.network": "Network",
   "category.title.query": "Query",

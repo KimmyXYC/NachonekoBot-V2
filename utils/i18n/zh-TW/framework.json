@@ -18,8 +18,6 @@
   "help.line.plugin": "/plugin - 全域插件管理（僅 Bot 管理員）",
   "help.line.plugin_settings": "/plugin_settings - 群組插件設定（僅群組管理員）",
   "help.line.language": "/language - 語言設定",
-  "help.special": "特殊功能：",
-  "help.special.report": "喜報/悲報/通報/警報 [內容] - 生成對應類型的報告圖片",
   "help.github": "🍀 Github",
   "category.title.network": "網路",
   "category.title.query": "查詢",

@@ -107,11 +107,6 @@ async def listen_help_command(bot, message: types.Message, plugin_manager, lang:
         help_lines.append(formatting.mcite(cmd_info["help_text"]))
         help_lines.append(formatting.mcite(""))  # 添加空行分隔
 
-    # 添加特殊功能说明
-    help_lines.append("")
-    help_lines.append(formatting.mitalic(t("help.special", lang)))
-    help_lines.append(formatting.mcite(t("help.special.report", lang)))
-
     # 添加 GitHub 链接
     help_lines.append("")
     help_lines.append(

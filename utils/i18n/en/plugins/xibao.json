@@ -1,5 +1,6 @@
 {
   "meta.description": "Xibao/Beibao/Tongbao/Jingbao image generator",
   "meta.display_name": "Report Image Generator",
-  "error.unknown": "An unknown error occurred"
+  "error.unknown": "An unknown error occurred",
+  "command.help._xibao": "喜报/悲报/通报/警报 [content] - Generate corresponding report image"
 }
