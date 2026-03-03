@@ -11,6 +11,7 @@ from loguru import logger
 from telebot import types
 
 from utils.postgres import BotDatabase
+from utils.i18n import normalize_language, plugin_t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "stats"
@@ -466,7 +467,6 @@ async def handle_stats_message(bot, message: types.Message):
 
 
 async def handle_dragon_king_schedule(bot):
-    _t = bot.t if hasattr(bot, "t") else (lambda k, **kw: k)
     job_name = f"{__plugin_name__}.dragon_king"
     rows = await BotDatabase.get_enabled_scheduled_groups(job_name)
     if not rows:
@@ -511,10 +511,13 @@ async def handle_dragon_king_schedule(bot):
         )
 
         try:
+            lang = normalize_language(await BotDatabase.get_group_language(group_id))
             await bot.send_message(
                 group_id,
-                _t(
+                plugin_t(
+                    __plugin_name__,
                     "result.dragon_congrats",
+                    lang,
                     display_name=display_name,
                     streak_days=streak_days,
                 ),
