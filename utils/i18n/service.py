@@ -23,6 +23,27 @@ def normalize_language(lang: Optional[str]) -> str:
     return DEFAULT_LANGUAGE
 
 
+def map_telegram_language_code(language_code: Optional[str]) -> str:
+    """Map a Telegram from_user.language_code to a supported bot language.
+
+    Mapping rules:
+      zh / zh-hans / zh-cn  → zh-CN
+      zh-TW / zh-hant / zh-HK → zh-TW
+      ja                    → ja
+      anything else         → en (DEFAULT_LANGUAGE)
+    """
+    if not language_code:
+        return DEFAULT_LANGUAGE
+    code = str(language_code).strip().lower()
+    if code in ("zh", "zh-cn", "zh-hans"):
+        return "zh-CN"
+    if code in ("zh-tw", "zh-hk", "zh-hant"):
+        return "zh-TW"
+    if code == "ja":
+        return "ja"
+    return DEFAULT_LANGUAGE
+
+
 def language_name(lang: str) -> str:
     return SUPPORTED_LANGUAGES.get(
         normalize_language(lang), SUPPORTED_LANGUAGES[DEFAULT_LANGUAGE]
@@ -86,10 +107,16 @@ async def get_message_language(message) -> str:
 
     chat = message.chat
     if chat.type == "private":
-        user_id = getattr(getattr(message, "from_user", None), "id", None)
+        from_user = getattr(message, "from_user", None)
+        user_id = getattr(from_user, "id", None)
         if not user_id:
             return DEFAULT_LANGUAGE
-        return normalize_language(await BotDatabase.get_user_language(user_id))
+        # Map Telegram's language_code to a supported language for first-time users
+        tg_lang_code = getattr(from_user, "language_code", None)
+        initial_language = map_telegram_language_code(tg_lang_code)
+        return normalize_language(
+            await BotDatabase.get_user_language(user_id, initial_language)
+        )
 
     return normalize_language(await BotDatabase.get_group_language(chat.id))
 
@@ -102,10 +129,15 @@ async def get_callback_language(call) -> str:
 
     chat = call.message.chat
     if chat.type == "private":
-        user_id = getattr(getattr(call, "from_user", None), "id", None)
+        from_user = getattr(call, "from_user", None)
+        user_id = getattr(from_user, "id", None)
         if not user_id:
             return DEFAULT_LANGUAGE
-        return normalize_language(await BotDatabase.get_user_language(user_id))
+        tg_lang_code = getattr(from_user, "language_code", None)
+        initial_language = map_telegram_language_code(tg_lang_code)
+        return normalize_language(
+            await BotDatabase.get_user_language(user_id, initial_language)
+        )
 
     return normalize_language(await BotDatabase.get_group_language(chat.id))
 
@@ -113,10 +145,15 @@ async def get_callback_language(call) -> str:
 async def get_inline_query_language(inline_query) -> str:
     from utils.postgres import BotDatabase
 
-    user_id = getattr(getattr(inline_query, "from_user", None), "id", None)
+    from_user = getattr(inline_query, "from_user", None)
+    user_id = getattr(from_user, "id", None)
     if not user_id:
         return DEFAULT_LANGUAGE
-    return normalize_language(await BotDatabase.get_user_language(user_id))
+    tg_lang_code = getattr(from_user, "language_code", None)
+    initial_language = map_telegram_language_code(tg_lang_code)
+    return normalize_language(
+        await BotDatabase.get_user_language(user_id, initial_language)
+    )
 
 
 def _load_plugin_locale(lang: str, plugin_name: str) -> Dict[str, str]:

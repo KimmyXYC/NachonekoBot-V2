@@ -220,17 +220,32 @@ class AsyncPostgresDB:
             logger.error(f"Error ensuring group row {group_id}: {e}")
             raise
 
-    async def ensure_user_row(self, user_id: int):
-        """Ensure a row exists for the given user_id in user_setting table."""
+    async def ensure_user_row(self, user_id: int, initial_language: str = None):
+        """Ensure a row exists for the given user_id in user_setting table.
+
+        If ``initial_language`` is provided and the user is brand-new (no existing
+        row), the row will be inserted with that language instead of the column
+        default ('en').  Existing rows are never modified by this method.
+        """
         try:
             async with self.conn.acquire() as connection:
-                await connection.execute(
-                    """
-                    INSERT INTO user_setting (user_id) VALUES ($1)
-                    ON CONFLICT (user_id) DO NOTHING
-                    """,
-                    int(user_id),
-                )
+                if initial_language:
+                    await connection.execute(
+                        """
+                        INSERT INTO user_setting (user_id, language) VALUES ($1, $2)
+                        ON CONFLICT (user_id) DO NOTHING
+                        """,
+                        int(user_id),
+                        str(initial_language),
+                    )
+                else:
+                    await connection.execute(
+                        """
+                        INSERT INTO user_setting (user_id) VALUES ($1)
+                        ON CONFLICT (user_id) DO NOTHING
+                        """,
+                        int(user_id),
+                    )
         except Exception as e:
             logger.error(f"Error ensuring user row {user_id}: {e}")
             raise
@@ -267,10 +282,16 @@ class AsyncPostgresDB:
             logger.error(f"Error setting group language for group {group_id}: {e}")
             return False
 
-    async def get_user_language(self, user_id: int) -> str:
-        """Get language of a user. Defaults to DEFAULT_LANGUAGE."""
+    async def get_user_language(
+        self, user_id: int, initial_language: str = None
+    ) -> str:
+        """Get language of a user. Defaults to DEFAULT_LANGUAGE.
+
+        If ``initial_language`` is provided and no row exists yet for this user,
+        the row will be initialised with that language (auto-detect on first use).
+        """
         try:
-            await self.ensure_user_row(user_id)
+            await self.ensure_user_row(user_id, initial_language)
             async with self.conn.acquire() as connection:
                 val = await connection.fetchval(
                     "SELECT language FROM user_setting WHERE user_id = $1",
