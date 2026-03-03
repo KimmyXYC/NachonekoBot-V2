@@ -11,6 +11,11 @@ from utils.i18n.service import (
     supported_languages,
     t,
 )
+from utils.i18n.runtime import (
+    LocalizedBot,
+    make_localized_bot,
+    make_localized_bot_for_chat,
+)
 
 __all__ = [
     "get_message_language",
@@ -22,4 +27,7 @@ __all__ = [
     "plugin_t",
     "supported_languages",
     "t",
+    "LocalizedBot",
+    "make_localized_bot",
+    "make_localized_bot_for_chat",
 ]

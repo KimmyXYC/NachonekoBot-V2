@@ -27,24 +27,24 @@ __command_help__ = {
 async def query_bin_text(card_bin: str, _t) -> str:
     """查询 BIN"""
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
-        return "error.invalid_bin_parameter"
+        return _t("error.invalid_bin_parameter")
 
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://lookup.binlist.net/{card_bin}") as r:
                 if r.status == 404:
-                    return "error.bin_not_found"
+                    return _t("error.bin_not_found")
                 if r.status == 429:
-                    return "error.rate_limit_exceeded"
+                    return _t("error.rate_limit_exceeded")
                 if r.status != 200:
                     return _t("error.request_failed_with_status", status=r.status)
 
                 content = await r.text()
                 bin_json = json.loads(content)
     except aiohttp.ClientError:
-        return "error.binlist_unreachable"
+        return _t("error.binlist_unreachable")
     except JSONDecodeError:
-        return "error.invalid_parameter"
+        return _t("error.invalid_parameter")
     except Exception as e:
         return _t("error.exception_occurred", reason=str(e))
 
@@ -91,12 +91,12 @@ async def handle_bin_command(bot, message: types.Message):
     command_args = message.text.split()
     _t = bot.t
     if len(command_args) != 2:
-        await bot.reply_to(message, "prompt.valid_bin_required")
+        await bot.reply_to(message, bot.t("prompt.valid_bin_required"))
         return
 
     card_bin = command_args[1]
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
-        await bot.reply_to(message, "error.invalid_bin_parameter")
+        await bot.reply_to(message, bot.t("error.invalid_bin_parameter"))
         return
 
     msg = await bot.reply_to(

@@ -74,7 +74,7 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            "prompt.trace_usage",
+            bot.t("prompt.trace_usage"),
         )
         return
 
@@ -82,7 +82,7 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
 
     # 验证目标地址，防止注入
     if not validate_target(target):
-        await bot.reply_to(message, "error.trace_invalid_target")
+        await bot.reply_to(message, bot.t("error.trace_invalid_target"))
         return
 
     protocol = None  # 默认使用ICMP
@@ -96,22 +96,22 @@ async def handle_trace_command(bot: AsyncTeleBot, message: types.Message):
         elif protocol_arg in ["U", "UDP"]:
             protocol = "U"
         else:
-            await bot.reply_to(message, "error.invalid_protocol_type")
+            await bot.reply_to(message, bot.t("error.invalid_protocol_type"))
             return
 
     # 解析端口参数
     if len(command_args) >= 4:
         if not command_args[3].isdigit():
-            await bot.reply_to(message, "error.port_not_numeric")
+            await bot.reply_to(message, bot.t("error.port_not_numeric"))
             return
         port = int(command_args[3])
         if not validate_port(port):
-            await bot.reply_to(message, "error.port_out_of_range")
+            await bot.reply_to(message, bot.t("error.port_out_of_range"))
             return
 
     # 检查 nexttrace 是否安装
     if not shutil.which("nexttrace"):
-        await bot.reply_to(message, "error.nexttrace_not_found")
+        await bot.reply_to(message, bot.t("error.nexttrace_not_found"))
         return
 
     # 发送初始消息

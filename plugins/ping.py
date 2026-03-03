@@ -236,7 +236,7 @@ async def handle_ping_command(bot, message: types.Message, target=None):
         if len(command_args) >= 2:
             target = command_args[1]
         else:
-            await bot.reply_to(message, "prompt.ping_target_required")
+            await bot.reply_to(message, bot.t("prompt.ping_target_required"))
             return
 
     # 清理和验证目标地址，防止命令注入
@@ -245,7 +245,7 @@ async def handle_ping_command(bot, message: types.Message, target=None):
 
     # 检查目标是否合法
     if not is_valid_target(target):
-        await bot.reply_to(message, "error.invalid_target_address")
+        await bot.reply_to(message, bot.t("error.invalid_target_address"))
         return
 
     # 发送正在处理的消息

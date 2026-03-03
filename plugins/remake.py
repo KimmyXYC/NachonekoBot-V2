@@ -110,10 +110,10 @@ async def handle_remake_data_command(bot, message):
                 ),
             )
         else:
-            await bot.reply_to(message, "prompt.remake_not_started")
+            await bot.reply_to(message, bot.t("prompt.remake_not_started"))
     except Exception as e:
         logger.error(f"Database error: {e}")
-        await bot.reply_to(message, "error.query_failed_retry")
+        await bot.reply_to(message, bot.t("error.query_failed_retry"))
 
 
 # ==================== 插件注册 ====================

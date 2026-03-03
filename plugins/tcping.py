@@ -226,7 +226,7 @@ async def handle_tcping_command(bot, message: types.Message):
     command_args = message.text.split()
 
     if len(command_args) < 2:
-        await bot.reply_to(message, "prompt.tcping_host_port_required")
+        await bot.reply_to(message, bot.t("prompt.tcping_host_port_required"))
         return
 
     # 解析目标和端口
@@ -236,7 +236,7 @@ async def handle_tcping_command(bot, message: types.Message):
         try:
             port = int(port)
         except ValueError:
-            await bot.reply_to(message, "error.invalid_port_number")
+            await bot.reply_to(message, bot.t("error.invalid_port_number"))
             return
     else:
         target = target_arg

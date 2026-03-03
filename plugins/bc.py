@@ -827,7 +827,7 @@ async def handle_bc_command(bot, message: types.Message) -> None:
     try:
         number = float(args[0])
     except ValueError:
-        await bot.reply_to(message, "error.amount_invalid")
+        await bot.reply_to(message, bot.t("error.amount_invalid"))
         return
 
     _from = args[1].upper().strip()

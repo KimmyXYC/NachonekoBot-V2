@@ -1,77 +1,47 @@
 # -*- coding: utf-8 -*-
 
-from utils.i18n.service import plugin_t
+from utils.i18n.service import plugin_t, t as framework_t, normalize_language
 
 
-class LocalizedBotProxy:
+class LocalizedBot:
+    """
+    携带 i18n 上下文的 bot 包装器。
+
+    不做任何隐式翻译 — 所有翻译必须通过 t() / ft() 显式调用。
+    bot 的所有方法（reply_to, send_message 等）直接透传到底层 bot 实例。
+    """
+
     def __init__(self, bot, plugin_name: str, lang: str):
         self._bot = bot
-        self._plugin_name = plugin_name
-        self._lang = lang
+        self.plugin_name = plugin_name
+        self.lang = lang
 
-    def _translate(self, text):
-        if not isinstance(text, str):
-            return text
-        return plugin_t(self._plugin_name, text, self._lang)
+    def t(self, key: str, **kwargs) -> str:
+        """插件级别翻译 — 从 plugins/{plugin_name}.json 查找 key"""
+        return plugin_t(self.plugin_name, key, self.lang, **kwargs)
 
-    def t(self, key: str, **kwargs):
-        return plugin_t(self._plugin_name, key, self._lang, **kwargs)
-
-    async def reply_to(self, message, text=None, *args, **kwargs):
-        if text is not None:
-            text = self._translate(text)
-        elif "text" in kwargs:
-            kwargs["text"] = self._translate(kwargs.get("text"))
-        return await self._bot.reply_to(message, text, *args, **kwargs)
-
-    async def send_message(self, chat_id, text=None, *args, **kwargs):
-        if text is not None:
-            text = self._translate(text)
-        elif "text" in kwargs:
-            kwargs["text"] = self._translate(kwargs.get("text"))
-        return await self._bot.send_message(chat_id, text, *args, **kwargs)
-
-    async def edit_message_text(self, text=None, *args, **kwargs):
-        if text is not None:
-            text = self._translate(text)
-        elif "text" in kwargs:
-            kwargs["text"] = self._translate(kwargs.get("text"))
-        return await self._bot.edit_message_text(text, *args, **kwargs)
-
-    async def answer_callback_query(
-        self, callback_query_id, text=None, *args, **kwargs
-    ):
-        if text is not None:
-            text = self._translate(text)
-        elif "text" in kwargs:
-            kwargs["text"] = self._translate(kwargs.get("text"))
-        return await self._bot.answer_callback_query(
-            callback_query_id, text, *args, **kwargs
-        )
-
-    async def send_photo(self, chat_id, photo, *args, **kwargs):
-        if "caption" in kwargs:
-            kwargs["caption"] = self._translate(kwargs.get("caption"))
-        return await self._bot.send_photo(chat_id, photo, *args, **kwargs)
-
-    async def send_document(self, chat_id, document, *args, **kwargs):
-        if "caption" in kwargs:
-            kwargs["caption"] = self._translate(kwargs.get("caption"))
-        return await self._bot.send_document(chat_id, document, *args, **kwargs)
-
-    async def send_video(self, chat_id, data, *args, **kwargs):
-        if "caption" in kwargs:
-            kwargs["caption"] = self._translate(kwargs.get("caption"))
-        return await self._bot.send_video(chat_id, data, *args, **kwargs)
-
-    async def send_animation(self, chat_id, animation, *args, **kwargs):
-        if "caption" in kwargs:
-            kwargs["caption"] = self._translate(kwargs.get("caption"))
-        return await self._bot.send_animation(chat_id, animation, *args, **kwargs)
+    def ft(self, key: str, **kwargs) -> str:
+        """Framework 级别翻译 — 从 framework.json 查找 key"""
+        return framework_t(key, self.lang, **kwargs)
 
     def __getattr__(self, item):
         return getattr(self._bot, item)
 
 
-def make_localized_bot(bot, plugin_name: str, lang: str):
-    return LocalizedBotProxy(bot, plugin_name, lang)
+def make_localized_bot(bot, plugin_name: str, lang: str) -> LocalizedBot:
+    """为 handler 调度创建 LocalizedBot 实例"""
+    return LocalizedBot(bot, plugin_name, lang)
+
+
+async def make_localized_bot_for_chat(
+    bot, plugin_name: str, chat_id: int
+) -> LocalizedBot:
+    """
+    为定时任务等非 handler 场景创建 LocalizedBot。
+
+    自动从数据库查询 chat 的语言偏好。
+    """
+    from utils.postgres import BotDatabase
+
+    lang = normalize_language(await BotDatabase.get_group_language(chat_id))
+    return LocalizedBot(bot, plugin_name, lang)

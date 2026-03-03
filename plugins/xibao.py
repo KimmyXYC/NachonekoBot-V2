@@ -37,7 +37,7 @@ async def good_news(bot, message: types.Message, news_type):
         fill_color = "white"
         font_size = 90
     else:
-        await bot.reply_to(message, "error.unknown")
+        await bot.reply_to(message, bot.t("error.unknown"))
         return
     img = Image.open(pic_dir).convert("RGB")
     text = message.text[2:]

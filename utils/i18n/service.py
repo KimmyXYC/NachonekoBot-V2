@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Dict, Optional
 
+from loguru import logger
+
 from utils.i18n.config import DEFAULT_LANGUAGE, LANGUAGE_FLAGS, SUPPORTED_LANGUAGES
 
 
@@ -42,7 +44,10 @@ def t(key: str, lang: Optional[str] = None, **kwargs) -> str:
     framework_map = _load_framework_locale(resolved)
     value = framework_map.get(key)
     if value is None:
-        value = _load_framework_locale(DEFAULT_LANGUAGE).get(key, key)
+        value = _load_framework_locale(DEFAULT_LANGUAGE).get(key)
+    if value is None:
+        logger.warning(f"i18n: Missing framework key '{key}' for lang '{resolved}'")
+        value = key
     if kwargs:
         try:
             return value.format(**kwargs)
@@ -147,6 +152,9 @@ def plugin_t(plugin_name: str, key: str, lang: Optional[str] = None, **kwargs) -
         value = mapping.get(key)
 
     if value is None:
+        logger.warning(
+            f"i18n: Missing plugin key '{key}' for plugin '{plugin_name}' in lang '{resolved}'"
+        )
         value = key
 
     if kwargs:

@@ -227,9 +227,7 @@ async def register_handlers(bot, middleware, plugin_name):
             if command_args[2].upper() not in record_types:
                 await bot.reply_to(
                     message,
-                    command_error_msg(
-                        reason="invalid_type", lang=getattr(bot, "_lang", None)
-                    ),
+                    command_error_msg(reason="invalid_type", lang=bot.lang),
                 )
                 return
             await handle_dns_command(bot, message, command_args[2])
@@ -240,7 +238,7 @@ async def register_handlers(bot, middleware, plugin_name):
                     "dns",
                     "Domain",
                     "Record_Type",
-                    lang=getattr(bot, "_lang", None),
+                    lang=bot.lang,
                 ),
             )
 

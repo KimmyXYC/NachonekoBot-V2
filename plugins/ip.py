@@ -184,7 +184,7 @@ async def register_handlers(bot, middleware, plugin_name):
                 command_error_msg(
                     "ip",
                     "IP Address or Domain",
-                    lang=getattr(bot, "_lang", None),
+                    lang=bot.lang,
                 ),
             )
 

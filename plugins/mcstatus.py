@@ -253,7 +253,7 @@ async def handle_mcstatus_command(
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            "prompt.server_address_required",
+            bot.t("prompt.server_address_required"),
         )
         return
 
@@ -288,7 +288,7 @@ async def handle_mcstatus_auto_command(bot, message: types.Message):
     if len(command_args) < 2:
         await bot.reply_to(
             message,
-            "prompt.server_address_required",
+            bot.t("prompt.server_address_required"),
         )
         return
 

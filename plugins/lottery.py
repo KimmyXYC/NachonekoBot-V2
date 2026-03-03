@@ -253,19 +253,19 @@ async def process_lottery_message(bot, message: types.Message):
 async def handle_lottery_command(bot, message: types.Message):
     """处理 /lottery 命令：创建抽奖或强制开奖。"""
     if message.chat.type not in ["group", "supergroup"]:
-        await bot.reply_to(message, "error.group_only")
+        await bot.reply_to(message, bot.t("error.group_only"))
         return
 
     # 仅群管理员可用
     if not await _is_admin(bot, message.chat.id, message.from_user.id):
-        await bot.reply_to(message, "error.group_admin_required")
+        await bot.reply_to(message, bot.t("error.group_admin_required"))
         return
 
     parts = message.text.split()
     if len(parts) == 1:
         await bot.reply_to(
             message,
-            "prompt.lottery_usage",
+            bot.t("prompt.lottery_usage"),
             parse_mode="Markdown",
         )
         return
@@ -274,36 +274,36 @@ async def handle_lottery_command(bot, message: types.Message):
     if len(parts) == 2 and parts[1] == "强制开奖":
         # 仅结束当前群的抽奖
         if message.chat.id in _lotteries and _lotteries[message.chat.id].get("start"):
-            await bot.reply_to(message, "status.force_draw_success")
+            await bot.reply_to(message, bot.t("status.force_draw_success"))
             await _lottery_end(bot, message.chat.id)
         else:
-            await bot.reply_to(message, "error.no_active_lottery")
+            await bot.reply_to(message, bot.t("error.no_active_lottery"))
         return
 
     if len(parts) < 4:
-        await bot.reply_to(message, "error.required_args_missing")
+        await bot.reply_to(message, bot.t("error.required_args_missing"))
         return
 
     num_list = parts[1].split("/")
     if len(num_list) != 2:
-        await bot.reply_to(message, "error.prize_or_participant_missing")
+        await bot.reply_to(message, bot.t("error.prize_or_participant_missing"))
         return
 
     try:
         num = int(num_list[1])
         win = int(num_list[0])
         if win > num:
-            await bot.reply_to(message, "error.prize_count_exceeds_participants")
+            await bot.reply_to(message, bot.t("error.prize_count_exceeds_participants"))
             return
     except ValueError:
-        await bot.reply_to(message, "error.participant_count_invalid")
+        await bot.reply_to(message, bot.t("error.participant_count_invalid"))
         return
 
     keyword = parts[2]
     title = parts[3]
 
     if not (keyword and title):
-        await bot.reply_to(message, "error.required_args_missing")
+        await bot.reply_to(message, bot.t("error.required_args_missing"))
         return
 
     try:
@@ -314,7 +314,7 @@ async def handle_lottery_command(bot, message: types.Message):
         except Exception:
             pass
     except FileExistsError:
-        await bot.reply_to(message, "error.lottery_in_progress")
+        await bot.reply_to(message, bot.t("error.lottery_in_progress"))
         return
 
 

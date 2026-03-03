@@ -11,7 +11,7 @@ from loguru import logger
 from telebot import types
 
 from utils.postgres import BotDatabase
-from utils.i18n import normalize_language, plugin_t
+from utils.i18n.runtime import make_localized_bot_for_chat
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "stats"
@@ -374,14 +374,14 @@ async def _send_long_reply(
 async def handle_stats_command(bot, message: types.Message):
     _t = bot.t
     if message.chat.type not in ("group", "supergroup"):
-        await bot.reply_to(message, "error.stats_group_only")
+        await bot.reply_to(message, bot.t("error.stats_group_only"))
         return
 
     parsed = _parse_stats_args(message.text or "", _t)
     if not parsed:
         await bot.reply_to(
             message,
-            "prompt.stats_usage",
+            bot.t("prompt.stats_usage"),
         )
         return
 
@@ -415,12 +415,12 @@ async def handle_stats_command(bot, message: types.Message):
 async def handle_dragon_command(bot, message: types.Message):
     _t = bot.t
     if message.chat.type not in ("group", "supergroup"):
-        await bot.reply_to(message, "error.stats_group_only")
+        await bot.reply_to(message, bot.t("error.stats_group_only"))
         return
 
     rows, total_days = await _query_dragon_king_leaderboard(message.chat.id)
     if not rows:
-        await bot.reply_to(message, "dragon.empty")
+        await bot.reply_to(message, bot.t("dragon.empty"))
         return
 
     lines = [_t("title.dragon_leaderboard"), ""]
@@ -511,13 +511,11 @@ async def handle_dragon_king_schedule(bot):
         )
 
         try:
-            lang = normalize_language(await BotDatabase.get_group_language(group_id))
+            lbot = await make_localized_bot_for_chat(bot, __plugin_name__, group_id)
             await bot.send_message(
                 group_id,
-                plugin_t(
-                    __plugin_name__,
+                lbot.t(
                     "result.dragon_congrats",
-                    lang,
                     display_name=display_name,
                     streak_days=streak_days,
                 ),

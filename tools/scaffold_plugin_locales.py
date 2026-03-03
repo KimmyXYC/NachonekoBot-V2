@@ -9,7 +9,7 @@ from typing import Dict, Set
 ROOT = Path(__file__).resolve().parent.parent
 PLUGINS_DIR = ROOT / "plugins"
 I18N_DIR = ROOT / "utils" / "i18n"
-LANGS = ("en", "zh-CN")
+LANGS = ("en", "zh-CN", "zh-TW", "ja")
 
 
 TARGET_CALLS = {

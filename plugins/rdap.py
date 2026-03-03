@@ -414,9 +414,7 @@ async def register_handlers(bot, middleware, plugin_name):
         else:
             await bot.reply_to(
                 message,
-                command_error_msg(
-                    "rdap", "Domain/IP/ASN", lang=getattr(bot, "_lang", None)
-                ),
+                command_error_msg("rdap", "Domain/IP/ASN", lang=bot.lang),
             )
 
     middleware.register_command_handler(

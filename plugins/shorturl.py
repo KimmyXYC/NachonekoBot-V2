@@ -45,7 +45,7 @@ async def handle_short_command(bot, message: types.Message, url):
     if server == "":
         logger.error(f"[Short URL][{message.chat.id}]: Backend Address Not Set")
         await bot.edit_message_text(
-            "error.backend_url_not_configured",
+            bot.t("error.backend_url_not_configured"),
             message.chat.id,
             reply.message_id,
             disable_web_page_preview=True,
@@ -123,7 +123,7 @@ async def register_handlers(bot, middleware, plugin_name):
         else:
             await bot.reply_to(
                 message,
-                command_error_msg("short", "URL", lang=getattr(bot, "_lang", None)),
+                command_error_msg("short", "URL", lang=bot.lang),
             )
 
     middleware.register_command_handler(

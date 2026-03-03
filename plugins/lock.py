@@ -47,18 +47,18 @@ async def check_permissions(bot, message: types.Message):
     """
     from_user = message.from_user
     if not from_user:
-        await bot.reply_to(message, "error.sender_unrecognized")
+        await bot.reply_to(message, bot.t("error.sender_unrecognized"))
         return False
 
     raw_bot_id = BotSetting.bot_id
     if raw_bot_id is None:
-        await bot.reply_to(message, "error.bot_id_invalid")
+        await bot.reply_to(message, bot.t("error.bot_id_invalid"))
         return False
 
     try:
         bot_id = int(raw_bot_id)
     except Exception:
-        await bot.reply_to(message, "error.bot_id_invalid")
+        await bot.reply_to(message, bot.t("error.bot_id_invalid"))
         return False
 
     bot_can_delete = await has_group_admin_permission(
@@ -70,7 +70,7 @@ async def check_permissions(bot, message: types.Message):
         allow_bot_admin=False,
     )
     if not bot_can_delete:
-        await bot.reply_to(message, "error.bot_delete_permission_required")
+        await bot.reply_to(message, bot.t("error.bot_delete_permission_required"))
         return False
 
     user_can_delete = await has_group_admin_permission(
@@ -82,7 +82,7 @@ async def check_permissions(bot, message: types.Message):
         allow_bot_admin=True,
     )
     if not user_can_delete:
-        await bot.reply_to(message, "error.permission_denied")
+        await bot.reply_to(message, bot.t("error.permission_denied"))
         return False
     return True
 
@@ -252,7 +252,7 @@ async def handle_list_command(bot, message: types.Message):
     """
     result = _get_sanitized_locklist(message.chat.id)
     if not result:
-        await bot.reply_to(message, "lock.list.empty")
+        await bot.reply_to(message, bot.t("lock.list.empty"))
     else:
         _t = bot.t
         msg = _t("result.list_header")
@@ -293,7 +293,7 @@ async def register_handlers(bot, middleware, plugin_name):
         if len(command_args) == 1:
             await bot.reply_to(
                 message,
-                command_error_msg("lock", "Command", lang=getattr(bot, "_lang", None)),
+                command_error_msg("lock", "Command", lang=bot.lang),
             )
         else:
             lock_list = command_args[1:]
@@ -304,9 +304,7 @@ async def register_handlers(bot, middleware, plugin_name):
         if len(command_args) == 1:
             await bot.reply_to(
                 message,
-                command_error_msg(
-                    "unlock", "Command", lang=getattr(bot, "_lang", None)
-                ),
+                command_error_msg("unlock", "Command", lang=bot.lang),
             )
         else:
             unlock_list = command_args[1:]

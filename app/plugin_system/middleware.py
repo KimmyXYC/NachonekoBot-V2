@@ -18,7 +18,7 @@ from utils.i18n import (
     get_inline_query_language,
     get_message_language,
 )
-from utils.i18n.runtime import make_localized_bot
+from utils.i18n import make_localized_bot
 
 
 @dataclass

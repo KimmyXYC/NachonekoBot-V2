@@ -183,7 +183,9 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                 logger.error(
                     f"[LongImageCutter][{message.chat.id}] local file not found: {local_path}"
                 )
-                await bot.reply_to(message, "error.local_botapi_path_inaccessible")
+                await bot.reply_to(
+                    message, bot.t("error.local_botapi_path_inaccessible")
+                )
                 return
             with open(local_path, "rb") as f:
                 file_bytes = f.read()
@@ -240,7 +242,9 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         l, t, r, b = batch[0]
                         crop = im.crop((l, t, r, b))
                         bio = image_to_bytes(crop, preferred_fmt=preferred_fmt)
-                        caption = f"第 {start_idx + 1}/{total} 张"
+                        caption = bot.t(
+                            "label.slice_single", current=start_idx + 1, total=total
+                        )
                         await _send_with_retry(
                             lambda: bot.send_photo(
                                 chat_id=message.chat.id,
@@ -260,7 +264,12 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         # 仅给本组第一张添加简短说明，避免多条 caption 干扰
                         if j == 0:
                             end_no = start_idx + len(batch)
-                            cap = f"第 {start_idx + 1}-{end_no} / {total} 张"
+                            cap = bot.t(
+                                "label.slice_range",
+                                start=start_idx + 1,
+                                end=end_no,
+                                total=total,
+                            )
                             media.append(
                                 tb_types.InputMediaPhoto(media=file_obj, caption=cap)
                             )
@@ -283,7 +292,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
     except Exception as e:
         logger.error(f"[LongImageCutter][{message.chat.id}] error: {e}")
         try:
-            await bot.reply_to(message, f"裁切失败：{e}")
+            await bot.reply_to(message, bot.t("error.cut_failed", reason=str(e)))
         except Exception:
             pass
 
