@@ -3,8 +3,12 @@
 # @Author  : KimmyXYC
 # @File    : event.py
 # @Software: PyCharm
+import re
 from telebot import types, formatting
 from utils.i18n import t
+
+# Telegram bot command: 1-32 lowercase letters, digits, underscores
+_VALID_BOT_COMMAND_RE = re.compile(r"^[a-z0-9_]{1,32}$")
 
 
 CATEGORY_KEYS = {
@@ -47,7 +51,7 @@ async def set_bot_commands(bot, plugin_manager):
 
     # 添加插件命令
     for cmd_info in plugin_commands_info:
-        if cmd_info["description"]:
+        if cmd_info["description"] and _VALID_BOT_COMMAND_RE.match(cmd_info["command"]):
             commands.append(
                 types.BotCommand(cmd_info["command"], cmd_info["description"])
             )
