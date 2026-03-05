@@ -257,7 +257,19 @@ async def handle_status_command(bot, message: types.Message):
     os_info = f"{os_name} {os_arch}"
     kernel_info = f"{platform.system()} {platform.release()}"
 
-    username = os.environ.get("USER") or os.environ.get("USERNAME") or "unknown"
+    username = os.environ.get("USER") or os.environ.get("USERNAME")
+    if not username:
+        try:
+            import pwd
+
+            username = pwd.getpwuid(os.getuid()).pw_name
+        except Exception:
+            try:
+                import getpass
+
+                username = getpass.getuser()
+            except Exception:
+                username = "unknown"
     hostname = socket.gethostname() or "unknown"
     separator = "-" * len(f"{username}@{hostname}")
 
