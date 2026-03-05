@@ -112,6 +112,7 @@ async def icp_record_check(domain, retries=5):
     """
     url = BotConfig["icp"]["url"]
     params = {"search": domain}
+    last_reason = _t("error.all_retries_failed")
 
     for attempt in range(retries):
         async with aiohttp.ClientSession() as session:
@@ -121,19 +122,14 @@ async def icp_record_check(domain, retries=5):
                         data = await response.json()
                         if data["code"] == 200:
                             return True, data["params"]["list"]
-                        elif data["code"] == 122:
-                            reason = data.get("message", "")
-                            error = data.get("error", "")
-                            logger.warning(
-                                f"Attempt {attempt + 1} got code 122: {reason}"
-                                + (f" | error: {error}" if error else "")
-                            )
                         else:
                             reason = data.get("message", str(data))
+                            error = data.get("error", "")
                             logger.warning(
                                 f"Attempt {attempt + 1} got code {data['code']}: {reason}"
+                                + (f" | error: {error}" if error else "")
                             )
-                            return False, reason
+                            last_reason = reason
                     else:
                         body = await response.text()
                         logger.warning(
@@ -142,7 +138,7 @@ async def icp_record_check(domain, retries=5):
             except Exception as e:
                 logger.error(f"Attempt {attempt + 1} failed with exception: {e}")
 
-    return False, _t("error.all_retries_failed")
+    return False, last_reason
 
 
 # ==================== 插件注册 ====================
