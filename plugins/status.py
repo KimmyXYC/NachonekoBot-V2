@@ -6,6 +6,7 @@
 
 import psutil
 import platform
+import subprocess
 from telebot import types
 from loguru import logger
 from app.security.permissions import is_bot_admin
@@ -38,6 +39,16 @@ async def handle_status_command(bot, message: types.Message):
     net_io = psutil.net_io_counters()
     load_avg = psutil.getloadavg()
 
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+        )
+        git_hash = result.stdout.strip() if result.returncode == 0 else "unknown"
+    except Exception:
+        git_hash = "unknown"
+
     info_message = (
         f"*Operating System:* `{os_info}`\n"
         f"*CPU Usage:* `{cpu_usage}%`\n"
@@ -49,7 +60,8 @@ async def handle_status_command(bot, message: types.Message):
         f"Used: {disk_info.used / (1024**3):.2f} GB)`\n"
         f"*Network I/O:* `Sent: {net_io.bytes_sent / (1024**2):.2f} MB, "
         f"Received: {net_io.bytes_recv / (1024**2):.2f} MB`\n"
-        f"*Load Average:* `1 min: {load_avg[0]:.2f}, 5 min: {load_avg[1]:.2f}, 15 min: {load_avg[2]:.2f}`"
+        f"*Load Average:* `1 min: {load_avg[0]:.2f}, 5 min: {load_avg[1]:.2f}, 15 min: {load_avg[2]:.2f}`\n"
+        f"*Git Commit:* `{git_hash}`"
     )
 
     await bot.reply_to(message, info_message, parse_mode="Markdown")
