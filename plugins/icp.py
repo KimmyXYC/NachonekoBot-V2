@@ -122,12 +122,22 @@ async def icp_record_check(domain, retries=5):
                         if data["code"] == 200:
                             return True, data["params"]["list"]
                         elif data["code"] == 122:
-                            pass
+                            reason = data.get("message", "")
+                            error = data.get("error", "")
+                            logger.warning(
+                                f"Attempt {attempt + 1} got code 122: {reason}"
+                                + (f" | error: {error}" if error else "")
+                            )
                         else:
-                            return False, data["msg"]
+                            reason = data.get("message", str(data))
+                            logger.warning(
+                                f"Attempt {attempt + 1} got code {data['code']}: {reason}"
+                            )
+                            return False, reason
                     else:
+                        body = await response.text()
                         logger.warning(
-                            f"Attempt {attempt + 1} failed with status {response.status}"
+                            f"Attempt {attempt + 1} failed with HTTP {response.status}: {body[:200]}"
                         )
             except Exception as e:
                 logger.error(f"Attempt {attempt + 1} failed with exception: {e}")
