@@ -248,7 +248,15 @@ async def handle_status_command(bot, message: types.Message):
     :param message: 消息对象
     :return:
     """
-    os_info = platform.platform()
+    try:
+        os_release = platform.freedesktop_os_release()
+        os_name = os_release.get("PRETTY_NAME") or os_release.get("NAME", "Linux")
+    except Exception:
+        os_name = platform.system() or "unknown"
+    os_arch = platform.machine() or "unknown"
+    os_info = f"{os_name} {os_arch}"
+    kernel_info = f"{platform.system()} {platform.release()}"
+
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory()
     swap_info = psutil.swap_memory()
@@ -277,7 +285,8 @@ async def handle_status_command(bot, message: types.Message):
         git_hash = "unknown"
 
     info_message = (
-        f"*Operating System:* `{os_info}`\n"
+        f"*OS:* `{os_info}`\n"
+        f"*Kernel:* `{kernel_info}`\n"
         f"*Uptime:* `{uptime}`\n"
         f"*Packages:* `{packages}`\n"
         f"*Shell:* `{shell}`\n"
