@@ -257,6 +257,10 @@ async def handle_status_command(bot, message: types.Message):
     os_info = f"{os_name} {os_arch}"
     kernel_info = f"{platform.system()} {platform.release()}"
 
+    username = os.environ.get("USER") or os.environ.get("USERNAME") or "unknown"
+    hostname = socket.gethostname() or "unknown"
+    separator = "-" * len(f"{username}@{hostname}")
+
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory()
     swap_info = psutil.swap_memory()
@@ -285,6 +289,8 @@ async def handle_status_command(bot, message: types.Message):
         git_hash = "unknown"
 
     info_message = (
+        f"`{username}@{hostname}`\n"
+        f"`{separator}`\n"
         f"*OS:* `{os_info}`\n"
         f"*Kernel:* `{kernel_info}`\n"
         f"*Uptime:* `{uptime}`\n"
