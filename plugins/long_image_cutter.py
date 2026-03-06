@@ -250,15 +250,18 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                                 photo=bio,
                                 caption=caption,
                                 reply_to_message_id=message.message_id,
-                            )
+                            ),
+                            seekables=[bio],
                         )
                         sent += 1
                         continue
 
                     media = []
+                    bio_list = []
                     for j, (l, t, r, b) in enumerate(batch):
                         crop = im.crop((l, t, r, b))
                         bio = image_to_bytes(crop, preferred_fmt=preferred_fmt)
+                        bio_list.append(bio)
                         file_obj = tb_types.InputFile(bio)
                         # 仅给本组第一张添加简短说明，避免多条 caption 干扰
                         if j == 0:
@@ -280,7 +283,8 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                             chat_id=message.chat.id,
                             media=media,
                             reply_to_message_id=message.message_id,
-                        )
+                        ),
+                        seekables=bio_list,
                     )
                     sent += len(batch)
                 except Exception as ex:
@@ -296,10 +300,13 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
             pass
 
 
-async def _send_with_retry(send_coro_factory, max_retries: int = 3):
+async def _send_with_retry(
+    send_coro_factory, max_retries: int = 3, seekables: list = None
+):
     """
     通用发送重试：当遇到 Telegram 429（Too Many Requests）错误时，读取 retry_after 秒等待后重试。
     send_coro_factory: 一个无参可调用，返回一个 awaitable（即调用具体的 bot 发送方法）。
+    seekables: 发送时用到的 BytesIO 流列表，重试前会自动 seek(0) 以复用流。
     """
     from asyncio import sleep
     from loguru import logger as _lg
@@ -311,7 +318,7 @@ async def _send_with_retry(send_coro_factory, max_retries: int = 3):
         except Exception as e:
             # 仅在 429 错误时重试，其余异常直接抛出
             text = str(e)
-            if "Too Many Requests" in text or "429" in text:
+            if ("Too Many Requests" in text or "429" in text) and attempt < max_retries:
                 # 尝试解析 "retry after X" 或 "retry_after X"
                 m = re.search(r"retry(?:\s|_)?after\s(\d+)", text, re.IGNORECASE)
                 retry_sec = int(m.group(1)) + 1 if m else 5
@@ -319,11 +326,13 @@ async def _send_with_retry(send_coro_factory, max_retries: int = 3):
                     f"[Retry] Telegram 429; waiting {retry_sec}s and retrying (attempt {attempt}/{max_retries})"
                 )
                 await sleep(retry_sec)
+                # 复用 BytesIO 流：将所有流 seek 回开头
+                if seekables:
+                    for s in seekables:
+                        s.seek(0)
                 continue
-            # 非 429，直接抛出
+            # 非 429 错误，或已达最大重试次数，直接抛出
             raise
-    # 超过重试次数，最后再尝试一次，若失败则抛出
-    return await send_coro_factory()
 
 
 # ==================== 插件注册 ====================
