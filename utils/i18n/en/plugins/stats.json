@@ -27,6 +27,8 @@
   "result.leaderboard_user_count": "Users on leaderboard: {user_count}",
   "result.dragon_congrats": "Congratulations {display_name} for becoming the 🐉 Dragon King (streak {streak_days} days)",
   "job.dragon_king": "Dragon King Badge",
+  "job.daily_stats": "Daily Stats Auto-Send",
+  "title.yesterday_activity": "Yesterday's Activity Leaderboard",
   "cutoff.title": "Stats Day Boundary Settings",
   "cutoff.current": "Current day boundary: {hour}:00",
   "cutoff.description": "The day boundary determines when \"today\" starts and ends, and also when the Dragon King is settled.\nFor example, if set to 4:00, today's stats start at 4:00 and the Dragon King is settled at 4:00.",

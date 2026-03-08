@@ -46,6 +46,7 @@ __toggleable__ = True
 __scheduled_jobs__ = []
 __scheduled_job_display_names__ = {
     "dragon_king": "job.dragon_king",
+    "daily_stats": "job.daily_stats",
 }
 
 DAY_CUTOFF_HOUR = 4
@@ -767,6 +768,58 @@ async def handle_dragon_king_schedule(bot):
             logger.error(f"[Stats] 发送龙王消息失败 group={group_id}: {e}")
 
 
+# ==================== 每日统计自动发送 ====================
+async def handle_daily_stats_schedule(bot):
+    """每日统计定时任务（每小时触发，按群组分割时间过滤）"""
+    job_name = f"{__plugin_name__}.daily_stats"
+    rows = await BotDatabase.get_enabled_scheduled_groups(job_name)
+    if not rows:
+        return
+
+    for row in rows:
+        group_id = row["group_id"]
+        tz_name = row.get("timezone") or "Asia/Shanghai"
+        try:
+            tz = pytz.timezone(tz_name)
+        except Exception:
+            tz = _get_tz()
+        now = datetime.datetime.now(tz)
+        current_hour = now.hour
+
+        # 读取该群组的分割时间
+        cutoff_hour = await _get_cutoff_hour(group_id)
+
+        # 仅在当前小时等于群组分割时间时执行
+        if current_hour != cutoff_hour:
+            continue
+
+        # 计算前一天的统计区间
+        cycle_end = _get_cycle_start(now, cutoff_hour)
+        cycle_start = cycle_end - datetime.timedelta(days=1)
+
+        stats_rows, total = await _query_stats(group_id, cycle_start, cycle_end)
+        if not stats_rows:
+            continue
+
+        try:
+            lbot = await make_localized_bot_for_chat(bot, __plugin_name__, group_id)
+
+            title = _t("title.yesterday_activity")
+            display_end = cycle_end - datetime.timedelta(hours=1)
+            range_text = f"{cycle_start:%Y-%m-%d %H:%M} ~ {display_end:%Y-%m-%d %H:%M}"
+
+            lines = [title, _t("label.stats_range", range_text=range_text), ""]
+            for idx, sr in enumerate(stats_rows, start=1):
+                name = sr["display_name"]
+                count = sr["total"]
+                lines.append(_t("result.stats_row", rank=idx, name=name, count=count))
+            lines.extend(["", _t("result.total_messages", total=total)])
+
+            await lbot.send_message(group_id, "\n".join(lines))
+        except Exception as e:
+            logger.error(f"[Stats] 发送每日统计失败 group={group_id}: {e}")
+
+
 # ==================== 插件注册 ====================
 async def register_handlers(bot, middleware, plugin_name):
     """注册插件处理器"""
@@ -840,6 +893,16 @@ async def register_handlers(bot, middleware, plugin_name):
         timezone="Asia/Shanghai",
         callback=handle_dragon_king_schedule,
         display_name="job.dragon_king",
+    )
+
+    # 每日统计自动发送：每小时触发，按群组分割时间过滤
+    middleware.register_cron_job(
+        plugin_name=plugin_name,
+        job_id="daily_stats",
+        cron_expr="0 * * * *",
+        timezone="Asia/Shanghai",
+        callback=handle_daily_stats_schedule,
+        display_name="job.daily_stats",
     )
 
 

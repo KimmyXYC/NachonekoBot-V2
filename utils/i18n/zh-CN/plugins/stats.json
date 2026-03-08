@@ -27,6 +27,8 @@
   "result.leaderboard_user_count": "上榜人数: {user_count}",
   "result.dragon_congrats": "恭喜 {display_name} 获得本群🐉龙王标志（已蝉联{streak_days}天）",
   "job.dragon_king": "龙王标志",
+  "job.daily_stats": "每日统计自动发送",
+  "title.yesterday_activity": "昨日活跃度排行",
   "cutoff.title": "统计日分割时间设置",
   "cutoff.current": "当前分割时间: {hour}:00",
   "cutoff.description": "分割时间决定「今日」的起止点，同时也是龙王结算时间。\n例如设为 4:00，则「今日」统计从 4:00 开始，龙王在 4:00 结算。",
