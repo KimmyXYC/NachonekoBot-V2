@@ -119,7 +119,7 @@ async def _get_cutoff_hour(group_id: int) -> int:
 
 
 async def _set_cutoff_hour(group_id: int, hour: int) -> bool:
-    """设置群组的统计日分割时间，返回是否成功"""
+    """设置群组的统计日分割时间，返回是否成功。同时联动更新 scheduled_jobs 中的 cron_expr。"""
     if not (0 <= hour <= 23):
         return False
     conn = BotDatabase.conn
@@ -131,6 +131,16 @@ async def _set_cutoff_hour(group_id: int, hour: int) -> bool:
                 int(hour),
                 int(group_id),
             )
+            # 联动更新 scheduled_jobs 中相关 job 的 cron_expr
+            new_cron = f"0 {hour} * * *"
+            for job_id in ("dragon_king", "daily_stats"):
+                job_name = f"{__plugin_name__}.{job_id}"
+                await connection.execute(
+                    "UPDATE scheduled_jobs SET cron_expr = $1 WHERE group_id = $2 AND job_name = $3",
+                    new_cron,
+                    int(group_id),
+                    job_name,
+                )
         logger.info(f"[Stats] Set cutoff hour={hour} for group {group_id}")
         return True
     except Exception as e:
