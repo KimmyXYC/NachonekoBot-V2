@@ -13,19 +13,21 @@ from telebot import types
 from utils.postgres import BotDatabase
 from utils.i18n import _t
 from utils.i18n.runtime import make_localized_bot_for_chat
+from app.security.permissions import has_group_admin_permission
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "stats"
 __display_name__ = "发言统计记录器"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "KimmyXYC"
 __description__ = "群聊发言统计排行（支持日/周/月/年与自定义时间范围）"
-__commands__ = ["stats", "dragon"]
+__commands__ = ["stats", "dragon", "stats_cutoff"]
 __command_category__ = "utility"
-__command_order__ = {"stats": 520, "dragon": 521}
+__command_order__ = {"stats": 520, "dragon": 521, "stats_cutoff": 522}
 __command_descriptions__ = {
     "stats": "查看群聊发言排行榜",
     "dragon": "查看龙王总榜",
+    "stats_cutoff": "设置统计日分割时间",
 }
 __command_help__ = {
     "stats": "/stats - 今日统计\n"
@@ -38,6 +40,7 @@ __command_help__ = {
     "/stats 2026/02/25 - 指定日期统计\n"
     "/stats 20260225 - 指定日期统计\n",
     "dragon": "/dragon - 龙王总榜\n",
+    "stats_cutoff": "/stats_cutoff - 设置统计日分割时间\n",
 }
 __toggleable__ = True
 __scheduled_jobs__ = []
@@ -151,7 +154,7 @@ def _parse_stats_date_arg(arg: str):
     return None
 
 
-def _get_time_range(n: int, unit: str):
+def _get_time_range(n: int, unit: str, cutoff_hour: int = DAY_CUTOFF_HOUR):
     tz = _get_tz()
     now = datetime.datetime.now(tz)
     end_time = now.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(
@@ -161,29 +164,31 @@ def _get_time_range(n: int, unit: str):
     if unit == "h":
         start_time = end_time - datetime.timedelta(hours=n)
     elif unit == "w":
-        cycle_start = _get_cycle_start(now)
+        cycle_start = _get_cycle_start(now, cutoff_hour)
         start_time = cycle_start - datetime.timedelta(days=n * 7 - 1)
     elif unit == "m":
-        cycle_start = _get_cycle_start(now)
+        cycle_start = _get_cycle_start(now, cutoff_hour)
         start_time = cycle_start - datetime.timedelta(days=n * 30 - 1)
     elif unit == "y":
-        cycle_start = _get_cycle_start(now)
+        cycle_start = _get_cycle_start(now, cutoff_hour)
         start_time = cycle_start - datetime.timedelta(days=n * 365 - 1)
     else:
-        cycle_start = _get_cycle_start(now)
+        cycle_start = _get_cycle_start(now, cutoff_hour)
         start_time = cycle_start - datetime.timedelta(days=n - 1)
 
     return start_time, end_time
 
 
-def _get_date_time_range(target_date: datetime.date):
+def _get_date_time_range(
+    target_date: datetime.date, cutoff_hour: int = DAY_CUTOFF_HOUR
+):
     tz = _get_tz()
     start_time = tz.localize(
         datetime.datetime(
             year=target_date.year,
             month=target_date.month,
             day=target_date.day,
-            hour=DAY_CUTOFF_HOUR,
+            hour=cutoff_hour,
             minute=0,
             second=0,
             microsecond=0,
@@ -385,11 +390,14 @@ async def handle_stats_command(bot, message: types.Message):
         )
         return
 
+    # 读取群组自定义分割时间
+    cutoff_hour = await BotDatabase.get_stats_cutoff_hour(message.chat.id)
+
     title = parsed["title"]
     if parsed["mode"] == "date":
-        start_time, end_time = _get_date_time_range(parsed["date"])
+        start_time, end_time = _get_date_time_range(parsed["date"], cutoff_hour)
     else:
-        start_time, end_time = _get_time_range(parsed["n"], parsed["unit"])
+        start_time, end_time = _get_time_range(parsed["n"], parsed["unit"], cutoff_hour)
     rows, total = await _query_stats(message.chat.id, start_time, end_time)
 
     display_end_time = end_time - datetime.timedelta(hours=1)
@@ -465,7 +473,148 @@ async def handle_stats_message(bot, message: types.Message):
     )
 
 
+# ==================== 分割时间设置 ====================
+def _build_cutoff_keyboard(current_hour: int) -> types.InlineKeyboardMarkup:
+    """构建分割时间选择键盘（24个按钮，4列排布）"""
+    kb = types.InlineKeyboardMarkup(row_width=4)
+    buttons = []
+    for h in range(24):
+        mark = " *" if h == current_hour else ""
+        btn = types.InlineKeyboardButton(
+            text=f"{h}:00{mark}",
+            callback_data=f"stats_cutoff:{h}",
+        )
+        buttons.append(btn)
+    # 4列排布
+    for i in range(0, len(buttons), 4):
+        row = buttons[i : i + 4]
+        kb.add(*row)
+    # 关闭按钮
+    close_btn = types.InlineKeyboardButton(text="X", callback_data="stats_cutoff_close")
+    kb.add(close_btn)
+    return kb
+
+
+def _build_cutoff_text(current_hour: int, t_func=None) -> str:
+    """构建分割时间设置面板文本"""
+    _tf = t_func or _t
+    lines = [
+        _tf("cutoff.title"),
+        "",
+        _tf("cutoff.current", hour=current_hour),
+        "",
+        _tf("cutoff.description"),
+    ]
+    return "\n".join(lines)
+
+
+async def handle_stats_cutoff_command(bot, message: types.Message):
+    """处理 /stats_cutoff 命令：打开分割时间设置面板"""
+    if message.chat.type not in ("group", "supergroup"):
+        await bot.reply_to(message, _t("error.stats_group_only"))
+        return
+
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+
+    # 权限检查：需要 can_change_info
+    has_perm = await has_group_admin_permission(
+        bot,
+        chat_id,
+        user_id,
+        required_permission="can_change_info",
+        default_when_missing=True,
+        allow_bot_admin=True,
+    )
+    if not has_perm:
+        await bot.reply_to(message, _t("cutoff.permission_required"))
+        return
+
+    current_hour = await BotDatabase.get_stats_cutoff_hour(chat_id)
+    text = _build_cutoff_text(current_hour)
+    kb = _build_cutoff_keyboard(current_hour)
+    await bot.reply_to(message, text, reply_markup=kb)
+
+
+async def handle_stats_cutoff_callback(bot, call: types.CallbackQuery):
+    """处理分割时间选择回调"""
+    chat_id = call.message.chat.id
+    user_id = call.from_user.id
+
+    # 权限检查
+    has_perm = await has_group_admin_permission(
+        bot,
+        chat_id,
+        user_id,
+        required_permission="can_change_info",
+        default_when_missing=True,
+        allow_bot_admin=True,
+    )
+    if not has_perm:
+        await bot.answer_callback_query(call.id, _t("cutoff.permission_required"))
+        return
+
+    # 解析小时
+    try:
+        hour = int(call.data.split(":", 1)[1])
+    except (ValueError, IndexError):
+        await bot.answer_callback_query(call.id, "Invalid hour")
+        return
+
+    if not (0 <= hour <= 23):
+        await bot.answer_callback_query(call.id, "Invalid hour")
+        return
+
+    # 保存到数据库
+    ok = await BotDatabase.set_stats_cutoff_hour(chat_id, hour)
+    if not ok:
+        await bot.answer_callback_query(call.id, "Failed to update")
+        return
+
+    # 更新消息
+    text = _build_cutoff_text(hour)
+    kb = _build_cutoff_keyboard(hour)
+    try:
+        await bot.edit_message_text(
+            text=text,
+            chat_id=chat_id,
+            message_id=call.message.message_id,
+            reply_markup=kb,
+        )
+    except Exception as e:
+        logger.debug(f"[Stats] 编辑分割时间消息失败: {e}")
+
+    await bot.answer_callback_query(call.id, _t("cutoff.updated", hour=hour))
+
+
+async def handle_stats_cutoff_close_callback(bot, call: types.CallbackQuery):
+    """处理分割时间面板关闭回调"""
+    chat_id = call.message.chat.id
+    user_id = call.from_user.id
+
+    # 权限检查
+    has_perm = await has_group_admin_permission(
+        bot,
+        chat_id,
+        user_id,
+        required_permission="can_change_info",
+        default_when_missing=True,
+        allow_bot_admin=True,
+    )
+    if not has_perm:
+        await bot.answer_callback_query(call.id, _t("cutoff.permission_required"))
+        return
+
+    try:
+        await bot.delete_message(chat_id, call.message.message_id)
+    except Exception as e:
+        logger.debug(f"[Stats] 删除分割时间面板失败: {e}")
+    await bot.answer_callback_query(call.id)
+
+
+# ==================== 龙王定时任务 ====================
 async def handle_dragon_king_schedule(bot):
+    """龙王定时任务（每小时触发，按群组分割时间过滤）"""
     job_name = f"{__plugin_name__}.dragon_king"
     rows = await BotDatabase.get_enabled_scheduled_groups(job_name)
     if not rows:
@@ -479,7 +628,16 @@ async def handle_dragon_king_schedule(bot):
         except Exception:
             tz = _get_tz()
         now = datetime.datetime.now(tz)
-        cycle_end = _get_cycle_start(now)
+        current_hour = now.hour
+
+        # 读取该群组的分割时间
+        cutoff_hour = await BotDatabase.get_stats_cutoff_hour(group_id)
+
+        # 仅在当前小时等于群组分割时间时执行结算
+        if current_hour != cutoff_hour:
+            continue
+
+        cycle_end = _get_cycle_start(now, cutoff_hour)
         cycle_start = cycle_end - datetime.timedelta(days=1)
         stat_date = cycle_start.date()
 
@@ -511,7 +669,7 @@ async def handle_dragon_king_schedule(bot):
 
         try:
             lbot = await make_localized_bot_for_chat(bot, __plugin_name__, group_id)
-            await bot.send_message(
+            await lbot.send_message(
                 group_id,
                 _t(
                     "result.dragon_congrats",
@@ -553,14 +711,46 @@ async def register_handlers(bot, middleware, plugin_name):
         chat_types=["group", "supergroup", "private"],
     )
 
+    middleware.register_command_handler(
+        commands=["stats_cutoff"],
+        callback=handle_stats_cutoff_command,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        chat_types=["group", "supergroup", "private"],
+    )
+
+    # 注册分割时间选择回调
+    middleware.register_callback_handler(
+        callback=handle_stats_cutoff_callback,
+        plugin_name=plugin_name,
+        handler_name="stats_cutoff_select",
+        priority=50,
+        stop_propagation=True,
+        data_startswith="stats_cutoff:",
+        chat_types=["group", "supergroup"],
+    )
+
+    # 注册分割时间面板关闭回调
+    middleware.register_callback_handler(
+        callback=handle_stats_cutoff_close_callback,
+        plugin_name=plugin_name,
+        handler_name="stats_cutoff_close",
+        priority=50,
+        stop_propagation=True,
+        data_startswith="stats_cutoff_close",
+        chat_types=["group", "supergroup"],
+    )
+
     logger.info(
         f"✅ {__plugin_name__} 插件已注册 - 支持命令: {', '.join(__commands__)}"
     )
 
+    # 龙王定时任务：每小时触发，按群组分割时间过滤
     middleware.register_cron_job(
         plugin_name=plugin_name,
         job_id="dragon_king",
-        cron_expr="0 4 * * *",
+        cron_expr="0 * * * *",
         timezone="Asia/Shanghai",
         callback=handle_dragon_king_schedule,
         display_name="job.dragon_king",

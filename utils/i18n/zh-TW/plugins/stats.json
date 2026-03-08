@@ -3,8 +3,10 @@
   "meta.display_name": "發言統計記錄器",
   "command.description.stats": "查看發言排行榜",
   "command.description.dragon": "查看龍王總榜",
+  "command.description.stats_cutoff": "設定統計日分割時間",
   "command.help.stats": "/stats - 今日統計\n/stats 5h - 近 5 小時統計\n/stats 4d - 近 4 日統計\n/stats 3w - 近 3 週統計\n/stats 2m - 近 2 月統計\n/stats 1y - 近 1 年統計\n/stats 2026-02-25 - 指定日期統計\n/stats 2026/02/25 - 指定日期統計\n/stats 20260225 - 指定日期統計\n",
   "command.help.dragon": "/dragon - 龍王總榜\n",
+  "command.help.stats_cutoff": "/stats_cutoff - 設定統計日分割時間\n",
   "prompt.stats_usage": "用法：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD]\n\n範例：\n/stats\n/stats 1h\n/stats 4d\n/stats 3w\n/stats 2m\n/stats 4y\n/stats 2026-02-25\n/stats 2026/02/25\n/stats 20260225",
   "error.stats_group_only": "該統計僅支援在群組中使用。",
   "dragon.empty": "龍王總榜\n\n暫無龍王統計資料。",
@@ -24,5 +26,10 @@
   "result.total_settlement_days": "累計結算天數: {total_days}",
   "result.leaderboard_user_count": "上榜人數: {user_count}",
   "result.dragon_congrats": "恭喜 {display_name} 獲得本群🐉龍王標誌（已蟬聯{streak_days}天）",
-  "job.dragon_king": "龍王標誌"
+  "job.dragon_king": "龍王標誌",
+  "cutoff.title": "統計日分割時間設定",
+  "cutoff.current": "目前分割時間: {hour}:00",
+  "cutoff.description": "分割時間決定「今日」的起止點，同時也是龍王結算時間。\n例如設為 4:00，則「今日」統計從 4:00 開始，龍王在 4:00 結算。",
+  "cutoff.updated": "分割時間已更新為 {hour}:00",
+  "cutoff.permission_required": "需要「變更群組資訊」權限才能修改此設定。"
 }

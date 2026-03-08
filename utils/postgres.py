@@ -148,6 +148,10 @@ class AsyncPostgresDB:
                     ALTER TABLE setting
                     ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en'
                 """)
+                await connection.execute("""
+                    ALTER TABLE setting
+                    ADD COLUMN IF NOT EXISTS stats_cutoff_hour INTEGER NOT NULL DEFAULT 4
+                """)
             logger.success("Settings table ensured (setting)")
         except Exception as e:
             logger.error(f"Error ensuring settings table: {e}")
@@ -426,6 +430,41 @@ class AsyncPostgresDB:
             logger.error(
                 f"Error setting plugin enabled for group {group_id}, plugin '{plugin_name}': {e}"
             )
+            return False
+
+    # ==================== Stats cutoff hour helpers ====================
+    async def get_stats_cutoff_hour(self, group_id: int) -> int:
+        """Get the day-boundary cutoff hour for stats in the given group. Defaults to 4."""
+        try:
+            await self.ensure_group_row(group_id)
+            async with self.conn.acquire() as connection:
+                val = await connection.fetchval(
+                    "SELECT stats_cutoff_hour FROM setting WHERE group_id = $1",
+                    int(group_id),
+                )
+                if val is None:
+                    return 4
+                return int(val)
+        except Exception as e:
+            logger.error(f"Error getting stats cutoff hour for group {group_id}: {e}")
+            return 4
+
+    async def set_stats_cutoff_hour(self, group_id: int, hour: int) -> bool:
+        """Set the day-boundary cutoff hour for stats in the given group. Returns True if success."""
+        if not (0 <= hour <= 23):
+            return False
+        try:
+            await self.ensure_group_row(group_id)
+            async with self.conn.acquire() as connection:
+                await connection.execute(
+                    "UPDATE setting SET stats_cutoff_hour = $1 WHERE group_id = $2",
+                    int(hour),
+                    int(group_id),
+                )
+            logger.info(f"Set stats cutoff hour={hour} for group {group_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error setting stats cutoff hour for group {group_id}: {e}")
             return False
 
     # ==================== Scheduled jobs helpers ====================

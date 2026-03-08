@@ -3,8 +3,10 @@
   "meta.display_name": "発言統計記録器",
   "command.description.stats": "発言ランキングを確認",
   "command.description.dragon": "ドラゴンキング総合ランキングを確認",
+  "command.description.stats_cutoff": "統計日の区切り時間を設定",
   "command.help.stats": "/stats - 今日の統計\n/stats 5h - 直近5時間の統計\n/stats 4d - 直近4日の統計\n/stats 3w - 直近3週間の統計\n/stats 2m - 直近2ヶ月の統計\n/stats 1y - 直近1年の統計\n/stats 2026-02-25 - 指定日付の統計\n/stats 2026/02/25 - 指定日付の統計\n/stats 20260225 - 指定日付の統計\n",
   "command.help.dragon": "/dragon - ドラゴンキング総合ランキング\n",
+  "command.help.stats_cutoff": "/stats_cutoff - 統計日の区切り時間を設定\n",
   "prompt.stats_usage": "使い方：/stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD]\n\n例：\n/stats\n/stats 1h\n/stats 4d\n/stats 3w\n/stats 2m\n/stats 4y\n/stats 2026-02-25\n/stats 2026/02/25\n/stats 20260225",
   "error.stats_group_only": "この統計はグループ内でのみ使用できます。",
   "dragon.empty": "ドラゴンキング総合ランキング\n\nドラゴンキングの統計データがありません。",
@@ -24,5 +26,10 @@
   "result.total_settlement_days": "累計集計日数: {total_days}",
   "result.leaderboard_user_count": "ランクイン人数: {user_count}",
   "result.dragon_congrats": "{display_name} がこのグループの🐉ドラゴンキング称号を獲得しました（{streak_days}日連続）",
-  "job.dragon_king": "ドラゴンキング称号"
+  "job.dragon_king": "ドラゴンキング称号",
+  "cutoff.title": "統計日の区切り時間設定",
+  "cutoff.current": "現在の区切り時間: {hour}:00",
+  "cutoff.description": "区切り時間は「今日」の開始・終了時刻を決定し、同時に龍王の集計時間にもなります。\n例：4:00 に設定した場合、「今日」の統計は 4:00 から開始し、龍王も 4:00 に集計されます。",
+  "cutoff.updated": "区切り時間を {hour}:00 に更新しました",
+  "cutoff.permission_required": "この設定を変更するには「グループ情報の変更」権限が必要です。"
 }

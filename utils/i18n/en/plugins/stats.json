@@ -3,8 +3,10 @@
   "meta.display_name": "Message Statistics Recorder",
   "command.description.stats": "View group message leaderboard",
   "command.description.dragon": "View Dragon King leaderboard",
+  "command.description.stats_cutoff": "Set stats day boundary time",
   "command.help.stats": "/stats - Today\n/stats 5h - Last 5 hours\n/stats 4d - Last 4 days\n/stats 3w - Last 3 weeks\n/stats 2m - Last 2 months\n/stats 1y - Last 1 year\n/stats 2026-02-25 - Specific date\n/stats 2026/02/25 - Specific date\n/stats 20260225 - Specific date\n",
   "command.help.dragon": "/dragon - Dragon King leaderboard\n",
+  "command.help.stats_cutoff": "/stats_cutoff - Set stats day boundary time\n",
   "prompt.stats_usage": "Usage: /stats [Nh|Nd|Nw|Nm|Ny|YYYY-MM-DD|YYYY/MM/DD|YYYYMMDD]\n\nExamples:\n/stats\n/stats 1h\n/stats 4d\n/stats 3w\n/stats 2m\n/stats 4y\n/stats 2026-02-25\n/stats 2026/02/25\n/stats 20260225",
   "error.stats_group_only": "This statistics command is only available in groups.",
   "dragon.empty": "Dragon King Leaderboard\n\nNo Dragon King statistics yet",
@@ -24,5 +26,10 @@
   "result.total_settlement_days": "Total settled days: {total_days}",
   "result.leaderboard_user_count": "Users on leaderboard: {user_count}",
   "result.dragon_congrats": "Congratulations {display_name} for becoming the 🐉 Dragon King (streak {streak_days} days)",
-  "job.dragon_king": "Dragon King Badge"
+  "job.dragon_king": "Dragon King Badge",
+  "cutoff.title": "Stats Day Boundary Settings",
+  "cutoff.current": "Current day boundary: {hour}:00",
+  "cutoff.description": "The day boundary determines when \"today\" starts and ends, and also when the Dragon King is settled.\nFor example, if set to 4:00, today's stats start at 4:00 and the Dragon King is settled at 4:00.",
+  "cutoff.updated": "Day boundary updated to {hour}:00",
+  "cutoff.permission_required": "You need \"Change Group Info\" permission to modify this setting."
 }
