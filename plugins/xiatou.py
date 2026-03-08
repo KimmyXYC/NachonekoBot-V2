@@ -25,6 +25,19 @@ __commands__ = []  # 这个插件通过过滤器和配置触发，不是命令
 __command_help__ = {"inb": "Inline: @NachoNekoX_bot inb"}
 
 
+# ==================== 数据库初始化 ====================
+async def setup_database(conn_pool):
+    """插件数据库初始化钩子：创建 xiatou 表"""
+    async with conn_pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS xiatou (
+                time BIGINT PRIMARY KEY,
+                count INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+    logger.info("[Xiatou] 数据库表初始化完成")
+
+
 # ==================== 核心功能 ====================
 def get_today_midnight_ts_utc8() -> int:
     tz = pytz.timezone("Asia/Shanghai")  # UTC+8

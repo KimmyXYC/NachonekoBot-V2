@@ -69,62 +69,14 @@ class AsyncPostgresDB:
         """
         Check if required tables exist and create them if they don't.
         This method is called after the database connection is established.
+
+        Note: Plugin-specific tables are created by each plugin's
+        setup_database() hook, not here. Only framework-level tables
+        should be managed in this method.
         """
         try:
             async with self.conn.acquire() as connection:
-                # Create remake table if it doesn't exist
-                await connection.execute("""
-                    CREATE TABLE IF NOT EXISTS remake (
-                        user_id BIGINT PRIMARY KEY,
-                        count INTEGER NOT NULL DEFAULT 0,
-                        country TEXT NOT NULL,
-                        gender TEXT NOT NULL
-                    )
-                """)
-
-                # Create xiatou table if it doesn't exist
-                await connection.execute("""
-                    CREATE TABLE IF NOT EXISTS xiatou (
-                        time BIGINT PRIMARY KEY,
-                        count INTEGER NOT NULL DEFAULT 0
-                    )
-                """)
-
-                # Create speech_stats table if it doesn't exist
-                await connection.execute("""
-                    CREATE TABLE IF NOT EXISTS speech_stats (
-                        group_id BIGINT NOT NULL,
-                        user_id BIGINT NOT NULL,
-                        hour TIMESTAMPTZ NOT NULL,
-                        count INTEGER NOT NULL DEFAULT 0,
-                        display_name TEXT NOT NULL,
-                        PRIMARY KEY (group_id, user_id, hour)
-                    )
-                """)
-
-                await connection.execute("""
-                    CREATE INDEX IF NOT EXISTS idx_speech_stats_group_hour
-                    ON speech_stats (group_id, hour)
-                """)
-
-                # Create dragon_king_daily table if it doesn't exist
-                await connection.execute("""
-                    CREATE TABLE IF NOT EXISTS dragon_king_daily (
-                        group_id BIGINT NOT NULL,
-                        stat_date DATE NOT NULL,
-                        user_id BIGINT NOT NULL,
-                        display_name TEXT NOT NULL,
-                        total INTEGER NOT NULL,
-                        streak_days INTEGER NOT NULL DEFAULT 1,
-                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                        PRIMARY KEY (group_id, stat_date)
-                    )
-                """)
-
-                await connection.execute("""
-                    CREATE INDEX IF NOT EXISTS idx_dragon_king_daily_group_user_date
-                    ON dragon_king_daily (group_id, user_id, stat_date DESC)
-                """)
+                pass  # Framework-level tables are managed by dedicated ensure_*_table() methods below.
 
             logger.success("Database tables checked and created if needed")
         except Exception as e:
@@ -135,6 +87,8 @@ class AsyncPostgresDB:
     async def ensure_settings_table(self):
         """
         Ensure the `setting` table exists with group-level language and plugin toggles.
+        Plugin-specific columns (e.g. stats_cutoff_hour) are added by each
+        plugin's setup_database() hook, not here.
         """
         try:
             async with self.conn.acquire() as connection:
@@ -147,10 +101,6 @@ class AsyncPostgresDB:
                 await connection.execute("""
                     ALTER TABLE setting
                     ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en'
-                """)
-                await connection.execute("""
-                    ALTER TABLE setting
-                    ADD COLUMN IF NOT EXISTS stats_cutoff_hour INTEGER NOT NULL DEFAULT 4
                 """)
             logger.success("Settings table ensured (setting)")
         except Exception as e:
@@ -430,41 +380,6 @@ class AsyncPostgresDB:
             logger.error(
                 f"Error setting plugin enabled for group {group_id}, plugin '{plugin_name}': {e}"
             )
-            return False
-
-    # ==================== Stats cutoff hour helpers ====================
-    async def get_stats_cutoff_hour(self, group_id: int) -> int:
-        """Get the day-boundary cutoff hour for stats in the given group. Defaults to 4."""
-        try:
-            await self.ensure_group_row(group_id)
-            async with self.conn.acquire() as connection:
-                val = await connection.fetchval(
-                    "SELECT stats_cutoff_hour FROM setting WHERE group_id = $1",
-                    int(group_id),
-                )
-                if val is None:
-                    return 4
-                return int(val)
-        except Exception as e:
-            logger.error(f"Error getting stats cutoff hour for group {group_id}: {e}")
-            return 4
-
-    async def set_stats_cutoff_hour(self, group_id: int, hour: int) -> bool:
-        """Set the day-boundary cutoff hour for stats in the given group. Returns True if success."""
-        if not (0 <= hour <= 23):
-            return False
-        try:
-            await self.ensure_group_row(group_id)
-            async with self.conn.acquire() as connection:
-                await connection.execute(
-                    "UPDATE setting SET stats_cutoff_hour = $1 WHERE group_id = $2",
-                    int(hour),
-                    int(group_id),
-                )
-            logger.info(f"Set stats cutoff hour={hour} for group {group_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Error setting stats cutoff hour for group {group_id}: {e}")
             return False
 
     # ==================== Scheduled jobs helpers ====================

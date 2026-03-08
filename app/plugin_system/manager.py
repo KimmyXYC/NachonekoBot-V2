@@ -320,6 +320,14 @@ class PluginManager:
                 except Exception as e:
                     logger.error(f"初始化插件开关列失败: {plugin.name}: {e}")
 
+                # 若插件声明了 setup_database 钩子，在注册处理器之前调用
+                if hasattr(module, "setup_database"):
+                    try:
+                        await module.setup_database(BotDatabase.conn)
+                        logger.debug(f"🗄️ 插件 {plugin.name} 数据库初始化完成")
+                    except Exception as e:
+                        logger.error(f"🗄️ 插件 {plugin.name} 数据库初始化失败: {e}")
+
                 # 新方式：通过中间件注册
                 if hasattr(module, "register_handlers"):
                     # 检查函数签名，支持新旧两种方式

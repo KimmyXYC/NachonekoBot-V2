@@ -28,6 +28,21 @@ __command_help__ = {
 }
 
 
+# ==================== 数据库初始化 ====================
+async def setup_database(conn_pool):
+    """插件数据库初始化钩子：创建 remake 表"""
+    async with conn_pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS remake (
+                user_id BIGINT PRIMARY KEY,
+                count INTEGER NOT NULL DEFAULT 0,
+                country TEXT NOT NULL,
+                gender TEXT NOT NULL
+            )
+        """)
+    logger.info("[Remake] 数据库表初始化完成")
+
+
 # ==================== 核心功能 ====================
 def get_csv_data_list():
     df = pd.read_csv("res/csv/data.csv", encoding="utf-8")

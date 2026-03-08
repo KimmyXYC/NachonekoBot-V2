@@ -51,6 +51,92 @@ __scheduled_job_display_names__ = {
 DAY_CUTOFF_HOUR = 4
 
 
+# ==================== 数据库初始化 ====================
+async def setup_database(conn_pool):
+    """插件数据库初始化钩子：创建 stats 插件所需的表和列"""
+    async with conn_pool.acquire() as conn:
+        # speech_stats 表
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS speech_stats (
+                group_id BIGINT NOT NULL,
+                user_id BIGINT NOT NULL,
+                hour TIMESTAMPTZ NOT NULL,
+                count INTEGER NOT NULL DEFAULT 0,
+                display_name TEXT NOT NULL,
+                PRIMARY KEY (group_id, user_id, hour)
+            )
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_speech_stats_group_hour
+            ON speech_stats (group_id, hour)
+        """)
+
+        # dragon_king_daily 表
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS dragon_king_daily (
+                group_id BIGINT NOT NULL,
+                stat_date DATE NOT NULL,
+                user_id BIGINT NOT NULL,
+                display_name TEXT NOT NULL,
+                total INTEGER NOT NULL,
+                streak_days INTEGER NOT NULL DEFAULT 1,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (group_id, stat_date)
+            )
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_dragon_king_daily_group_user_date
+            ON dragon_king_daily (group_id, user_id, stat_date DESC)
+        """)
+
+        # 在 setting 表中添加 stats_cutoff_hour 列
+        await conn.execute("""
+            ALTER TABLE setting
+            ADD COLUMN IF NOT EXISTS stats_cutoff_hour INTEGER NOT NULL DEFAULT 4
+        """)
+
+    logger.info("[Stats] 数据库表和列初始化完成")
+
+
+# ==================== 分割时间数据库操作 ====================
+async def _get_cutoff_hour(group_id: int) -> int:
+    """获取群组的统计日分割时间，默认 4"""
+    conn = BotDatabase.conn
+    try:
+        await BotDatabase.ensure_group_row(group_id)
+        async with conn.acquire() as connection:
+            val = await connection.fetchval(
+                "SELECT stats_cutoff_hour FROM setting WHERE group_id = $1",
+                int(group_id),
+            )
+            if val is None:
+                return DAY_CUTOFF_HOUR
+            return int(val)
+    except Exception as e:
+        logger.error(f"[Stats] get cutoff hour error for group {group_id}: {e}")
+        return DAY_CUTOFF_HOUR
+
+
+async def _set_cutoff_hour(group_id: int, hour: int) -> bool:
+    """设置群组的统计日分割时间，返回是否成功"""
+    if not (0 <= hour <= 23):
+        return False
+    conn = BotDatabase.conn
+    try:
+        await BotDatabase.ensure_group_row(group_id)
+        async with conn.acquire() as connection:
+            await connection.execute(
+                "UPDATE setting SET stats_cutoff_hour = $1 WHERE group_id = $2",
+                int(hour),
+                int(group_id),
+            )
+        logger.info(f"[Stats] Set cutoff hour={hour} for group {group_id}")
+        return True
+    except Exception as e:
+        logger.error(f"[Stats] set cutoff hour error for group {group_id}: {e}")
+        return False
+
+
 def _get_tz():
     return pytz.timezone("Asia/Shanghai")
 
@@ -391,7 +477,7 @@ async def handle_stats_command(bot, message: types.Message):
         return
 
     # 读取群组自定义分割时间
-    cutoff_hour = await BotDatabase.get_stats_cutoff_hour(message.chat.id)
+    cutoff_hour = await _get_cutoff_hour(message.chat.id)
 
     title = parsed["title"]
     if parsed["mode"] == "date":
@@ -530,7 +616,7 @@ async def handle_stats_cutoff_command(bot, message: types.Message):
         await bot.reply_to(message, _t("cutoff.permission_required"))
         return
 
-    current_hour = await BotDatabase.get_stats_cutoff_hour(chat_id)
+    current_hour = await _get_cutoff_hour(chat_id)
     text = _build_cutoff_text(current_hour)
     kb = _build_cutoff_keyboard(current_hour)
     await bot.reply_to(message, text, reply_markup=kb)
@@ -566,7 +652,7 @@ async def handle_stats_cutoff_callback(bot, call: types.CallbackQuery):
         return
 
     # 保存到数据库
-    ok = await BotDatabase.set_stats_cutoff_hour(chat_id, hour)
+    ok = await _set_cutoff_hour(chat_id, hour)
     if not ok:
         await bot.answer_callback_query(call.id, "Failed to update")
         return
@@ -631,7 +717,7 @@ async def handle_dragon_king_schedule(bot):
         current_hour = now.hour
 
         # 读取该群组的分割时间
-        cutoff_hour = await BotDatabase.get_stats_cutoff_hour(group_id)
+        cutoff_hour = await _get_cutoff_hour(group_id)
 
         # 仅在当前小时等于群组分割时间时执行结算
         if current_hour != cutoff_hour:
