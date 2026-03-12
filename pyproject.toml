@@ -6,7 +6,7 @@ authors = [
     { name = "KimmyXYC", email = "kimmyxyc@nepnep.moe" },
 ]
 dependencies = [
-    "pyTelegramBotAPI>=4.30.0",
+    "pyTelegramBotAPI>=4.32.0",
     "asgiref>=3.11.1",
     "loguru>=0.7.3",
     "requests>=2.32.5",
@@ -17,20 +17,20 @@ dependencies = [
     "aiohttp>=3.13.3",
     "pillow>=12.1.1",
     "cryptography>=46.0.5",
-    "numpy>=2.4.2",
-    "pandas>=3.0.0",
+    "numpy>=2.4.3",
+    "pandas>=3.0.1",
     "psutil>=7.2.2",
-    "pytz>=2025.2",
-    "python-dotenv>=1.2.1",
+    "pytz>=2026.1",
+    "python-dotenv>=1.2.2",
     "pydantic>=2.12.5",
-    "pydantic-settings>=2.12.0",
+    "pydantic-settings>=2.13.1",
     "dynaconf>=3.2.12",
     "dnspython>=2.8.0",
     "scapy>=2.7.0",
     "binance-connector>=3.12.0",
-    "xmltodict>=1.0.2",
+    "xmltodict>=1.0.4",
     "curl-cffi>=0.14.0",
-    "mcstatus>=12.2.1",
+    "mcstatus>=13.0.0",
     "pysocks>=1.7.1",
 ]
 
@@ -43,7 +43,7 @@ license = { text = "MIT" }
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
-    "ruff>=0.4.0",
+    "ruff>=0.15.5",
 ]
 
 [tool.ruff]
