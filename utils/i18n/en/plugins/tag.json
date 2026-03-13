@@ -1,0 +1,17 @@
+{
+  "meta.description": "Set and remove group member tags",
+  "command.description.t": "Set a tag for yourself or the replied user",
+  "command.description.td": "Remove your own tag",
+  "command.help.t": "/t [tag] - Set a tag for yourself or the replied user",
+  "command.help.td": "/td - Remove your own tag",
+  "error.sender_unrecognized": "I can't figure out who you are",
+  "error.bot_manage_tags_permission_required": "The admins won't let me change tags meow",
+  "error.target_user_unavailable": "There is no usable target user in that message meow",
+  "error.cannot_change_admin_tag": "I can't change an admin's tag meow",
+  "error.cannot_delete_admin_tag": "I don't have enough permission to change an admin's tag meow",
+  "error.set_tag_failed": "Failed to change the tag meow",
+  "error.delete_tag_failed": "Failed to delete the tag meow",
+  "result.self_set": "Okay, you are now {tag}",
+  "result.other_set": "{sender} turned {target} into {tag}!",
+  "result.self_deleted": "Your tag has been removed meow"
+}

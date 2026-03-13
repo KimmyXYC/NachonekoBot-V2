@@ -1,0 +1,17 @@
+{
+  "meta.description": "グループの肩書き設定と削除",
+  "command.description.t": "自分または返信先ユーザーの肩書きを設定",
+  "command.description.td": "自分の肩書きを削除",
+  "command.help.t": "/t [tag] - 自分または返信先ユーザーの肩書きを設定",
+  "command.help.td": "/td - 自分の肩書きを削除",
+  "error.sender_unrecognized": "誰なのか分からないにゃ",
+  "error.bot_manage_tags_permission_required": "管理者が tag の変更を許してくれないにゃ",
+  "error.target_user_unavailable": "そのメッセージには対象ユーザーがいないにゃ",
+  "error.cannot_change_admin_tag": "管理者の肩書きは変更できないにゃ",
+  "error.cannot_delete_admin_tag": "管理者の肩書きを変更する権限が足りないにゃ",
+  "error.set_tag_failed": "tag の変更に失敗したにゃ",
+  "error.delete_tag_failed": "肩書きの削除に失敗したにゃ",
+  "result.self_set": "よし、今からあなたは {tag} だにゃ",
+  "result.other_set": "{sender} が {target} を {tag} に変えた!",
+  "result.self_deleted": "あなたの肩書きを削除したにゃ"
+}

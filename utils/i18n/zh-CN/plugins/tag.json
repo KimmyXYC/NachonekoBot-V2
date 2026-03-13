@@ -1,0 +1,17 @@
+{
+  "meta.description": "群组头衔设置与删除",
+  "command.description.t": "设置自己或被回复用户的头衔",
+  "command.description.td": "删除自己的头衔",
+  "command.help.t": "/t [tag] - 设置自己或被回复用户的头衔",
+  "command.help.td": "/td - 删除自己的头衔",
+  "error.sender_unrecognized": "咱认不出你是谁喵",
+  "error.bot_manage_tags_permission_required": "管理员不让我更改 tag 喵",
+  "error.target_user_unavailable": "这条消息没有可用的目标用户喵",
+  "error.cannot_change_admin_tag": "咱只能不能更改管理员的头衔喵",
+  "error.cannot_delete_admin_tag": "咱没有足够的权限更改管理员的头衔喵",
+  "error.set_tag_failed": "更改 tag 失败了喵",
+  "error.delete_tag_failed": "删除头衔失败了喵",
+  "result.self_set": "好, 你现在是 {tag} 啦",
+  "result.other_set": "{sender} 把 {target} 变成 {tag} !",
+  "result.self_deleted": "已删除你的头衔喵"
+}
