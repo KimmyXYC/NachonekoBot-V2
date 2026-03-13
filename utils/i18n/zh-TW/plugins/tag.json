@@ -1,4 +1,5 @@
 {
+  "meta.display_name": "贈送頭銜",
   "meta.description": "群組頭銜設定與刪除",
   "command.description.t": "設定自己或被回覆使用者的頭銜",
   "command.description.td": "刪除自己的頭銜",
@@ -7,7 +8,7 @@
   "error.sender_unrecognized": "咱認不出你是誰喵",
   "error.bot_manage_tags_permission_required": "管理員不讓我更改 tag 喵",
   "error.target_user_unavailable": "這則訊息沒有可用的目標使用者喵",
-  "error.cannot_change_admin_tag": "咱只能不能更改管理員的頭銜喵",
+  "error.cannot_change_admin_tag": "咱不能更改管理員的頭銜喵",
   "error.cannot_delete_admin_tag": "咱沒有足夠的權限更改管理員的頭銜喵",
   "error.set_tag_failed": "更改 tag 失敗了喵",
   "error.delete_tag_failed": "刪除頭銜失敗了喵",

@@ -1,4 +1,5 @@
 {
+  "meta.display_name": "Give Tag",
   "meta.description": "Set and remove group member tags",
   "command.description.t": "Set a tag for yourself or the replied user",
   "command.description.td": "Remove your own tag",
@@ -11,7 +12,7 @@
   "error.cannot_delete_admin_tag": "I don't have enough permission to change an admin's tag meow",
   "error.set_tag_failed": "Failed to change the tag meow",
   "error.delete_tag_failed": "Failed to delete the tag meow",
-  "result.self_set": "Okay, you are now {tag}",
-  "result.other_set": "{sender} turned {target} into {tag}!",
+  "result.self_set": "Okay, you are now {tag} meow",
+  "result.other_set": "{sender} made {target} become {tag}!",
   "result.self_deleted": "Your tag has been removed meow"
 }

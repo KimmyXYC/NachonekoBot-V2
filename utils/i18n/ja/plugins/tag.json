@@ -1,4 +1,5 @@
 {
+  "meta.display_name": "肩書きを贈る",
   "meta.description": "グループの肩書き設定と削除",
   "command.description.t": "自分または返信先ユーザーの肩書きを設定",
   "command.description.td": "自分の肩書きを削除",
@@ -12,6 +13,6 @@
   "error.set_tag_failed": "tag の変更に失敗したにゃ",
   "error.delete_tag_failed": "肩書きの削除に失敗したにゃ",
   "result.self_set": "よし、今からあなたは {tag} だにゃ",
-  "result.other_set": "{sender} が {target} を {tag} に変えた!",
+  "result.other_set": "{sender} が {target} を {tag} にしたにゃ!",
   "result.self_deleted": "あなたの肩書きを削除したにゃ"
 }
