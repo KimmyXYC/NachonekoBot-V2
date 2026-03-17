@@ -11,6 +11,7 @@
   "prompt.empty_after_mention": "请在 @我 后面带上具体需求。",
   "prompt.usage": "你可以这样对我说：\n@botusername 记一下：周五晚 8 点开会\n@botusername 修改 MEM-0001 改成：周五晚 9 点开会\n@botusername 删掉关于服务器维护的备忘\n@botusername 列出群备忘\n@botusername 服务器维护时间是什么",
   "status.adding": "正在写入群备忘...",
+  "status.thinking": "Thinking...",
   "status.answering": "正在检索群备忘并整理回答...",
   "label.title": "标题：{title}",
   "label.summary": "摘要：{summary}",

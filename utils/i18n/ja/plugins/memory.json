@@ -11,6 +11,7 @@
   "prompt.empty_after_mention": "@メンションの後に具体的な依頼を書いてください。",
   "prompt.usage": "次のように使えます：\n@botusername 覚えて：金曜20時に会議\n@botusername MEM-0001 を 金曜21時に会議 に変更して\n@botusername サーバーメンテのメモを削除して\n@botusername グループメモを一覧して\n@botusername サーバーメンテ時間は？",
   "status.adding": "グループメモに保存しています...",
+  "status.thinking": "Thinking...",
   "status.answering": "グループメモを検索して回答を準備しています...",
   "label.title": "タイトル：{title}",
   "label.summary": "概要：{summary}",

@@ -232,6 +232,18 @@ def _chunk_text(text: str, limit: int = 3500) -> list[str]:
     return chunks
 
 
+async def _reply_or_edit(bot, message: types.Message, text: str, progress_message=None, **kwargs):
+    if progress_message is not None:
+        try:
+            await bot.edit_message_text(
+                text, progress_message.chat.id, progress_message.message_id, **kwargs
+            )
+            return
+        except Exception:
+            pass
+    await bot.reply_to(message, text, **kwargs)
+
+
 def _extract_json_payload(raw_text: str) -> dict[str, Any]:
     text = (raw_text or "").strip()
     if not text:
@@ -455,13 +467,22 @@ async def _require_group_admin(bot, message: types.Message) -> bool:
     return True
 
 
-async def _execute_add_memory(bot, message: types.Message, payload: str):
+async def _execute_add_memory(bot, message: types.Message, payload: str, progress_message=None):
     if not await _require_group_admin(bot, message):
         return
     if not payload.strip():
-        await bot.reply_to(message, _msg("prompt.add_missing", "Please tell me what to save after mentioning me."))
+        await _reply_or_edit(bot, message, _msg("prompt.add_missing", "Please tell me what to save after mentioning me."), progress_message=progress_message)
         return
-    progress = await bot.reply_to(message, _msg("status.adding", "Saving group memory..."))
+    if progress_message is not None:
+        try:
+            await bot.edit_message_text(
+                _msg("status.adding", "Saving group memory..."),
+                progress_message.chat.id,
+                progress_message.message_id,
+            )
+        except Exception:
+            progress_message = None
+    progress = progress_message or await bot.reply_to(message, _msg("status.adding", "Saving group memory..."))
     entries = _load_entries(message.chat.id)
     optimized = await _optimize_memory_text(payload, entries)
     new_entry = MemoryEntry(
@@ -490,72 +511,90 @@ async def _execute_add_memory(bot, message: types.Message, payload: str):
         await bot.reply_to(message, text, parse_mode="Markdown")
 
 
-async def _execute_list_memory(bot, message: types.Message):
+async def _execute_list_memory(bot, message: types.Message, progress_message=None):
     entries = _load_entries(message.chat.id)
     if not entries:
-        await bot.reply_to(message, _msg("result.list_empty", "There are no group memories yet."))
+        await _reply_or_edit(bot, message, _msg("result.list_empty", "There are no group memories yet."), progress_message=progress_message)
         return
     lines = [_msg("result.list_header", "There are {count} memories in this group:", count=len(entries)), ""]
     for entry in reversed(entries):
         lines.append(f"- `{entry.memory_id}` {entry.title}")
         lines.append(f"  {entry.summary}")
-    for chunk in _chunk_text("\n".join(lines)):
+    chunks = _chunk_text("\n".join(lines))
+    if progress_message is not None and chunks:
+        try:
+            await bot.edit_message_text(
+                chunks[0], progress_message.chat.id, progress_message.message_id, parse_mode="Markdown"
+            )
+            chunks = chunks[1:]
+        except Exception:
+            pass
+    for chunk in chunks:
         await bot.send_message(message.chat.id, chunk, parse_mode="Markdown")
 
 
-async def _execute_delete_memory(bot, message: types.Message, target_text: str, memory_id: str | None = None):
+async def _execute_delete_memory(bot, message: types.Message, target_text: str, memory_id: str | None = None, progress_message=None):
     if not await _require_group_admin(bot, message):
         return
     query = (memory_id or target_text or "").strip()
     if not query:
-        await bot.reply_to(message, _msg("prompt.delete_missing", "Please tell me which memory to delete, or give a MEM-id directly."))
+        await _reply_or_edit(bot, message, _msg("prompt.delete_missing", "Please tell me which memory to delete, or give a MEM-id directly."), progress_message=progress_message)
         return
     entries = _load_entries(message.chat.id)
     if not entries:
-        await bot.reply_to(message, _msg("result.delete_empty", "There are no memories to delete."))
+        await _reply_or_edit(bot, message, _msg("result.delete_empty", "There are no memories to delete."), progress_message=progress_message)
         return
     candidates = _find_candidates(query, entries, _get_memory_config()["delete_match_threshold"])
     if not candidates:
-        await bot.reply_to(message, _msg("result.no_match", "No matching memory was found."))
+        await _reply_or_edit(bot, message, _msg("result.no_match", "No matching memory was found."), progress_message=progress_message)
         return
     if len(candidates) == 1 and (candidates[0][1] >= _get_memory_config()["delete_match_threshold"] or bool(memory_id and MEMORY_ID_RE.match(memory_id))):
         target = candidates[0][0]
         _save_entries(message.chat.id, getattr(message.chat, "title", ""), [entry for entry in entries if entry.memory_id != target.memory_id])
-        await bot.reply_to(message, _msg("result.deleted", "Deleted memory `{memory_id}` {title}", memory_id=target.memory_id, title=target.title), parse_mode="Markdown")
+        await _reply_or_edit(bot, message, _msg("result.deleted", "Deleted memory `{memory_id}` {title}", memory_id=target.memory_id, title=target.title), progress_message=progress_message, parse_mode="Markdown")
         return
     lines = [_msg("result.multiple_matches", "Matched multiple memories. Please use a more specific keyword or a MEM-id:"), ""]
     for entry, score in candidates:
         lines.append(f"- `{entry.memory_id}` {entry.title} ({score:.2f})")
         lines.append(f"  {entry.summary}")
-    await bot.reply_to(message, "\n".join(lines), parse_mode="Markdown")
+    await _reply_or_edit(bot, message, "\n".join(lines), progress_message=progress_message, parse_mode="Markdown")
 
 
-async def _execute_update_memory(bot, message: types.Message, target_text: str, updated_text: str, memory_id: str | None = None):
+async def _execute_update_memory(bot, message: types.Message, target_text: str, updated_text: str, memory_id: str | None = None, progress_message=None):
     if not await _require_group_admin(bot, message):
         return
     query = (memory_id or target_text or "").strip()
     if not query:
-        await bot.reply_to(message, _msg("prompt.update_missing_target", "Please tell me which memory to modify, or give a MEM-id directly."))
+        await _reply_or_edit(bot, message, _msg("prompt.update_missing_target", "Please tell me which memory to modify, or give a MEM-id directly."), progress_message=progress_message)
         return
     if not updated_text.strip():
-        await bot.reply_to(message, _msg("prompt.update_missing_content", "Please tell me what the memory should be updated to."))
+        await _reply_or_edit(bot, message, _msg("prompt.update_missing_content", "Please tell me what the memory should be updated to."), progress_message=progress_message)
         return
     entries = _load_entries(message.chat.id)
     if not entries:
-        await bot.reply_to(message, _msg("result.update_empty", "There are no memories to update."))
+        await _reply_or_edit(bot, message, _msg("result.update_empty", "There are no memories to update."), progress_message=progress_message)
         return
     candidates = _find_candidates(query, entries, _get_memory_config()["delete_match_threshold"])
     if not candidates:
-        await bot.reply_to(message, _msg("result.no_match", "No matching memory was found."))
+        await _reply_or_edit(bot, message, _msg("result.no_match", "No matching memory was found."), progress_message=progress_message)
         return
     if len(candidates) != 1 and not (memory_id and MEMORY_ID_RE.match(memory_id)):
         lines = [_msg("result.multiple_matches_update", "Matched multiple memories. Please use a more specific keyword or a MEM-id for update:"), ""]
         for entry, score in candidates:
             lines.append(f"- `{entry.memory_id}` {entry.title} ({score:.2f})")
             lines.append(f"  {entry.summary}")
-        await bot.reply_to(message, "\n".join(lines), parse_mode="Markdown")
+        await _reply_or_edit(bot, message, "\n".join(lines), progress_message=progress_message, parse_mode="Markdown")
         return
     target = candidates[0][0]
+    if progress_message is not None:
+        try:
+            await bot.edit_message_text(
+                _msg("status.adding", "Saving group memory..."),
+                progress_message.chat.id,
+                progress_message.message_id,
+            )
+        except Exception:
+            progress_message = None
     optimized = await _optimize_memory_text(updated_text, entries)
     now = dt.datetime.now(dt.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
     for index, entry in enumerate(entries):
@@ -572,15 +611,24 @@ async def _execute_update_memory(bot, message: types.Message, target_text: str, 
             )
             break
     _save_entries(message.chat.id, getattr(message.chat, "title", ""), entries)
-    await bot.reply_to(message, _msg("result.updated", "Updated memory `{memory_id}` {title}", memory_id=target.memory_id, title=optimized["title"]), parse_mode="Markdown")
+    await _reply_or_edit(bot, message, _msg("result.updated", "Updated memory `{memory_id}` {title}", memory_id=target.memory_id, title=optimized["title"]), progress_message=progress_message, parse_mode="Markdown")
 
 
-async def _answer_qa(bot, message: types.Message, question: str):
+async def _answer_qa(bot, message: types.Message, question: str, progress_message=None):
     entries = _load_entries(message.chat.id)
     if not entries:
-        await bot.reply_to(message, _msg("qa.empty", "There are no group memories yet, so I can't answer from memory."))
+        await _reply_or_edit(bot, message, _msg("qa.empty", "There are no group memories yet, so I can't answer from memory."), progress_message=progress_message)
         return
-    progress = await bot.reply_to(message, _msg("status.answering", "Searching group memories and preparing an answer..."))
+    if progress_message is not None:
+        try:
+            await bot.edit_message_text(
+                _msg("status.answering", "Searching group memories and preparing an answer..."),
+                progress_message.chat.id,
+                progress_message.message_id,
+            )
+        except Exception:
+            progress_message = None
+    progress = progress_message or await bot.reply_to(message, _msg("status.answering", "Searching group memories and preparing an answer..."))
     answer = await _answer_from_memory(question, entries)
     try:
         await bot.edit_message_text(answer, progress.chat.id, progress.message_id)
@@ -589,32 +637,32 @@ async def _answer_qa(bot, message: types.Message, question: str):
             await bot.send_message(message.chat.id, chunk)
 
 
-async def _dispatch_intent(bot, message: types.Message, parsed: IntentParseResult, is_admin: bool):
+async def _dispatch_intent(bot, message: types.Message, parsed: IntentParseResult, is_admin: bool, progress_message=None):
     if parsed.intent == "add_memory":
         if not is_admin:
-            await bot.reply_to(message, _msg("error.modify_denied", "You can ask questions or view memories, but you cannot modify group memories."))
+            await _reply_or_edit(bot, message, _msg("error.modify_denied", "You can ask questions or view memories, but you cannot modify group memories."), progress_message=progress_message)
             return
-        await _execute_add_memory(bot, message, parsed.target_text)
+        await _execute_add_memory(bot, message, parsed.target_text, progress_message=progress_message)
         return
     if parsed.intent == "delete_memory":
         if not is_admin:
-            await bot.reply_to(message, _msg("error.modify_denied", "You can ask questions or view memories, but you cannot modify group memories."))
+            await _reply_or_edit(bot, message, _msg("error.modify_denied", "You can ask questions or view memories, but you cannot modify group memories."), progress_message=progress_message)
             return
-        await _execute_delete_memory(bot, message, parsed.target_text, parsed.memory_id)
+        await _execute_delete_memory(bot, message, parsed.target_text, parsed.memory_id, progress_message=progress_message)
         return
     if parsed.intent == "update_memory":
         if not is_admin:
-            await bot.reply_to(message, _msg("error.modify_denied", "You can ask questions or view memories, but you cannot modify group memories."))
+            await _reply_or_edit(bot, message, _msg("error.modify_denied", "You can ask questions or view memories, but you cannot modify group memories."), progress_message=progress_message)
             return
-        await _execute_update_memory(bot, message, parsed.target_text, parsed.updated_text, parsed.memory_id)
+        await _execute_update_memory(bot, message, parsed.target_text, parsed.updated_text, parsed.memory_id, progress_message=progress_message)
         return
     if parsed.intent == "list_memory":
-        await _execute_list_memory(bot, message)
+        await _execute_list_memory(bot, message, progress_message=progress_message)
         return
     if parsed.intent == "qa":
-        await _answer_qa(bot, message, parsed.target_text)
+        await _answer_qa(bot, message, parsed.target_text, progress_message=progress_message)
         return
-    await bot.reply_to(message, _msg("prompt.usage", "You can say:\n@botusername remember this: Friday 8pm meeting\n@botusername update MEM-0001 to: Friday 9pm meeting\n@botusername delete the server maintenance memory\n@botusername list group memories\n@botusername when is server maintenance"))
+    await _reply_or_edit(bot, message, _msg("prompt.usage", "You can say:\n@botusername remember this: Friday 8pm meeting\n@botusername update MEM-0001 to: Friday 9pm meeting\n@botusername delete the server maintenance memory\n@botusername list group memories\n@botusername when is server maintenance"), progress_message=progress_message)
 
 
 async def _handle_memory_message(bot, message: types.Message):
@@ -624,10 +672,13 @@ async def _handle_memory_message(bot, message: types.Message):
     if not text:
         await bot.reply_to(message, _msg("prompt.empty_after_mention", "Please put a concrete request after mentioning me."))
         return
+    progress_message = await bot.reply_to(
+        message, _msg("status.thinking", "Thinking...")
+    )
     entries = _load_entries(message.chat.id)
     is_admin = await _is_group_admin(bot, message)
     parsed = await _parse_intent(text, is_admin=is_admin, has_entries=bool(entries))
-    await _dispatch_intent(bot, message, parsed, is_admin)
+    await _dispatch_intent(bot, message, parsed, is_admin, progress_message=progress_message)
 
 
 async def register_handlers(bot, middleware, plugin_name):

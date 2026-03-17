@@ -11,6 +11,7 @@
   "prompt.empty_after_mention": "Please put a concrete request after mentioning me.",
   "prompt.usage": "You can say:\n@botusername remember this: Friday 8pm meeting\n@botusername update MEM-0001 to: Friday 9pm meeting\n@botusername delete the server maintenance memory\n@botusername list group memories\n@botusername when is server maintenance",
   "status.adding": "Saving group memory...",
+  "status.thinking": "Thinking...",
   "status.answering": "Searching group memories and preparing an answer...",
   "label.title": "Title: {title}",
   "label.summary": "Summary: {summary}",
