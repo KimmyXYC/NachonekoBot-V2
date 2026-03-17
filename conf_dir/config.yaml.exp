@@ -55,3 +55,15 @@ ocr:
   min_pixels: 3072
   max_pixels: 8388608
   enable_rotate: false
+
+# Group memory plugin (OpenAI-compatible endpoint)
+memory:
+  base_url: https://api.openai.com/v1
+  api_key: sk-abcdefghijklmnopqrstuvwxyz1234567890
+  model: gpt-4o-mini
+  timeout: 60
+  storage_dir: res/memory
+  max_context_items: 5
+  dedupe_threshold: 0.84
+  delete_match_threshold: 0.88
+  intent_confidence_threshold: 0.68
