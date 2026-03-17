@@ -1,5 +1,6 @@
 {
   "meta.description": "通过 @bot 管理和查询群组备忘",
+  "meta.display_name": "群组备忘",
   "command.help.memory_mention": "@botusername 记一下：周五晚 8 点开会\n@botusername 修改 MEM-0001 改成：周五晚 9 点开会\n@botusername 删掉关于服务器维护的备忘\n@botusername 列出群备忘\n@botusername 服务器维护时间是什么",
   "error.group_only": "这个功能只能在群组里使用。",
   "error.modify_denied": "你可以提问或查看备忘，但不能修改群备忘。",

@@ -1,5 +1,6 @@
 {
   "meta.description": "@bot でグループメモを管理・参照します",
+  "meta.display_name": "グループメモ",
   "command.help.memory_mention": "@botusername 覚えて：金曜20時に会議\n@botusername MEM-0001 を 金曜21時に会議 に変更して\n@botusername サーバーメンテのメモを削除して\n@botusername グループメモを一覧して\n@botusername サーバーメンテ時間は？",
   "error.group_only": "この機能はグループ内でのみ使えます。",
   "error.modify_denied": "質問したりメモを閲覧したりはできますが、グループメモの変更はできません。",
