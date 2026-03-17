@@ -2,6 +2,7 @@
 conf_dir/*.yaml
 conf_dir/*.db
 plugins/version.json
+res/memory/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
