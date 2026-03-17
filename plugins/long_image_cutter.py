@@ -15,6 +15,7 @@ from typing import List, Tuple
 
 from loguru import logger
 from telebot import types
+from telebot.asyncio_helper import ApiTelegramException
 from PIL import Image
 from utils.yaml import BotConfig
 from utils.i18n import _t
@@ -312,16 +313,40 @@ async def _send_with_retry(
     from loguru import logger as _lg
     import re
 
+    def _extract_retry_after(exc: Exception) -> int | None:
+        if isinstance(exc, ApiTelegramException):
+            params = getattr(exc, "result_json", {}).get("parameters", {})
+            retry_after = params.get("retry_after")
+            if retry_after is not None:
+                try:
+                    return int(retry_after)
+                except (TypeError, ValueError):
+                    pass
+
+            description = getattr(exc, "description", "") or str(exc)
+        else:
+            description = str(exc)
+
+        match = re.search(
+            r"retry(?:\s|_)?after[:\s]+(\d+)", description, re.IGNORECASE
+        )
+        return int(match.group(1)) if match else None
+
+    def _is_telegram_rate_limit(exc: Exception) -> bool:
+        if isinstance(exc, ApiTelegramException):
+            return getattr(exc, "error_code", None) == 429
+
+        text = str(exc)
+        return "Too Many Requests" in text or "429" in text
+
     for attempt in range(1, max_retries + 1):
         try:
             return await send_coro_factory()
         except Exception as e:
             # 仅在 429 错误时重试，其余异常直接抛出
-            text = str(e)
-            if ("Too Many Requests" in text or "429" in text) and attempt < max_retries:
-                # 尝试解析 "retry after X" 或 "retry_after X"
-                m = re.search(r"retry(?:\s|_)?after\s(\d+)", text, re.IGNORECASE)
-                retry_sec = int(m.group(1)) + 1 if m else 5
+            if _is_telegram_rate_limit(e) and attempt < max_retries:
+                retry_after = _extract_retry_after(e)
+                retry_sec = (retry_after if retry_after is not None else 5) + 1
                 _lg.warning(
                     f"[Retry] Telegram 429; waiting {retry_sec}s and retrying (attempt {attempt}/{max_retries})"
                 )
