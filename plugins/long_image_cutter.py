@@ -327,9 +327,7 @@ async def _send_with_retry(
         else:
             description = str(exc)
 
-        match = re.search(
-            r"retry(?:\s|_)?after[:\s]+(\d+)", description, re.IGNORECASE
-        )
+        match = re.search(r"retry(?:\s|_)?after[:\s]+(\d+)", description, re.IGNORECASE)
         return int(match.group(1)) if match else None
 
     def _is_telegram_rate_limit(exc: Exception) -> bool:
