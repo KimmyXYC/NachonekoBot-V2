@@ -85,6 +85,16 @@ def _msg(key: str, fallback: str, **kwargs) -> str:
     return value
 
 
+def _language_name_for_prompt(lang: str) -> str:
+    mapping = {
+        "en": "English",
+        "zh-CN": "Simplified Chinese",
+        "zh-TW": "Traditional Chinese",
+        "ja": "Japanese",
+    }
+    return mapping.get(lang, lang or "English")
+
+
 def _get_memory_config() -> dict[str, Any]:
     conf = BotConfig.get("memory", {}) or {}
     return {
@@ -359,11 +369,29 @@ async def _parse_intent(raw_text: str, is_admin: bool, has_entries: bool) -> Int
     return _fallback_parse_intent(raw_text)
 
 
-async def _optimize_memory_text(raw_text: str, existing_entries: list[MemoryEntry]) -> dict[str, Any]:
+async def _optimize_memory_text(
+    raw_text: str, existing_entries: list[MemoryEntry], target_lang: str = "en"
+) -> dict[str, Any]:
     recent_context = "\n".join(f"- {entry.memory_id}: {entry.title} | {entry.summary}" for entry in existing_entries[-5:])
     messages = [
-        {"role": "system", "content": "Rewrite the user's text into a clean memory entry. Return JSON with title,body,keywords."},
-        {"role": "user", "content": f"Existing memories:\n{recent_context or 'none'}\n\nNew text:\n{raw_text}"},
+        {
+            "role": "system",
+            "content": (
+                "Rewrite the user's text into a clean memory entry. "
+                "Return JSON with title, body, keywords. "
+                "The final title, body, and keywords must be written in the target group language. "
+                "Do not mix languages unless the original content requires a proper noun or fixed term."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Target group language code: {target_lang}\n"
+                f"Target group language name: {_language_name_for_prompt(target_lang)}\n"
+                f"Existing memories:\n{recent_context or 'none'}\n\n"
+                f"New text:\n{raw_text}"
+            ),
+        },
     ]
     try:
         payload = _extract_json_payload(await _call_openai_compatible(messages))
@@ -484,7 +512,9 @@ async def _execute_add_memory(bot, message: types.Message, payload: str, progres
             progress_message = None
     progress = progress_message or await bot.reply_to(message, _msg("status.adding", "Saving group memory..."))
     entries = _load_entries(message.chat.id)
-    optimized = await _optimize_memory_text(payload, entries)
+    optimized = await _optimize_memory_text(
+        payload, entries, target_lang=getattr(bot, "lang", "en")
+    )
     new_entry = MemoryEntry(
         memory_id=_next_memory_id(entries),
         title=optimized["title"],
@@ -595,7 +625,9 @@ async def _execute_update_memory(bot, message: types.Message, target_text: str, 
             )
         except Exception:
             progress_message = None
-    optimized = await _optimize_memory_text(updated_text, entries)
+    optimized = await _optimize_memory_text(
+        updated_text, entries, target_lang=getattr(bot, "lang", "en")
+    )
     now = dt.datetime.now(dt.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
     for index, entry in enumerate(entries):
         if entry.memory_id == target.memory_id:
