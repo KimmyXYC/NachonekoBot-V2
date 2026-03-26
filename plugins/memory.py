@@ -227,6 +227,8 @@ def _message_mentions_bot(message: types.Message) -> bool:
     username = (BotSetting.bot_username or "").lstrip("@")
     if not text or not username:
         return False
+    if re.match(r"^\s*/\S+", text):
+        return False
     for ent in list(getattr(message, "entities", None) or []):
         if getattr(ent, "type", "") == "mention":
             start = getattr(ent, "offset", 0)

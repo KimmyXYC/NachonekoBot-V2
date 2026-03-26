@@ -82,6 +82,12 @@ def test_extract_message_question_strips_bot_mention(monkeypatch):
     assert question == "帮我找一下服务器维护时间"
 
 
+def test_message_mentions_bot_ignores_slash_commands(monkeypatch):
+    monkeypatch.setattr(BotSetting, "bot_username", "NachoNekoX_bot")
+    message = _make_message("/help@NachoNekoX_bot")
+    assert memory_module._message_mentions_bot(message) is False
+
+
 def test_fallback_parse_intent_detects_update():
     parsed = memory_module._fallback_parse_intent(
         "修改 MEM-0002 改成：维护时间改到周六 03:00"
