@@ -39,22 +39,18 @@ inline:
 botapi:
   enable: false
 
-# OCR plugin configuration (Aliyun Qwen OCR)
+# OCR plugin configuration (Paddle OCR)
 ocr:
-  # Required: Model Studio API Key (DashScope API Key)
-  api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  # OpenAI compatible endpoint
-  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
-  # Model name (e.g. qwen-vl-ocr, qwen-vl-ocr-latest)
-  model: qwen-vl-ocr-latest
-  # Fallback prompt when /ocr is used without custom prompt
-  default_prompt: Please output only the text content from the image without any additional descriptions or formatting.
+  # Paddle OCR API endpoint
+  api_url: https://h4l75ambd2ef57v5.aistudio-app.com/ocr
+  # Authorization header token, sent as `token <value>`
+  token: undefined
   # Request timeout in seconds
   timeout: 60
-  # Optional image params
-  min_pixels: 3072
-  max_pixels: 8388608
-  enable_rotate: false
+  # Optional Paddle OCR switches
+  use_doc_orientation_classify: false
+  use_doc_unwarping: false
+  use_textline_orientation: false
 
 # Group memory plugin (OpenAI-compatible endpoint)
 memory:

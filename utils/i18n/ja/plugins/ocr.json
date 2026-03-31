@@ -1,11 +1,11 @@
 {
-  "meta.description": "OCR 文字認識（Alibaba Cloud qwen-vl-ocr）",
-  "command.description.ocr": "画像の文字を認識",
-  "command.help.ocr": "/ocr [カスタムプロンプト] - 画像の文字をOCR認識。画像/画像ファイルに返信するか、画像のcaptionで使用",
+  "meta.description": "OCR 文字認識（Paddle OCR）",
+  "command.description.ocr": "画像または PDF の文字を認識",
+  "command.help.ocr": "/ocr - 画像または PDF の文字を OCR 認識。画像・画像ファイル・PDF ファイルに返信するか、画像/PDF の caption で使用",
   "status.ocr_processing": "OCR 認識中...",
-  "error.ocr_invalid_format": "形式エラー。期待される形式：/ocr [カスタムプロンプト]",
-  "prompt.ocr_reply_image_first": "先に画像または画像ファイルに返信してから、/ocr [カスタムプロンプト] を使用してください。",
-  "error.image_download_failed": "画像の取得に失敗しました。有効な画像ファイルか確認してください。",
-  "error.ocr_empty_result": "認識完了しましたが、テキストは抽出されませんでした。",
+  "error.ocr_invalid_format": "形式エラー。使用方法: /ocr",
+  "prompt.ocr_reply_image_first": "先に画像、画像ファイル、または PDF ファイルに返信してから /ocr を使用してください。",
+  "error.image_download_failed": "ファイルの取得に失敗しました。有効な画像または PDF ファイルか確認してください。",
+  "error.ocr_empty_result": "認識は完了しましたが、テキストは抽出されませんでした。",
   "error.ocr_failed": "OCR 認識に失敗: {reason}"
 }

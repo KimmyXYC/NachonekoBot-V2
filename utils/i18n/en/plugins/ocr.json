@@ -1,11 +1,11 @@
 {
-  "meta.description": "OCR text recognition (Alibaba qwen-vl-ocr)",
-  "command.description.ocr": "Recognize text in images via OCR",
-  "command.help.ocr": "/ocr [Custom Prompt] - OCR image text; reply to an image/image file, or use in image caption",
+  "meta.description": "OCR text recognition (Paddle OCR)",
+  "command.description.ocr": "Recognize text in images or PDFs via OCR",
+  "command.help.ocr": "/ocr - OCR image or PDF text; reply to an image, image file, or PDF file, or use in image/PDF caption",
   "status.ocr_processing": "Running OCR...",
-  "error.ocr_invalid_format": "Invalid format. Use: /ocr [Custom Prompt]",
-  "prompt.ocr_reply_image_first": "Please reply to an image or image file, then use /ocr [Custom Prompt].",
-  "error.image_download_failed": "Failed to download image. Please check if it is a valid image file.",
+  "error.ocr_invalid_format": "Invalid format. Use: /ocr",
+  "prompt.ocr_reply_image_first": "Please reply to an image, image file, or PDF file, then use /ocr.",
+  "error.image_download_failed": "Failed to download the file. Please check if it is a valid image or PDF file.",
   "error.ocr_empty_result": "OCR completed, but no text was extracted.",
   "error.ocr_failed": "OCR recognition failed: {reason}"
 }
