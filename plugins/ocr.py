@@ -126,11 +126,40 @@ async def _download_file_bytes(bot, source_message: types.Message) -> bytes | No
 
 
 def _extract_result_text(item: dict) -> str:
-    for key in ("prunedResult", "ocrText", "text"):
-        value = item.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return ""
+    def _collect_texts(value) -> list[str]:
+        texts = []
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped:
+                texts.append(stripped)
+        elif isinstance(value, list):
+            for sub_value in value:
+                texts.extend(_collect_texts(sub_value))
+        elif isinstance(value, dict):
+            preferred_keys = (
+                "rec_texts",
+                "texts",
+                "text",
+                "ocrText",
+                "prunedResult",
+                "res",
+            )
+            for key in preferred_keys:
+                if key in value:
+                    texts.extend(_collect_texts(value[key]))
+            if not texts:
+                for sub_value in value.values():
+                    texts.extend(_collect_texts(sub_value))
+        return texts
+
+    collected = []
+    for key in ("prunedResult", "ocrText", "text", "res"):
+        if key in item:
+            collected.extend(_collect_texts(item[key]))
+
+    # Deduplicate while preserving order.
+    unique_texts = list(dict.fromkeys(text for text in collected if text.strip()))
+    return "\n".join(unique_texts).strip()
 
 
 async def _call_ocr_api(file_bytes: bytes, file_type: int, conf: dict) -> str:
@@ -170,12 +199,16 @@ async def _call_ocr_api(file_bytes: bytes, file_type: int, conf: dict) -> str:
         raise RuntimeError("OCR API 返回缺少 ocrResults 字段")
 
     text_parts = []
-    for item in ocr_results:
+    for idx, item in enumerate(ocr_results):
         if not isinstance(item, dict):
             continue
         text = _extract_result_text(item)
         if text:
             text_parts.append(text)
+        else:
+            logger.warning(
+                f"[OCR] 第 {idx + 1} 项未提取到文本，返回字段: {list(item.keys())}"
+            )
 
     return "\n\n".join(text_parts).strip()
 
