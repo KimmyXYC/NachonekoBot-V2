@@ -531,6 +531,33 @@ def _normalize_bc_tokens(tokens: list[str]) -> list[str]:
     return tokens
 
 
+def _binance_usd_price_symbols(crypto_currency: str) -> list[str]:
+    """返回用于估算加密货币 USD 价格的 Binance 交易对候选。"""
+    return [
+        f"{crypto_currency}{quote_currency}"
+        for quote_currency in ("USD", "USDT")
+        if crypto_currency != quote_currency
+    ]
+
+
+def _fetch_binance_price_by_symbols(
+    binanceclient: Any, symbols: list[str]
+) -> tuple[dict[str, Any], str]:
+    """按顺序尝试多个 Binance 交易对，返回第一个成功的价格数据。"""
+    last_client_error: ClientError | None = None
+
+    for symbol in symbols:
+        try:
+            return binanceclient.ticker_price(symbol), symbol
+        except ClientError as e:
+            last_client_error = e
+
+    if last_client_error is not None:
+        raise last_client_error
+
+    raise ValueError("no Binance symbols provided")
+
+
 async def query_bc_text(raw_tokens: list[str]) -> str:
     """生成与 `/bc` 命令一致的输出文本，用于命令与 Inline 复用。"""
     args = _normalize_bc_tokens(raw_tokens)
@@ -678,8 +705,11 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
     if currencies.count(_from) != 0:
         try:
             usd_number = number * data["USD"] / data[_from]
+            symbols = _binance_usd_price_symbols(_to)
             try:
-                price_data = binanceclient.ticker_price(f"{_to}USDT")
+                price_data, _ = _fetch_binance_price_by_symbols(
+                    binanceclient, symbols
+                )
                 crypto_amount = 1 / float(price_data["price"]) * usd_number
 
                 return _t(
@@ -691,14 +721,15 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
                     usd_amount=f"{usd_number:.2f}",
                 )
             except ClientError:
-                return _t("error.pair_not_found", pair=f"{_to}USDT")
+                return _t("error.pair_not_found", pair=", ".join(symbols))
         except Exception as e:
             return _t("error.convert_failed", reason=str(e))
 
     # 从加密货币到法定货币
     if currencies.count(_to) != 0:
+        symbols = _binance_usd_price_symbols(_from)
         try:
-            price_data = binanceclient.ticker_price(f"{_from}USDT")
+            price_data, _ = _fetch_binance_price_by_symbols(binanceclient, symbols)
             usd_price = float(price_data["price"])
             fiat_amount = usd_price * number * data[_to] / data["USD"]
 
@@ -711,7 +742,7 @@ async def query_bc_text(raw_tokens: list[str]) -> str:
                 unit_usd_price=f"{usd_price:.2f}",
             )
         except ClientError:
-            return _t("error.pair_not_found", pair=f"{_from}USDT")
+            return _t("error.pair_not_found", pair=", ".join(symbols))
         except Exception as e:
             return _t("error.convert_failed", reason=str(e))
 
