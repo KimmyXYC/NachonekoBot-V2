@@ -783,7 +783,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "pysocks", specifier = ">=1.7.1" },
-    { name = "pytelegrambotapi", specifier = ">=4.32.0" },
+    { name = "pytelegrambotapi", specifier = ">=4.34.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "pytz", specifier = ">=2026.1" },
@@ -1266,14 +1266,15 @@ wheels = [
 
 [[package]]
 name = "pytelegrambotapi"
-version = "4.32.0"
+version = "4.34.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "aiohttp" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bf/60/f5fb7dedc4b78135a8bbb247d9b619b50e6ea13925b247f9b0c70142d1aa/pytelegrambotapi-4.32.0.tar.gz", hash = "sha256:01d36a5c0df9d1293fc768a802542ad7f4aeb3fcd5d1574b5116d935b3a3313a", size = 1374159, upload-time = "2026-03-09T20:20:56.17Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/6d/11705e63ac5922bddb8fe93dbe6010b2f46e1366c1e534d0c3866b46140d/pytelegrambotapi-4.34.0.tar.gz", hash = "sha256:ec56b339690c4f4a2c867cc677d01a9bfa9e4af58227a54596e2f366c0947df9", size = 1388791, upload-time = "2026-06-03T20:25:28.851Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/e8/4fccc4094155749b46482b790d65ec0f930da076070deaea7364d955c8a8/pytelegrambotapi-4.32.0-py3-none-any.whl", hash = "sha256:ed973b302bc7014d06a7ad3cadd76a02e79498ff1e2c4be9e5ca96b0ba352d63", size = 303282, upload-time = "2026-03-09T20:20:54.325Z" },
+    { url = "https://files.pythonhosted.org/packages/83/e9/18d614a0846a33639dc88c561122e665209798196f074f7dbca60c6145a0/pytelegrambotapi-4.34.0-py3-none-any.whl", hash = "sha256:470bec408033ceebe089cf968cc92cc1ff2d79b912ee5a983a07926ff79d4053", size = 317168, upload-time = "2026-06-03T20:25:27.425Z" },
 ]
 
 [[package]]

@@ -149,6 +149,7 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
+        guest_supported=True,
         chat_types=["private", "group", "supergroup"],
     )
 
@@ -158,6 +159,7 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
+        guest_supported=True,
         chat_types=["private", "group", "supergroup"],
     )
 

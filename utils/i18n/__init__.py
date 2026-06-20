@@ -12,7 +12,9 @@ from utils.i18n.service import (
     t,
 )
 from utils.i18n.runtime import (
+    GuestLocalizedBot,
     LocalizedBot,
+    make_guest_localized_bot,
     make_localized_bot,
     make_localized_bot_for_chat,
 )
@@ -34,7 +36,9 @@ __all__ = [
     "supported_languages",
     "t",
     "LocalizedBot",
+    "GuestLocalizedBot",
     "make_localized_bot",
+    "make_guest_localized_bot",
     "make_localized_bot_for_chat",
     "_t",
     "_ft",

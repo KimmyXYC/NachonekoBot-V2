@@ -596,6 +596,30 @@ class BotRunner:
                 # 允许像 quote 这类通过 message handler 解析 '/$' 的插件生效。
                 await plugin_manager.middleware.dispatch_message(bot, message)
 
+        if hasattr(bot, "guest_message_handler"):
+
+            @bot.guest_message_handler(
+                func=lambda m: bool(getattr(m, "guest_query_id", None))
+            )
+            async def guest_message_dispatcher(message: types.Message):
+                """Guest Mode 命令分发器。
+
+                pyTelegramBotAPI 会把 Guest Mode 更新作为 guest_message 分发，
+                回复需通过 answer_guest_query，由中间件中的 Guest bot wrapper 处理。
+                """
+                executed = await plugin_manager.middleware.dispatch_guest_command(
+                    bot, message
+                )
+                if executed > 0:
+                    logger.info(
+                        f"✨ Guest 命令处理完成，执行了 {executed} 个处理器"
+                    )
+        else:
+            logger.warning(
+                "当前 pyTelegramBotAPI 版本不支持 guest_message_handler，"
+                "Guest Mode 将不可用。请升级 pyTelegramBotAPI。"
+            )
+
         @bot.message_handler(
             content_types=[
                 "text",
@@ -669,8 +693,11 @@ class BotRunner:
         # ==================== 启动 Bot ====================
         try:
             logger.success("✨ Bot 启动成功,开始轮询...")
+            allowed_updates = list(util.update_types)
+            if "guest_message" not in allowed_updates:
+                allowed_updates.append("guest_message")
             await bot.polling(
-                non_stop=True, allowed_updates=util.update_types, skip_pending=True
+                non_stop=True, allowed_updates=allowed_updates, skip_pending=True
             )
         except ApiTelegramException as e:
             logger.opt(exception=e).exception("ApiTelegramException")

@@ -244,7 +244,6 @@ async def whois_check(data):
                 # 分割标签和值
                 parts = stripped.split(":", 1)
                 if len(parts) == 2:
-                    key = parts[0].strip()
                     value = parts[1].strip()
                     # 如果值为空，跳过这一行
                     if not value:
@@ -293,6 +292,7 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,
         stop_propagation=True,
+        guest_supported=True,
         chat_types=["private", "group", "supergroup"],
     )
 

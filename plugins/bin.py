@@ -153,6 +153,7 @@ async def register_handlers(bot, middleware, plugin_name):
         plugin_name=plugin_name,
         priority=50,  # 优先级
         stop_propagation=True,  # 阻止后续处理器
+        guest_supported=True,
         chat_types=["private", "group", "supergroup"],  # 过滤器
     )
 

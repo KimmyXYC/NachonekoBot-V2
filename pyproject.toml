@@ -6,7 +6,7 @@ authors = [
     { name = "KimmyXYC", email = "kimmyxyc@nepnep.moe" },
 ]
 dependencies = [
-    "pyTelegramBotAPI>=4.32.0",
+    "pyTelegramBotAPI>=4.34.0",
     "asgiref>=3.11.1",
     "loguru>=0.7.3",
     "requests>=2.32.5",

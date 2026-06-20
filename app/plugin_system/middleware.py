@@ -7,6 +7,8 @@
 插件中间件系统 - 支持多 Handler 执行
 """
 
+import re
+import time
 from typing import List, Callable, Dict, Any
 from dataclasses import dataclass, field
 from loguru import logger
@@ -18,7 +20,7 @@ from utils.i18n import (
     get_inline_query_language,
     get_message_language,
 )
-from utils.i18n import make_localized_bot
+from utils.i18n import make_guest_localized_bot, make_localized_bot
 
 
 @dataclass
@@ -31,6 +33,7 @@ class HandlerMetadata:
     priority: int = 50  # 优先级(越大越先执行)
     stop_propagation: bool = False  # 是否停止传播
     filters: Dict[str, Any] = field(default_factory=dict)
+    guest_supported: bool = False
 
 
 class PluginMiddleware:
@@ -44,6 +47,7 @@ class PluginMiddleware:
             "inline": [],  # inline_query handlers
         }
         self._execution_stats = {}  # 统计信息
+        self._guest_query_seen: dict[str, float] = {}
         # 可切换开关的插件集合（由插件管理器在加载时标记）
         # plugin_name -> display_name
         self.toggleable_plugins: Dict[str, str] = {}
@@ -90,6 +94,7 @@ class PluginMiddleware:
         plugin_name: str,
         priority: int = 50,
         stop_propagation: bool = False,
+        guest_supported: bool = False,
         **filters,
     ):
         """
@@ -110,6 +115,7 @@ class PluginMiddleware:
                 priority=priority,
                 stop_propagation=stop_propagation,
                 filters=filters,
+                guest_supported=guest_supported,
             )
             self.handlers["command"].append(handler)
             logger.debug(f"注册命令 /{cmd} -> {plugin_name} (优先级: {priority})")
@@ -147,19 +153,9 @@ class PluginMiddleware:
         if not message.text or not message.text.startswith("/"):
             return 0
 
-        # 提取命令
-        raw_command = message.text.split()[0][1:]
-        if "@" in raw_command:
-            command_part, mentioned_bot = raw_command.split("@", 1)
-            if BotSetting.bot_username:
-                if (
-                    BotSetting.bot_username
-                    and mentioned_bot.lower() != BotSetting.bot_username.lower()
-                ):
-                    return 0
-            command = command_part.lower()
-        else:
-            command = raw_command.lower()
+        command = self._extract_command(message.text)
+        if not command:
+            return 0
 
         # 查找所有匹配的 handlers
         matched_handlers = [
@@ -215,6 +211,80 @@ class PluginMiddleware:
             except Exception as e:
                 logger.error(
                     f"❌ Handler {handler.plugin}.{handler.name} 执行失败: {e}"
+                )
+
+        return executed_count
+
+    async def dispatch_guest_command(self, bot, message: types.Message):
+        """分发 Guest Mode 命令消息。
+
+        Guest Mode 使用 Update.guest_message + answer_guest_query，不能直接走
+        普通 ``reply_to``/``send_message``。这里仅执行显式声明
+        ``guest_supported=True`` 的命令处理器。
+        """
+        guest_query_id = getattr(message, "guest_query_id", None)
+        if not guest_query_id:
+            return 0
+
+        if self._is_duplicate_guest_query(guest_query_id):
+            logger.warning(f"⏭️ 跳过重复 Guest query: {guest_query_id}")
+            return 0
+
+        original_text = getattr(message, "text", None) or ""
+        normalized_text = self.normalize_guest_command_text(original_text)
+        if not normalized_text.startswith("/"):
+            return 0
+
+        try:
+            setattr(message, "original_guest_text", original_text)
+            setattr(message, "text", normalized_text)
+            setattr(message, "is_guest_message", True)
+        except Exception:
+            pass
+
+        command = self._extract_command(normalized_text)
+        if not command:
+            return 0
+
+        matched_handlers = [
+            h
+            for h in self.handlers["command"]
+            if h.guest_supported
+            and h.name in (command, "*")
+            and self._check_filters(h, message)
+        ]
+
+        if not matched_handlers:
+            return 0
+
+        logger.info(
+            f"🎯 Guest 命令 /{command} 匹配到 {len(matched_handlers)} 个处理器"
+        )
+
+        executed_count = 0
+        for handler in matched_handlers:
+            try:
+                logger.debug(f"  → 执行 Guest {handler.plugin}.{handler.name}")
+                # Guest Mode 下 bot 可能不是群成员，不使用群组语言/开关状态。
+                lang = await get_inline_query_language(message)
+                callback_result = await handler.callback(
+                    make_guest_localized_bot(bot, handler.plugin, lang), message
+                )
+
+                if callback_result is True:
+                    if handler.stop_propagation:
+                        break
+                    continue
+
+                executed_count += 1
+                key = f"guest.{handler.plugin}.{handler.name}"
+                self._execution_stats[key] = self._execution_stats.get(key, 0) + 1
+
+                if handler.stop_propagation or callback_result is False:
+                    break
+            except Exception as e:
+                logger.error(
+                    f"❌ Guest Handler {handler.plugin}.{handler.name} 执行失败: {e}"
                 )
 
         return executed_count
@@ -342,6 +412,53 @@ class PluginMiddleware:
                 return False
 
         return True
+
+    @staticmethod
+    def normalize_guest_command_text(text: str) -> str:
+        """清理 Guest Mode 中尾随/命令内的 @BotName mention。"""
+        text = (text or "").strip()
+        username = (BotSetting.bot_username or "").lstrip("@")
+        if not text or not username:
+            return text
+
+        # /cmd@BotName args -> /cmd args
+        text = re.sub(
+            rf"(?i)^/([A-Za-z0-9_]+)@{re.escape(username)}\b",
+            r"/\1",
+            text,
+        )
+        # /cmd args @BotName -> /cmd args
+        text = re.sub(rf"(?i)(^|\s)@{re.escape(username)}\b", " ", text)
+        return re.sub(r"\s+", " ", text).strip()
+
+    @staticmethod
+    def _extract_command(text: str | None) -> str | None:
+        if not text or not text.startswith("/"):
+            return None
+
+        raw_command = text.split()[0][1:]
+        if "@" in raw_command:
+            command_part, mentioned_bot = raw_command.split("@", 1)
+            if BotSetting.bot_username:
+                if mentioned_bot.lower() != BotSetting.bot_username.lower():
+                    return None
+            return command_part.lower()
+
+        return raw_command.lower()
+
+    def _is_duplicate_guest_query(self, guest_query_id: str) -> bool:
+        now = time.monotonic()
+        ttl = 30 * 60
+        expired = [
+            key for key, expires_at in self._guest_query_seen.items() if expires_at <= now
+        ]
+        for key in expired:
+            self._guest_query_seen.pop(key, None)
+
+        if guest_query_id in self._guest_query_seen:
+            return True
+        self._guest_query_seen[guest_query_id] = now + ttl
+        return False
 
     def _check_callback_filters(
         self, handler: HandlerMetadata, call: types.CallbackQuery
