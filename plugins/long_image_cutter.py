@@ -17,6 +17,7 @@ from loguru import logger
 from telebot import types
 from telebot.asyncio_helper import ApiTelegramException
 from PIL import Image
+from utils.telegram_send_queue import telegram_send_queue
 from utils.yaml import BotConfig
 from utils.i18n import _t
 
@@ -245,12 +246,16 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         caption = _t(
                             "label.slice_single", current=start_idx + 1, total=total
                         )
-                        await _send_with_retry(
-                            lambda: bot.send_photo(
-                                chat_id=message.chat.id,
-                                photo=bio,
-                                caption=caption,
-                                reply_to_message_id=message.message_id,
+                        await telegram_send_queue.enqueue(
+                            message.chat.id,
+                            lambda: _send_with_retry(
+                                lambda: bot.send_photo(
+                                    chat_id=message.chat.id,
+                                    photo=bio,
+                                    caption=caption,
+                                    reply_to_message_id=message.message_id,
+                                ),
+                                seekables=[bio],
                             ),
                             seekables=[bio],
                         )
@@ -279,11 +284,15 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
                         else:
                             media.append(tb_types.InputMediaPhoto(media=file_obj))
 
-                    await _send_with_retry(
-                        lambda: bot.send_media_group(
-                            chat_id=message.chat.id,
-                            media=media,
-                            reply_to_message_id=message.message_id,
+                    await telegram_send_queue.enqueue(
+                        message.chat.id,
+                        lambda: _send_with_retry(
+                            lambda: bot.send_media_group(
+                                chat_id=message.chat.id,
+                                media=media,
+                                reply_to_message_id=message.message_id,
+                            ),
+                            seekables=bio_list,
                         ),
                         seekables=bio_list,
                     )
@@ -302,7 +311,7 @@ async def handle_document_image(bot, message: types.Message, document: types.Doc
 
 
 async def _send_with_retry(
-    send_coro_factory, max_retries: int = 3, seekables: list = None
+    send_coro_factory, max_retries: int = 3, seekables: list | None = None
 ):
     """
     通用发送重试：当遇到 Telegram 429（Too Many Requests）错误时，读取 retry_after 秒等待后重试。
