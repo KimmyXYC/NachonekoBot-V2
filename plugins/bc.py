@@ -16,10 +16,12 @@ import xmltodict
 
 try:
     from curl_cffi.requests import AsyncSession
+    from curl_cffi.requests.impersonate import DEFAULT_CHROME
 
     CURL_CFFI_AVAILABLE = True
 except ImportError:
     AsyncSession = None
+    DEFAULT_CHROME = None
     CURL_CFFI_AVAILABLE = False
     logger.warning(
         "curl_cffi 未安装，Mastercard 和 Visa 汇率查询可能失败。请运行: pip install curl_cffi"
@@ -45,7 +47,8 @@ __command_help__ = {
 _chrome_version_cache = None
 _chrome_version_timestamp = 0
 CHROME_VERSION_TTL = 86400  # 24小时
-FALLBACK_CHROME_VERSION = "136"
+FALLBACK_CHROME_VERSION = "142"
+FALLBACK_CHROME_FULL_VERSION = "142.0.7444.175"
 
 
 # ==================== 核心功能 ====================
@@ -97,9 +100,25 @@ def get_exchange_rate_date() -> datetime:
 
 async def fetch_chrome_version() -> str:
     """
-    获取Chrome版本，使用TTL缓存
+    获取 Chrome 主版本，优先跟随 curl_cffi 当前默认 TLS 指纹版本。
     """
+    if DEFAULT_CHROME:
+        version = str(DEFAULT_CHROME).removeprefix("chrome")
+        if version.isdigit():
+            return version
     return FALLBACK_CHROME_VERSION
+
+
+def get_chrome_full_version(chrome_version: str) -> str:
+    if chrome_version == FALLBACK_CHROME_VERSION:
+        return FALLBACK_CHROME_FULL_VERSION
+    return f"{chrome_version}.0.0.0"
+
+
+def get_chrome_impersonate_version(chrome_version: str) -> str:
+    if DEFAULT_CHROME:
+        return str(DEFAULT_CHROME)
+    return f"chrome{chrome_version}"
 
 
 async def generate_headers() -> dict:
@@ -107,8 +126,9 @@ async def generate_headers() -> dict:
     生成请求头
     """
     chrome_version = await fetch_chrome_version()
-    ua = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version}.0.0.0 Safari/537.36"
-    client_hints_ua = f'"Google Chrome";v="{chrome_version}", "Chromium";v="{chrome_version}", "Not A(Brand";v="24"'
+    chrome_full_version = get_chrome_full_version(chrome_version)
+    ua = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_full_version} Safari/537.36"
+    client_hints_ua = f'"Not A(Brand";v="99", "Google Chrome";v="{chrome_version}", "Chromium";v="{chrome_version}"'
 
     headers = {
         "user-agent": ua,
@@ -118,7 +138,7 @@ async def generate_headers() -> dict:
         "sec-ch-ua-platform": "Windows",
     }
 
-    logger.debug("生成请求头，Chrome版本: {}", chrome_version)
+    logger.debug("生成请求头，Chrome版本: {}", chrome_full_version)
     return headers
 
 
@@ -290,7 +310,7 @@ async def fetch_mastercard_rate(
 
         # 获取Chrome版本并构建impersonate参数
         chrome_version = await fetch_chrome_version()
-        impersonate_version = f"chrome{chrome_version}"
+        impersonate_version = get_chrome_impersonate_version(chrome_version)
         logger.debug("使用TLS指纹版本: {}", impersonate_version)
 
         async with AsyncSession() as session:
@@ -417,7 +437,7 @@ async def fetch_visa_rate(amount: float, currency_from: str, currency_to: str) -
 
         # 获取Chrome版本并构建impersonate参数
         chrome_version = await fetch_chrome_version()
-        impersonate_version = f"chrome{chrome_version}"
+        impersonate_version = get_chrome_impersonate_version(chrome_version)
         logger.debug("使用TLS指纹版本: {}", impersonate_version)
 
         async with AsyncSession() as session:
