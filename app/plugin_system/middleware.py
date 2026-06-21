@@ -130,6 +130,7 @@ class PluginMiddleware:
         handler_name: str = None,
         priority: int = 50,
         stop_propagation: bool = False,
+        guest_supported: bool = False,
         **filters,
     ):
         """注册通用消息处理器"""
@@ -140,6 +141,7 @@ class PluginMiddleware:
             priority=priority,
             stop_propagation=stop_propagation,
             filters=filters,
+            guest_supported=guest_supported,
         )
         self.handlers["message"].append(handler)
         self.handlers["message"].sort(key=lambda h: h.priority, reverse=True)
@@ -226,10 +228,6 @@ class PluginMiddleware:
         if not guest_query_id:
             return 0
 
-        if self._is_duplicate_guest_query(guest_query_id):
-            logger.warning(f"⏭️ 跳过重复 Guest query: {guest_query_id}")
-            return 0
-
         original_text = getattr(message, "text", None) or ""
         normalized_text = self.normalize_guest_command_text(original_text)
         if not normalized_text.startswith("/"):
@@ -257,6 +255,10 @@ class PluginMiddleware:
         if not matched_handlers:
             return 0
 
+        if self._is_duplicate_guest_query(guest_query_id):
+            logger.warning(f"⏭️ 跳过重复 Guest query: {guest_query_id}")
+            return 0
+
         logger.info(
             f"🎯 Guest 命令 /{command} 匹配到 {len(matched_handlers)} 个处理器"
         )
@@ -267,8 +269,10 @@ class PluginMiddleware:
                 logger.debug(f"  → 执行 Guest {handler.plugin}.{handler.name}")
                 # Guest Mode 下 bot 可能不是群成员，不使用群组语言/开关状态。
                 lang = await get_inline_query_language(message)
+                localized_bot = make_guest_localized_bot(bot, handler.plugin, lang)
+                setattr(localized_bot, "_current_guest_message", message)
                 callback_result = await handler.callback(
-                    make_guest_localized_bot(bot, handler.plugin, lang), message
+                    localized_bot, message
                 )
 
                 if callback_result is True:
@@ -285,6 +289,55 @@ class PluginMiddleware:
             except Exception as e:
                 logger.error(
                     f"❌ Guest Handler {handler.plugin}.{handler.name} 执行失败: {e}"
+                )
+
+        return executed_count
+
+    async def dispatch_guest_message(self, bot, message: types.Message):
+        """分发 Guest Mode 普通消息到显式支持 Guest 的 message handlers。"""
+        guest_query_id = getattr(message, "guest_query_id", None)
+        if not guest_query_id:
+            return 0
+
+        original_text = getattr(message, "text", None) or ""
+        normalized_text = self.normalize_guest_command_text(original_text)
+        try:
+            setattr(message, "original_guest_text", original_text)
+            setattr(message, "text", normalized_text)
+            setattr(message, "is_guest_message", True)
+        except Exception:
+            pass
+
+        matched_handlers = [
+            h
+            for h in self.handlers["message"]
+            if h.guest_supported and self._check_filters(h, message)
+        ]
+
+        if not matched_handlers:
+            return 0
+
+        if self._is_duplicate_guest_query(guest_query_id):
+            logger.warning(f"⏭️ 跳过重复 Guest query: {guest_query_id}")
+            return 0
+
+        executed_count = 0
+        for handler in matched_handlers:
+            try:
+                lang = await get_inline_query_language(message)
+                localized_bot = make_guest_localized_bot(bot, handler.plugin, lang)
+                setattr(localized_bot, "_current_guest_message", message)
+                await handler.callback(localized_bot, message)
+                executed_count += 1
+
+                key = f"guest.{handler.plugin}.{handler.name}"
+                self._execution_stats[key] = self._execution_stats.get(key, 0) + 1
+
+                if handler.stop_propagation:
+                    break
+            except Exception as e:
+                logger.error(
+                    f"❌ Guest Message Handler {handler.plugin}.{handler.name} 执行失败: {e}"
                 )
 
         return executed_count
@@ -427,8 +480,8 @@ class PluginMiddleware:
             r"/\1",
             text,
         )
-        # /cmd args @BotName -> /cmd args
-        text = re.sub(rf"(?i)(^|\s)@{re.escape(username)}\b", " ", text)
+        # /cmd args @BotName -> /cmd args；喜报@BotName 文本 -> 喜报 文本
+        text = re.sub(rf"(?i)@{re.escape(username)}\b", " ", text)
         return re.sub(r"\s+", " ", text).strip()
 
     @staticmethod

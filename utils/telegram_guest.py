@@ -10,6 +10,7 @@ import uuid
 from types import SimpleNamespace
 from typing import Any
 
+import aiohttp
 from telebot import types
 
 
@@ -67,6 +68,63 @@ async def answer_guest_text(
         title=title,
         parse_mode=parse_mode,
         disable_web_page_preview=disable_web_page_preview,
+    )
+    return await bot.answer_guest_query(guest_query_id, result)
+
+
+async def upload_image_to_telegraph(photo: Any, filename: str = "image.png") -> str:
+    """Upload an in-memory image to Telegraph and return a public HTTPS URL."""
+    seek = getattr(photo, "seek", None)
+    if seek is not None:
+        seek(0)
+
+    if hasattr(photo, "read"):
+        data = photo.read()
+    elif isinstance(photo, bytes):
+        data = photo
+    else:
+        raise TypeError("Guest Mode photo must be bytes or a file-like object")
+
+    form = aiohttp.FormData()
+    form.add_field(
+        "file",
+        data,
+        filename=getattr(photo, "name", filename) or filename,
+        content_type="image/png",
+    )
+    async with aiohttp.ClientSession() as session:
+        async with session.post("https://telegra.ph/upload", data=form, timeout=30) as resp:
+            payload = await resp.json(content_type=None)
+            if resp.status != 200:
+                raise RuntimeError(f"Telegraph upload failed: HTTP {resp.status} {payload}")
+
+    if not isinstance(payload, list) or not payload or "src" not in payload[0]:
+        raise RuntimeError(f"Telegraph upload returned unexpected payload: {payload}")
+
+    return f"https://telegra.ph{payload[0]['src']}"
+
+
+async def answer_guest_photo(
+    bot: Any,
+    message: Any,
+    photo: Any,
+    *,
+    title: str = "Image",
+    caption: str | None = None,
+    parse_mode: str | None = None,
+) -> Any:
+    guest_query_id = getattr(message, "guest_query_id", None)
+    if not guest_query_id:
+        raise ValueError("message.guest_query_id is required for Guest Mode replies")
+
+    photo_url = await upload_image_to_telegraph(photo)
+    result = types.InlineQueryResultPhoto(
+        id=f"guest_photo_{uuid.uuid4().hex}",
+        photo_url=photo_url,
+        thumbnail_url=photo_url,
+        title=title,
+        caption=caption,
+        parse_mode=parse_mode,
     )
     return await bot.answer_guest_query(guest_query_id, result)
 

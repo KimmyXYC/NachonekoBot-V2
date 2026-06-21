@@ -610,6 +610,10 @@ class BotRunner:
                 executed = await plugin_manager.middleware.dispatch_guest_command(
                     bot, message
                 )
+                if executed == 0:
+                    executed = await plugin_manager.middleware.dispatch_guest_message(
+                        bot, message
+                    )
                 if executed > 0:
                     logger.info(
                         f"✨ Guest 命令处理完成，执行了 {executed} 个处理器"
