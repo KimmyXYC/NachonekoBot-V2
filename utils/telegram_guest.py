@@ -10,8 +10,8 @@ import uuid
 from types import SimpleNamespace
 from typing import Any
 
-import aiohttp
 from telebot import types
+from utils.yaml import BotConfig
 
 
 MAX_GUEST_TEXT_LENGTH = 4096
@@ -72,36 +72,61 @@ async def answer_guest_text(
     return await bot.answer_guest_query(guest_query_id, result)
 
 
-async def upload_image_to_telegraph(photo: Any, filename: str = "image.png") -> str:
-    """Upload an in-memory image to Telegraph and return a public HTTPS URL."""
+def get_guest_media_cache_chat_id() -> int | str:
+    guest_config = BotConfig.get("guest", {}) or {}
+    chat_id = (
+        guest_config.get("media_cache_chat_id")
+        or guest_config.get("media_cache_channel_id")
+        or guest_config.get("channel_id")
+    )
+    if not chat_id:
+        raise RuntimeError(
+            "Guest Mode 媒体缓存频道未配置，请在 conf_dir/config.yaml 中设置 "
+            "guest.media_cache_chat_id"
+        )
+    return chat_id
+
+
+def rewind_uploadable(uploadable: Any) -> None:
+    seek = getattr(uploadable, "seek", None)
+    if seek is not None:
+        seek(0)
+
+
+def get_uploadable_name(uploadable: Any, fallback: str) -> str:
+    return getattr(uploadable, "name", None) or fallback
+
+
+async def upload_photo_to_cache_chat(bot: Any, photo: Any) -> str:
+    """Upload a local/generated photo to cache chat and return Telegram file_id."""
     seek = getattr(photo, "seek", None)
     if seek is not None:
         seek(0)
 
-    if hasattr(photo, "read"):
-        data = photo.read()
-    elif isinstance(photo, bytes):
-        data = photo
-    else:
-        raise TypeError("Guest Mode photo must be bytes or a file-like object")
-
-    form = aiohttp.FormData()
-    form.add_field(
-        "file",
-        data,
-        filename=getattr(photo, "name", filename) or filename,
-        content_type="image/png",
+    cache_message = await bot.send_photo(
+        get_guest_media_cache_chat_id(),
+        photo,
+        disable_notification=True,
     )
-    async with aiohttp.ClientSession() as session:
-        async with session.post("https://telegra.ph/upload", data=form, timeout=30) as resp:
-            payload = await resp.json(content_type=None)
-            if resp.status != 200:
-                raise RuntimeError(f"Telegraph upload failed: HTTP {resp.status} {payload}")
+    photos = getattr(cache_message, "photo", None) or []
+    if not photos:
+        raise RuntimeError("上传 Guest Mode 图片到缓存频道后未获得 photo file_id")
+    return photos[-1].file_id
 
-    if not isinstance(payload, list) or not payload or "src" not in payload[0]:
-        raise RuntimeError(f"Telegraph upload returned unexpected payload: {payload}")
 
-    return f"https://telegra.ph{payload[0]['src']}"
+async def upload_document_to_cache_chat(bot: Any, document: Any) -> str:
+    """Upload a local/generated file to cache chat and return Telegram file_id."""
+    rewind_uploadable(document)
+    cache_message = await bot.send_document(
+        get_guest_media_cache_chat_id(),
+        document,
+        disable_notification=True,
+    )
+    cached_document = getattr(cache_message, "document", None)
+    file_id = getattr(cached_document, "file_id", None)
+    if not file_id:
+        raise RuntimeError("上传 Guest Mode 文件到缓存频道后未获得 document file_id")
+    return file_id
 
 
 async def answer_guest_photo(
@@ -117,12 +142,35 @@ async def answer_guest_photo(
     if not guest_query_id:
         raise ValueError("message.guest_query_id is required for Guest Mode replies")
 
-    photo_url = await upload_image_to_telegraph(photo)
-    result = types.InlineQueryResultPhoto(
+    photo_file_id = await upload_photo_to_cache_chat(bot, photo)
+    result = types.InlineQueryResultCachedPhoto(
         id=f"guest_photo_{uuid.uuid4().hex}",
-        photo_url=photo_url,
-        thumbnail_url=photo_url,
+        photo_file_id=photo_file_id,
         title=title,
+        caption=caption,
+        parse_mode=parse_mode,
+    )
+    return await bot.answer_guest_query(guest_query_id, result)
+
+
+async def answer_guest_document(
+    bot: Any,
+    message: Any,
+    document: Any,
+    *,
+    title: str | None = None,
+    caption: str | None = None,
+    parse_mode: str | None = None,
+) -> Any:
+    guest_query_id = getattr(message, "guest_query_id", None)
+    if not guest_query_id:
+        raise ValueError("message.guest_query_id is required for Guest Mode replies")
+
+    document_file_id = await upload_document_to_cache_chat(bot, document)
+    result = types.InlineQueryResultCachedDocument(
+        id=f"guest_document_{uuid.uuid4().hex}",
+        document_file_id=document_file_id,
+        title=title or get_uploadable_name(document, "file"),
         caption=caption,
         parse_mode=parse_mode,
     )

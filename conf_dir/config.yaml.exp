@@ -35,9 +35,16 @@ translate:
 inline:
   empty_placeholder_image: https://pbs.twimg.com/media/HAckcxubgAARphg?format=jpg&name=4096x4096
 
+# Guest Mode media cache.
+# Dynamic local media cannot be uploaded directly via answerGuestQuery.
+# Configure a channel/group where the bot can send media first, then reuse Telegram file_id.
+guest:
+  media_cache_chat_id: -1001234567890
+
 # Custom Bot API server configuration
 botapi:
   enable: false
+  api_server: http://127.0.0.1:8081
 
 # OCR plugin configuration (Paddle OCR)
 ocr:

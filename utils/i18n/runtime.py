@@ -2,6 +2,7 @@
 
 from utils.i18n.service import plugin_t, t as framework_t, normalize_language
 from utils.telegram_guest import (
+    answer_guest_document,
     answer_guest_photo,
     answer_guest_text,
     is_guest_message,
@@ -90,6 +91,30 @@ class GuestLocalizedBot(LocalizedBot):
             self._bot,
             guest_message,
             photo,
+            caption=kwargs.get("caption"),
+            parse_mode=kwargs.get("parse_mode"),
+        )
+        self._answered = True
+        self._inline_message_id = getattr(sent, "inline_message_id", None)
+        self._fake_message_seq += 1
+        return make_guest_message_like(
+            int(getattr(guest_message.chat, "id", 0)),
+            self._fake_message_seq,
+            self._inline_message_id,
+        )
+
+    async def send_document(self, chat_id, document, *args, **kwargs):
+        guest_message = kwargs.pop("guest_message", None) or getattr(
+            self, "_current_guest_message", None
+        )
+        if not guest_message or not is_guest_message(guest_message):
+            return await self._bot.send_document(chat_id, document, *args, **kwargs)
+
+        sent = await answer_guest_document(
+            self._bot,
+            guest_message,
+            document,
+            title=kwargs.get("visible_file_name") or getattr(document, "name", None),
             caption=kwargs.get("caption"),
             parse_mode=kwargs.get("parse_mode"),
         )
