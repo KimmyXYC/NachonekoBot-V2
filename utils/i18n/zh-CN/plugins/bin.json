@@ -18,6 +18,8 @@
   "label.prepaid_yes": "是否预付：是",
   "label.prepaid_no": "是否预付：否",
   "label.country_name": "发卡国家：{value}",
+  "label.luhn_yes": "Luhn 校验：通过",
+  "label.luhn_no": "Luhn 校验：未通过",
   "status.querying_bin": "正在查询BIN: {card_bin} ...",
   "inline.usage_title": "BIN 查询",
   "inline.usage_description": "用法：bin [Card_BIN]",

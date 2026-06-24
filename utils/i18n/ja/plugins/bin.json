@@ -18,6 +18,8 @@
   "label.prepaid_yes": "プリペイド：はい",
   "label.prepaid_no": "プリペイド：いいえ",
   "label.country_name": "発行国：{value}",
+  "label.luhn_yes": "Luhn チェック：合格",
+  "label.luhn_no": "Luhn チェック：不合格",
   "status.querying_bin": "BINを照会中: {card_bin} ...",
   "inline.usage_title": "BIN 照会",
   "inline.usage_description": "使い方：bin [Card_BIN]",

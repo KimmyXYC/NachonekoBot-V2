@@ -18,6 +18,8 @@
   "label.prepaid_yes": "Prepaid: Yes",
   "label.prepaid_no": "Prepaid: No",
   "label.country_name": "Country: {value}",
+  "label.luhn_yes": "Luhn: Passed",
+  "label.luhn_no": "Luhn: Failed",
   "status.querying_bin": "Querying BIN: {card_bin} ...",
   "inline.usage_title": "BIN Lookup",
   "inline.usage_description": "Usage: bin [Card_BIN]",

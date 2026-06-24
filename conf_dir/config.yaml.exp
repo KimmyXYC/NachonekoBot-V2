@@ -22,6 +22,10 @@ shorturl:
 icp:
   url: https://icp-api.example.com/query/web
 
+# HandyAPI BIN lookup configuration
+bin:
+  handyapi_api_key: your_handyapi_api_key
+
 xiatou:
   id: [123456, 789012]
   openai_api: https://api.openai.com
