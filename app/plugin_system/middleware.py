@@ -156,20 +156,22 @@ class PluginMiddleware:
             return 0
 
         command = self._extract_command(message.text)
-        if not command:
+        command_name = command or self._extract_command_name(message.text)
+        if not command_name:
             return 0
 
         # 查找所有匹配的 handlers
         matched_handlers = [
             h
             for h in self.handlers["command"]
-            if h.name in (command, "*") and self._check_filters(h, message)
+            if (h.name == "*" or (command is not None and h.name == command))
+            and self._check_filters(h, message)
         ]
 
         if not matched_handlers:
             return 0
 
-        logger.info(f"🎯 命令 /{command} 匹配到 {len(matched_handlers)} 个处理器")
+        logger.info(f"🎯 命令 /{command_name} 匹配到 {len(matched_handlers)} 个处理器")
 
         executed_count = 0
         for handler in matched_handlers:
@@ -498,6 +500,20 @@ class PluginMiddleware:
             return command_part.lower()
 
         return raw_command.lower()
+
+    @staticmethod
+    def _extract_command_name(text: str | None) -> str | None:
+        """提取命令名，不因命令指向其他 bot 而丢弃。
+
+        该结果仅用于 ``*`` 命令守卫；普通命令处理器仍使用
+        :meth:`_extract_command`，不会响应发给其他 bot 的命令。
+        """
+        if not text or not text.startswith("/"):
+            return None
+
+        raw_command = text.split()[0][1:]
+        command_part = raw_command.split("@", 1)[0]
+        return command_part.lower() or None
 
     def _is_duplicate_guest_query(self, guest_query_id: str) -> bool:
         now = time.monotonic()
