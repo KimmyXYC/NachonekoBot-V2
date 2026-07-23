@@ -587,13 +587,13 @@ class BotRunner:
         @bot.message_handler(func=lambda m: m.text and m.text.startswith("/"))
         async def middleware_dispatcher(message: types.Message):
             """统一命令分发器：优先分发命令；若无命中，则继续走普通消息分发，
-            以便处理像 '/$' 这类非标准命令前缀的消息（由插件自行解析）。"""
+            以便处理像 '/$'、'/ ' 这类非标准命令前缀的消息（由插件自行解析）。"""
             executed = await plugin_manager.middleware.dispatch_command(bot, message)
             if executed > 0:
                 logger.info(f"✨ 命令处理完成，执行了 {executed} 个处理器")
             else:
                 # 没有任何命令处理器命中，则转交给通用消息中间件，
-                # 允许像 quote 这类通过 message handler 解析 '/$' 的插件生效。
+                # 允许 quote 等插件通过 message handler 解析 '/$'、'/ ' 语法。
                 await plugin_manager.middleware.dispatch_message(bot, message)
 
         if hasattr(bot, "guest_message_handler"):

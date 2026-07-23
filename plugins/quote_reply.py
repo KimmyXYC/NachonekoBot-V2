@@ -4,7 +4,7 @@
 # @File    : quote.py
 # @Software: PyCharm
 """
-- 监听形如 "/$动作 [附加语句]" 或 "\\$动作 [附加语句]" 的消息（不是标准 /command）
+- 监听形如 "/$动作"、"/ 动作"、"\\$动作" 或 "\\ 动作" 的消息
 - 当消息回复了他人时，以被回复的人作为对象；否则支持“动作@username”语法解析用户名
 - MarkdownV2 转义与 t.me 用户名解析（爬 og:title）
 - 群话题消息会自动跟随原消息线程（使用 reply_to）
@@ -24,9 +24,9 @@ from app.utils import escape_md_v2_text
 # ==================== 插件元数据 ====================
 __plugin_name__ = "quote_reply"
 __display_name__ = "Quote Reply"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "KimmyXYC"
-__description__ = "/$ 与 \\$ 开头的动作引用插件"
+__description__ = "支持 $ 或空格分隔动作词的引用插件"
 __commands__ = ["$"]  # 仅用于展示，实际通过 message handler 拦截
 __command_category__ = "misc"
 __command_order__ = {"$": 900}
@@ -179,13 +179,16 @@ async def _find_target_from_text(
 
 def _parse_keywords(text: str) -> list:
     """
-    先删除第一个 '$'，再去掉首字符（/ 或 \\），再进行 MarkdownV2 转义，最后按空格 SplitN 2。
+    删除第一个 '$'，去掉首字符（/ 或 \\）及其后的空白，
+    再进行 MarkdownV2 转义，最后按空格 SplitN 2。
     """
     # 删除第一个 '$'
     cleaned = text.replace("$", "", 1)
     # 去掉开头的 / 或 \\
     if cleaned and cleaned[0] in ("/", "\\"):
         cleaned = cleaned[1:]
+    # 英文动作既支持 /$like，也支持 / like。
+    cleaned = cleaned.lstrip()
     # 转义后 split
     cleaned = escape_md_v2_text(cleaned)
     parts = cleaned.split(" ", 2)
@@ -195,14 +198,10 @@ def _parse_keywords(text: str) -> list:
 
 
 def _is_trigger(text: str) -> bool:
-    """匹配 '/$' 或 '\\$' 开头的消息。"""
-    if not text or len(text) < 2:
+    """匹配 $、空白分隔或直接跟非 ASCII 动作词的消息。"""
+    if not text or len(text) < 2 or text[0] not in ("/", "\\"):
         return False
-    if text.startswith("/"):
-        return (not _is_ascii(text[:2])) or text.startswith("/$")
-    if text.startswith("\\"):
-        return (not _is_ascii(text[:2])) or text.startswith("\\$")
-    return False
+    return not _is_ascii(text[:2]) or text[1] == "$" or text[1].isspace()
 
 
 # ==================== 业务核心 ====================
@@ -261,7 +260,7 @@ async def _build_reply_text(message: types.Message) -> str:
 
 # ==================== Handler 注册 ====================
 async def register_handlers(bot, middleware, plugin_name):
-    """注册消息监听器：拦截 '/$' 与 '\\$' 前缀的消息。"""
+    """注册消息监听器：拦截 $ 或空格分隔动作词的消息。"""
 
     async def quote_handler(bot, message: types.Message):
         try:
@@ -288,7 +287,9 @@ async def register_handlers(bot, middleware, plugin_name):
         chat_types=["group", "supergroup"],
     )
 
-    logger.info(f"✅ {__plugin_name__} 插件已注册 - 监听 '/$' 与 '\\$' 消息")
+    logger.info(
+        f"✅ {__plugin_name__} 插件已注册 - 监听 '$' 或空格分隔的动作消息"
+    )
 
 
 # ==================== 插件信息 ====================
