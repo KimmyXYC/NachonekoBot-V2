@@ -13,7 +13,7 @@ from utils.i18n import _t
 
 # ==================== 插件元数据 ====================
 __plugin_name__ = "whois"
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 __author__ = "KimmyXYC"
 __description__ = "Whois 域名查询"
 __commands__ = ["whois"]
@@ -136,7 +136,9 @@ async def query_whois_text(data: str) -> str:
     status, result = await whois_check(data)
     if not status:
         return _t("error.request_failed", reason=result)
-    return f"`{result}`"
+    # 代码块内只需转义反斜杠和反引号（MarkdownV2 pre 实体规则）
+    escaped = result.replace("\\", "\\\\").replace("`", "\\`")
+    return f"```\n{escaped}\n```"
 
 
 async def handle_whois_command(bot, message: types.Message):
