@@ -124,9 +124,14 @@ def test_mastercard_success_stops_fallback(plugin, install_session, monkeypatch)
     "card_bin", ["2233", "22330", "223300", "2233000", "22330000", "001234"]
 )
 def test_valid_input_is_sent_unchanged(plugin, install_session, card_bin):
-    session = install_session(Response(MASTERCARD_RESULT))
+    session = install_session(
+        Response({"scheme": "visa"} if card_bin == "001234" else MASTERCARD_RESULT)
+    )
     result = asyncio.run(plugin.query_bin_text(card_bin))
-    assert session.calls[0][2] == {"json": {"bin": card_bin}}
+    if card_bin == "001234":
+        assert session.calls[0][1] == "https://lookup.binlist.net/001234"
+    else:
+        assert session.calls[0][2] == {"json": {"bin": card_bin}}
     assert result.startswith(f"BIN：{card_bin}\n")
 
 
@@ -194,10 +199,9 @@ def test_mastercard_failure_falls_back_to_handyapi(
 
 
 def test_no_key_skips_handyapi(plugin, install_session):
-    session = install_session(Response({}), Response({"scheme": "visa"}))
+    session = install_session(Response({"scheme": "visa"}))
     assert asyncio.run(plugin.query_bin_text("411111")) == "BIN：411111\n卡品牌：visa"
     assert [call[1] for call in session.calls] == [
-        plugin.MASTERCARD_BIN_URL,
         "https://lookup.binlist.net/411111",
     ]
 
@@ -259,8 +263,8 @@ def test_command_and_inline_use_shared_query(
 ):
     if api_key:
         monkeypatch.setenv("HANDYAPI_API_KEY", api_key)
-    query = AsyncMock(return_value="shared result")
-    monkeypatch.setattr(plugin, "query_bin_text", query)
+    query = AsyncMock(return_value=("shared result", "binlist"))
+    monkeypatch.setattr(plugin, "_query_bin_result", query)
     bot = SimpleNamespace(
         reply_to=AsyncMock(return_value=SimpleNamespace(message_id=9)),
         edit_message_text=AsyncMock(),
@@ -286,6 +290,62 @@ def test_command_and_inline_use_shared_query(
     assert call.args[0] == "inline-id"
     assert call.args[1][0].input_message_content.message_text == "shared result"
     assert len(call.args[1][0].reply_markup.keyboard[0]) == button_count
+    assert call.args[1][0].reply_markup.keyboard[0][-1].text == "✓ binlist"
+
+
+@pytest.mark.parametrize("inline", [False, True])
+@pytest.mark.parametrize(
+    "api_key, responses, selected_source",
+    [
+        (None, [Response(MASTERCARD_RESULT)], "mastercard"),
+        (
+            "test-key",
+            [Response({}), Response({"Status": "SUCCESS", "Issuer": "Handy Bank"})],
+            "handyapi",
+        ),
+        (None, [Response({}), Response({"scheme": "visa"})], "binlist"),
+        (
+            "test-key",
+            [Response({}), TimeoutError(), Response({"scheme": "visa"})],
+            "binlist",
+        ),
+        (None, [Response({}), Response(status=404)], None),
+    ],
+)
+def test_initial_message_checks_actual_successful_source(
+    plugin, install_session, monkeypatch, inline, api_key, responses, selected_source
+):
+    if api_key:
+        monkeypatch.setenv("HANDYAPI_API_KEY", api_key)
+    session = install_session(*responses)
+    bot = SimpleNamespace(
+        reply_to=AsyncMock(return_value=SimpleNamespace(message_id=9)),
+        edit_message_text=AsyncMock(),
+        answer_inline_query=AsyncMock(),
+    )
+    if inline:
+        asyncio.run(
+            plugin.handle_bin_inline_query(
+                bot, SimpleNamespace(query="bin 223300", id="inline-id")
+            )
+        )
+        keyboard = bot.answer_inline_query.call_args.args[1][0].reply_markup
+    else:
+        asyncio.run(
+            plugin.handle_bin_command(
+                bot, SimpleNamespace(text="/bin 223300", chat=SimpleNamespace(id=7))
+            )
+        )
+        keyboard = bot.edit_message_text.call_args.kwargs["reply_markup"]
+    checked = [
+        button.callback_data
+        for button in keyboard.keyboard[0]
+        if button.text.startswith("✓ ")
+    ]
+    assert checked == (
+        [f"bin_source:{selected_source}:223300"] if selected_source else []
+    )
+    assert len(session.calls) == len(responses)
 
 
 @pytest.mark.parametrize("config_key", ["handyapi_api_key", "api_key"])
@@ -296,12 +356,10 @@ def test_source_keyboard_is_one_row_and_preserves_bin(plugin, config_key):
     ]
     assert len(rows) == 1
     assert [button["text"] for button in rows[0]] == [
-        "Mastercard",
         "✓ HandyAPI",
         "binlist",
     ]
     assert [button["callback_data"] for button in rows[0]] == [
-        "bin_source:mastercard:001234",
         "bin_source:handyapi:001234",
         "bin_source:binlist:001234",
     ]
@@ -490,3 +548,178 @@ def test_source_errors_have_translations(lang):
     )
     assert locale["error.handyapi_key_missing"]
     assert "HandyAPI" in locale["error.source_unreachable"].format(source="HandyAPI")
+
+
+@pytest.mark.parametrize(
+    "card_bin, is_mastercard",
+    [
+        ("2220", False),
+        ("22209999", False),
+        ("2221", True),
+        ("22210000", True),
+        ("2720", True),
+        ("27209999", True),
+        ("2721", False),
+        ("27210000", False),
+        ("50999999", False),
+        ("5100", True),
+        ("51000000", True),
+        ("55999999", True),
+        ("5600", False),
+        ("411111", False),
+        ("378282", False),
+        ("622202", False),
+        ("５０１０", False),
+        ("222", False),
+    ],
+)
+def test_mastercard_range_controls_button(plugin, card_bin, is_mastercard):
+    assert plugin._is_mastercard_bin(card_bin) is is_mastercard
+    buttons = plugin._build_source_keyboard(card_bin).keyboard[0]
+    assert any(button.text == "Mastercard" for button in buttons) is is_mastercard
+
+
+@pytest.mark.parametrize("api_key", [None, "test-key"])
+def test_non_mastercard_skips_mastercard_request(
+    plugin, install_session, monkeypatch, api_key
+):
+    if api_key:
+        monkeypatch.setenv("HANDYAPI_API_KEY", api_key)
+    session = install_session(
+        Response(
+            {"Status": "SUCCESS", "Issuer": "Bank"}
+            if api_key
+            else {"bank": {"name": "Bank"}}
+        )
+    )
+    text, source = asyncio.run(plugin._query_bin_result("411111"))
+    assert "Bank" in text
+    assert source == ("handyapi" if api_key else "binlist")
+    assert len(session.calls) == 1
+    assert session.calls[0][0] == "GET"
+
+
+def test_manual_mastercard_rejects_other_ranges(plugin, install_session):
+    session = install_session()
+    assert asyncio.run(plugin.query_bin_text("411111", "mastercard")) == plugin._t(
+        "error.invalid_parameter"
+    )
+    assert session.calls == []
+
+
+@pytest.mark.parametrize(
+    "source, data",
+    [
+        ("mastercard", MASTERCARD_RESULT),
+        ("handyapi", {"Status": "SUCCESS", "Issuer": "Handy Bank"}),
+        ("binlist", {"bank": {"name": "Last Bank"}}),
+    ],
+)
+def test_cache_expires_after_24_hours_without_sliding(
+    plugin, install_session, monkeypatch, source, data
+):
+    monkeypatch.setenv("HANDYAPI_API_KEY", "test-key")
+    now = [100.0]
+    monkeypatch.setattr(plugin, "monotonic", lambda: now[0])
+    session = install_session(Response(data), Response(data))
+    first = asyncio.run(plugin._query_bin_result("223300", source))
+    assert first[1] == source
+    now[0] += 86399
+    assert asyncio.run(plugin._query_bin_result("223300", source)) == first
+    assert len(session.calls) == 1
+    now[0] += 1
+    assert asyncio.run(plugin._query_bin_result("223300", source)) == first
+    assert len(session.calls) == 2
+
+
+def test_cache_separates_sources_and_full_bin_strings(plugin, install_session):
+    session = install_session(
+        Response(MASTERCARD_RESULT),
+        Response({"scheme": "mastercard"}),
+        Response(MASTERCARD_RESULT),
+    )
+    mc = asyncio.run(plugin.query_bin_text("223300", "mastercard"))
+    other = asyncio.run(plugin.query_bin_text("223300", "binlist"))
+    longer = asyncio.run(plugin.query_bin_text("22330000", "mastercard"))
+    assert mc != other
+    assert longer.startswith("BIN：22330000\n")
+    assert asyncio.run(plugin.query_bin_text("223300", "mastercard")) == mc
+    assert len(session.calls) == 3
+
+
+def test_cached_fallback_avoids_retrying_failed_provider(plugin, install_session):
+    session = install_session(
+        Response({}), Response({"scheme": "mastercard"}), Response(MASTERCARD_RESULT)
+    )
+    first = asyncio.run(plugin._query_bin_result("223300"))
+    assert first[1] == "binlist"
+    assert asyncio.run(plugin._query_bin_result("223300")) == first
+    assert len(session.calls) == 2
+    # 手动切换仍可单独查询此前失败的来源。
+    assert (
+        asyncio.run(plugin._query_bin_result("223300", "mastercard"))[1] == "mastercard"
+    )
+    assert len(session.calls) == 3
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        Response({}),
+        Response(status=404),
+        Response(status=429),
+        Response(status=503),
+        Response(ValueError()),
+        TimeoutError(),
+    ],
+)
+def test_failed_responses_are_not_cached(plugin, install_session, failure):
+    session = install_session(failure, Response(MASTERCARD_RESULT))
+    assert asyncio.run(plugin._query_bin_result("223300", "mastercard"))[1] is None
+    assert (
+        asyncio.run(plugin._query_bin_result("223300", "mastercard"))[1] == "mastercard"
+    )
+    assert len(session.calls) == 2
+
+
+def test_empty_binlist_result_is_not_cached(plugin, install_session):
+    session = install_session(Response({}), Response({"scheme": "visa"}))
+    assert asyncio.run(plugin._query_bin_result("411111"))[1] is None
+    assert asyncio.run(plugin._query_bin_result("411111"))[1] == "binlist"
+    assert len(session.calls) == 2
+
+
+def test_cached_data_uses_current_language(plugin, install_session, monkeypatch):
+    session = install_session(Response(MASTERCARD_RESULT))
+    assert "发卡行" in asyncio.run(plugin.query_bin_text("223300"))
+    locale = json.loads(
+        (ROOT / "utils/i18n/en/plugins/bin.json").read_text(encoding="utf-8")
+    )
+    monkeypatch.setattr(
+        plugin, "_t", lambda key, **kwargs: locale[key].format(**kwargs)
+    )
+    text = asyncio.run(plugin.query_bin_text("223300"))
+    assert "Bank: Bank of China Limited" in text
+    assert "发卡行" not in text
+    assert len(session.calls) == 1
+
+
+def test_handyapi_cache_respects_removed_key(plugin, install_session, monkeypatch):
+    monkeypatch.setenv("HANDYAPI_API_KEY", "test-key")
+    session = install_session(
+        Response({"Status": "SUCCESS", "Issuer": "Handy Bank"}),
+        Response({"scheme": "visa"}),
+    )
+    assert asyncio.run(plugin._query_bin_result("411111"))[1] == "handyapi"
+    monkeypatch.delenv("HANDYAPI_API_KEY")
+    assert asyncio.run(plugin._query_bin_result("411111"))[1] == "binlist"
+    assert len(session.calls) == 2
+
+
+def test_cache_evicts_old_entries_at_capacity(plugin, install_session, monkeypatch):
+    monkeypatch.setattr(plugin, "BIN_CACHE_MAX_ENTRIES", 2)
+    session = install_session(*(Response({"scheme": "visa"}) for _ in range(4)))
+    for card_bin in ("411111", "411112", "411113", "411111"):
+        asyncio.run(plugin.query_bin_text(card_bin))
+    assert len(session.calls) == 4
+    assert len(plugin._bin_cache) == 2

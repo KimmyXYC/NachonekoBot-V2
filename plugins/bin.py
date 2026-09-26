@@ -4,6 +4,8 @@
 # @File    : bin.py
 # @Software: PyCharm
 import os
+from collections import OrderedDict
+from time import monotonic
 from typing import Any
 
 import aiohttp
@@ -35,6 +37,10 @@ BIN_SOURCES = {
     "handyapi": "HandyAPI",
     "binlist": "binlist",
 }
+BIN_CACHE_TTL = 24 * 60 * 60
+BIN_CACHE_MAX_ENTRIES = 4096
+# 仅缓存成功响应的原始数据；不缓存语言相关文本或错误。
+_bin_cache: OrderedDict[tuple[str, str], tuple[float, dict[str, Any]]] = OrderedDict()
 
 
 class BinNotFoundError(Exception):
@@ -73,6 +79,48 @@ def _get_handyapi_api_key() -> str | None:
 def _append_label(msg_out: list[str], key: str, value: Any) -> None:
     if value not in (None, ""):
         msg_out.append(_t(key, value=value))
+
+
+def _is_mastercard_bin(card_bin: str) -> bool:
+    return (
+        4 <= len(card_bin) <= 8
+        and card_bin.isascii()
+        and card_bin.isdigit()
+        and ("51" <= card_bin[:2] <= "55" or "2221" <= card_bin[:4] <= "2720")
+    )
+
+
+def _available_sources(card_bin: str) -> list[str]:
+    return [
+        source
+        for source in BIN_SOURCES
+        if (source != "mastercard" or _is_mastercard_bin(card_bin))
+        and (source != "handyapi" or _get_handyapi_api_key())
+    ]
+
+
+def _get_cached_bin(source: str, card_bin: str) -> dict[str, Any] | None:
+    key = (source, card_bin)
+    cached = _bin_cache.get(key)
+    if cached is None:
+        return None
+    expires_at, data = cached
+    if monotonic() >= expires_at:
+        del _bin_cache[key]
+        return None
+    return data
+
+
+def _cache_bin(source: str, card_bin: str, data: dict[str, Any]) -> None:
+    now = monotonic()
+    _bin_cache.pop((source, card_bin), None)
+    # 按写入时间排列，清理过期项并限制内存占用。
+    while _bin_cache:
+        expires_at, _ = next(iter(_bin_cache.values()))
+        if expires_at > now and len(_bin_cache) < BIN_CACHE_MAX_ENTRIES:
+            break
+        _bin_cache.popitem(last=False)
+    _bin_cache[(source, card_bin)] = (now + BIN_CACHE_TTL, data)
 
 
 async def _query_mastercard_bin(
@@ -139,6 +187,8 @@ async def _query_binlist_bin(
 
     if not isinstance(bin_json, dict):
         raise ValueError("Invalid BIN response")
+    if not bin_json:
+        raise BinNotFoundError
     return bin_json
 
 
@@ -199,59 +249,58 @@ def _build_source_keyboard(
     keyboard.row(
         *[
             types.InlineKeyboardButton(
-                text=f"✓ {name}" if source == selected_source else name,
+                text=f"✓ {BIN_SOURCES[source]}"
+                if source == selected_source
+                else BIN_SOURCES[source],
                 callback_data=f"bin_source:{source}:{card_bin}",
             )
-            for source, name in BIN_SOURCES.items()
-            if source != "handyapi" or _get_handyapi_api_key()
+            for source in _available_sources(card_bin)
         ]
     )
     return keyboard
 
 
-async def query_bin_text(card_bin: str, source: str | None = None) -> str:
-    """查询 BIN；指定来源时仅查询该来源，否则按优先级自动回退。"""
+async def _query_bin_result(
+    card_bin: str, source: str | None = None
+) -> tuple[str, str | None]:
+    """返回查询文本及实际成功的来源；指定来源时不自动回退。"""
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
-        return _t("error.invalid_bin_parameter")
+        return _t("error.invalid_bin_parameter"), None
     if source is not None and source not in BIN_SOURCES:
-        return _t("error.invalid_parameter")
+        return _t("error.invalid_parameter"), None
     if source == "handyapi" and not _get_handyapi_api_key():
-        return _t("error.handyapi_key_missing")
+        return _t("error.handyapi_key_missing"), None
 
+    if source == "mastercard" and not _is_mastercard_bin(card_bin):
+        return _t("error.invalid_parameter"), None
+
+    sources = [source] if source else _available_sources(card_bin)
+    formatters = {
+        "mastercard": _format_mastercard_bin,
+        "handyapi": _format_handyapi_bin,
+        "binlist": _format_binlist_bin,
+    }
     try:
+        # 自动查询优先复用已有成功结果，避免再次请求此前失败的来源。
+        for candidate in sources:
+            cached = _get_cached_bin(candidate, card_bin)
+            if cached is not None:
+                return formatters[candidate](card_bin, cached), candidate
+
         async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT) as session:
-            if source == "mastercard":
-                bin_json = await _query_mastercard_bin(session, card_bin)
-                return _format_mastercard_bin(card_bin, bin_json)
-            if source == "handyapi":
-                bin_json = await _query_handyapi_bin(
-                    session, card_bin, _get_handyapi_api_key()
-                )
-                return _format_handyapi_bin(card_bin, bin_json)
-            if source == "binlist":
-                bin_json = await _query_binlist_bin(session, card_bin)
-                return _format_binlist_bin(card_bin, bin_json)
-
-            try:
-                bin_json = await _query_mastercard_bin(session, card_bin)
-                return _format_mastercard_bin(card_bin, bin_json)
-            except (
-                aiohttp.ClientError,
-                TimeoutError,
-                BinNotFoundError,
-                BinRateLimitError,
-                BinRequestError,
-                ValueError,
-            ) as e:
-                logger.warning(f"Mastercard BIN lookup failed, fallback: {e}")
-
-            handyapi_key = _get_handyapi_api_key()
-            if handyapi_key:
+            for candidate in sources:
                 try:
-                    bin_json = await _query_handyapi_bin(
-                        session, card_bin, handyapi_key
-                    )
-                    return _format_handyapi_bin(card_bin, bin_json)
+                    if candidate == "mastercard":
+                        bin_json = await _query_mastercard_bin(session, card_bin)
+                    elif candidate == "handyapi":
+                        bin_json = await _query_handyapi_bin(
+                            session, card_bin, _get_handyapi_api_key()
+                        )
+                    else:
+                        bin_json = await _query_binlist_bin(session, card_bin)
+                    result_text = formatters[candidate](card_bin, bin_json)
+                    _cache_bin(candidate, card_bin, bin_json)
+                    return result_text, candidate
                 except (
                     aiohttp.ClientError,
                     TimeoutError,
@@ -260,24 +309,31 @@ async def query_bin_text(card_bin: str, source: str | None = None) -> str:
                     BinRequestError,
                     ValueError,
                 ) as e:
-                    logger.warning(f"HandyAPI BIN lookup failed, fallback: {e}")
-
-            bin_json = await _query_binlist_bin(session, card_bin)
-            return _format_binlist_bin(card_bin, bin_json)
+                    if candidate == sources[-1]:
+                        raise
+                    logger.warning(
+                        f"{BIN_SOURCES[candidate]} BIN lookup failed, fallback: {e}"
+                    )
     except BinNotFoundError:
-        return _t("error.bin_not_found")
+        return _t("error.bin_not_found"), None
     except BinRateLimitError:
-        return _t("error.rate_limit_exceeded")
+        return _t("error.rate_limit_exceeded"), None
     except BinRequestError as e:
-        return _t("error.request_failed_with_status", status=e.status)
+        return _t("error.request_failed_with_status", status=e.status), None
     except (aiohttp.ClientError, TimeoutError):
         if source is not None:
-            return _t("error.source_unreachable", source=BIN_SOURCES[source])
-        return _t("error.binlist_unreachable")
+            return _t("error.source_unreachable", source=BIN_SOURCES[source]), None
+        return _t("error.binlist_unreachable"), None
     except ValueError:
-        return _t("error.invalid_parameter")
+        return _t("error.invalid_parameter"), None
     except Exception as e:
-        return _t("error.exception_occurred", reason=str(e))
+        return _t("error.exception_occurred", reason=str(e)), None
+
+
+async def query_bin_text(card_bin: str, source: str | None = None) -> str:
+    """查询 BIN 文本，保留现有调用接口。"""
+    text, _ = await _query_bin_result(card_bin, source)
+    return text
 
 
 async def handle_bin_command(bot, message: types.Message):
@@ -302,12 +358,12 @@ async def handle_bin_command(bot, message: types.Message):
         _t("status.querying_bin", card_bin=card_bin),
     )
 
-    result_text = await query_bin_text(card_bin)
+    result_text, selected_source = await _query_bin_result(card_bin)
     await bot.edit_message_text(
         result_text,
         message.chat.id,
         msg.message_id,
-        reply_markup=_build_source_keyboard(card_bin),
+        reply_markup=_build_source_keyboard(card_bin, selected_source),
     )
 
 
@@ -331,7 +387,7 @@ async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
         return
 
     card_bin = args[1]
-    result_text = await query_bin_text(card_bin)
+    result_text, selected_source = await _query_bin_result(card_bin)
 
     result = types.InlineQueryResultArticle(
         id=f"bin_{card_bin}",
@@ -339,7 +395,7 @@ async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
         description=_t("inline.send_result_description"),
         input_message_content=types.InputTextMessageContent(result_text),
         reply_markup=(
-            _build_source_keyboard(card_bin)
+            _build_source_keyboard(card_bin, selected_source)
             if card_bin.isdigit() and 4 <= len(card_bin) <= 8
             else None
         ),
