@@ -18,11 +18,11 @@
   "label.prepaid_yes": "プリペイド：はい",
   "label.prepaid_no": "プリペイド：いいえ",
   "label.country_name": "発行国：{value}",
-  "label.luhn_yes": "Luhn チェック：合格",
-  "label.luhn_no": "Luhn チェック：不合格",
   "status.querying_bin": "BINを照会中: {card_bin} ...",
   "inline.usage_title": "BIN 照会",
   "inline.usage_description": "使い方：bin [Card_BIN]",
   "inline.result_title": "BIN：{card_bin}",
-  "inline.send_result_description": "照会結果を送信"
+  "inline.send_result_description": "照会結果を送信",
+  "error.handyapi_key_missing": "HandyAPI の API キーが設定されていません。他の情報源を選択してください。",
+  "error.source_unreachable": "{source} にアクセスできません。しばらくしてから再試行するか、他の情報源を選択してください。"
 }

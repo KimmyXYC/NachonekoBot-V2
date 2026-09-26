@@ -8,6 +8,7 @@ from typing import Any
 
 import aiohttp
 from telebot import types
+from telebot.asyncio_helper import ApiTelegramException
 from loguru import logger
 from utils.i18n import _t
 from utils.yaml import BotConfig
@@ -25,9 +26,15 @@ __command_help__ = {
     "bin": "/bin [Card_BIN] - 查询银行卡 BIN 信息\nInline: @NachoNekoX_bot bin [Card_BIN]"
 }
 
+MASTERCARD_BIN_URL = "https://btr-reference-app.herokuapp.com/bins"
 HANDYAPI_BIN_URL = "https://data.handyapi.com/bin/{card_bin}"
 BINLIST_BIN_URL = "https://lookup.binlist.net/{card_bin}"
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
+BIN_SOURCES = {
+    "mastercard": "Mastercard",
+    "handyapi": "HandyAPI",
+    "binlist": "binlist",
+}
 
 
 class BinNotFoundError(Exception):
@@ -66,6 +73,34 @@ def _get_handyapi_api_key() -> str | None:
 def _append_label(msg_out: list[str], key: str, value: Any) -> None:
     if value not in (None, ""):
         msg_out.append(_t(key, value=value))
+
+
+async def _query_mastercard_bin(
+    session: aiohttp.ClientSession, card_bin: str
+) -> dict[str, Any]:
+    async with session.post(MASTERCARD_BIN_URL, json={"bin": card_bin}) as r:
+        if r.status == 404:
+            raise BinNotFoundError
+        if r.status == 429:
+            raise BinRateLimitError
+        if r.status != 200:
+            raise BinRequestError(r.status)
+
+        bin_json = await r.json(content_type=None)
+
+    if bin_json == {}:
+        raise BinNotFoundError
+    if not isinstance(bin_json, dict):
+        raise ValueError("Invalid Mastercard BIN response")
+    bin_num = bin_json.get("binNum")
+    if (
+        not isinstance(bin_num, str)
+        or not bin_num.isascii()
+        or not bin_num.isdigit()
+        or not (4 <= len(bin_num) <= 8)
+    ):
+        raise ValueError("Invalid Mastercard BIN number")
+    return bin_json
 
 
 async def _query_handyapi_bin(
@@ -107,6 +142,21 @@ async def _query_binlist_bin(
     return bin_json
 
 
+def _format_mastercard_bin(card_bin: str, bin_json: dict[str, Any]) -> str:
+    msg_out = [_t("label.bin", value=card_bin)]
+    scheme = bin_json.get("acceptanceBrand")
+    _append_label(msg_out, "label.scheme", "Mastercard" if scheme == "DMC" else scheme)
+    _append_label(msg_out, "label.card_type", bin_json.get("fundingSource"))
+    _append_label(msg_out, "label.brand", bin_json.get("productDescription"))
+    _append_label(msg_out, "label.bank_name", bin_json.get("customerName"))
+
+    country = bin_json.get("country") or {}
+    if isinstance(country, dict):
+        _append_label(msg_out, "label.country_name", country.get("name"))
+
+    return "\n".join(msg_out)
+
+
 def _format_handyapi_bin(card_bin: str, bin_json: dict[str, Any]) -> str:
     msg_out = [_t("label.bin", value=card_bin)]
     _append_label(msg_out, "label.scheme", bin_json.get("Scheme"))
@@ -117,10 +167,6 @@ def _format_handyapi_bin(card_bin: str, bin_json: dict[str, Any]) -> str:
     country = bin_json.get("Country") or {}
     if isinstance(country, dict):
         _append_label(msg_out, "label.country_name", country.get("Name"))
-
-    luhn = bin_json.get("Luhn")
-    if isinstance(luhn, bool):
-        msg_out.append(_t("label.luhn_yes") if luhn else _t("label.luhn_no"))
 
     return "\n".join(msg_out)
 
@@ -146,13 +192,59 @@ def _format_binlist_bin(card_bin: str, bin_json: dict[str, Any]) -> str:
     return "\n".join(msg_out)
 
 
-async def query_bin_text(card_bin: str) -> str:
-    """查询 BIN"""
+def _build_source_keyboard(
+    card_bin: str, selected_source: str | None = None
+) -> types.InlineKeyboardMarkup:
+    keyboard = types.InlineKeyboardMarkup(row_width=3)
+    keyboard.row(
+        *[
+            types.InlineKeyboardButton(
+                text=f"✓ {name}" if source == selected_source else name,
+                callback_data=f"bin_source:{source}:{card_bin}",
+            )
+            for source, name in BIN_SOURCES.items()
+            if source != "handyapi" or _get_handyapi_api_key()
+        ]
+    )
+    return keyboard
+
+
+async def query_bin_text(card_bin: str, source: str | None = None) -> str:
+    """查询 BIN；指定来源时仅查询该来源，否则按优先级自动回退。"""
     if not card_bin.isdigit() or not (4 <= len(card_bin) <= 8):
         return _t("error.invalid_bin_parameter")
+    if source is not None and source not in BIN_SOURCES:
+        return _t("error.invalid_parameter")
+    if source == "handyapi" and not _get_handyapi_api_key():
+        return _t("error.handyapi_key_missing")
 
     try:
         async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT) as session:
+            if source == "mastercard":
+                bin_json = await _query_mastercard_bin(session, card_bin)
+                return _format_mastercard_bin(card_bin, bin_json)
+            if source == "handyapi":
+                bin_json = await _query_handyapi_bin(
+                    session, card_bin, _get_handyapi_api_key()
+                )
+                return _format_handyapi_bin(card_bin, bin_json)
+            if source == "binlist":
+                bin_json = await _query_binlist_bin(session, card_bin)
+                return _format_binlist_bin(card_bin, bin_json)
+
+            try:
+                bin_json = await _query_mastercard_bin(session, card_bin)
+                return _format_mastercard_bin(card_bin, bin_json)
+            except (
+                aiohttp.ClientError,
+                TimeoutError,
+                BinNotFoundError,
+                BinRateLimitError,
+                BinRequestError,
+                ValueError,
+            ) as e:
+                logger.warning(f"Mastercard BIN lookup failed, fallback: {e}")
+
             handyapi_key = _get_handyapi_api_key()
             if handyapi_key:
                 try:
@@ -160,9 +252,14 @@ async def query_bin_text(card_bin: str) -> str:
                         session, card_bin, handyapi_key
                     )
                     return _format_handyapi_bin(card_bin, bin_json)
-                except (aiohttp.ClientError, BinNotFoundError) as e:
-                    logger.warning(f"HandyAPI BIN lookup failed, fallback: {e}")
-                except (BinRateLimitError, BinRequestError, ValueError) as e:
+                except (
+                    aiohttp.ClientError,
+                    TimeoutError,
+                    BinNotFoundError,
+                    BinRateLimitError,
+                    BinRequestError,
+                    ValueError,
+                ) as e:
                     logger.warning(f"HandyAPI BIN lookup failed, fallback: {e}")
 
             bin_json = await _query_binlist_bin(session, card_bin)
@@ -173,7 +270,9 @@ async def query_bin_text(card_bin: str) -> str:
         return _t("error.rate_limit_exceeded")
     except BinRequestError as e:
         return _t("error.request_failed_with_status", status=e.status)
-    except aiohttp.ClientError:
+    except (aiohttp.ClientError, TimeoutError):
+        if source is not None:
+            return _t("error.source_unreachable", source=BIN_SOURCES[source])
         return _t("error.binlist_unreachable")
     except ValueError:
         return _t("error.invalid_parameter")
@@ -204,7 +303,12 @@ async def handle_bin_command(bot, message: types.Message):
     )
 
     result_text = await query_bin_text(card_bin)
-    await bot.edit_message_text(result_text, message.chat.id, msg.message_id)
+    await bot.edit_message_text(
+        result_text,
+        message.chat.id,
+        msg.message_id,
+        reply_markup=_build_source_keyboard(card_bin),
+    )
 
 
 async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
@@ -234,10 +338,54 @@ async def handle_bin_inline_query(bot, inline_query: types.InlineQuery):
         title=_t("inline.result_title", card_bin=card_bin),
         description=_t("inline.send_result_description"),
         input_message_content=types.InputTextMessageContent(result_text),
+        reply_markup=(
+            _build_source_keyboard(card_bin)
+            if card_bin.isdigit() and 4 <= len(card_bin) <= 8
+            else None
+        ),
     )
     await bot.answer_inline_query(
         inline_query.id, [result], cache_time=1, is_personal=True
     )
+
+
+async def handle_bin_source_callback(bot, call: types.CallbackQuery):
+    """切换普通消息或 Inline 消息的 BIN 查询来源。"""
+    parts = (call.data or "").split(":")
+    if (
+        len(parts) != 3
+        or parts[0] != "bin_source"
+        or parts[1] not in BIN_SOURCES
+        or not parts[2].isdigit()
+        or not (4 <= len(parts[2]) <= 8)
+    ):
+        await bot.answer_callback_query(call.id, _t("error.invalid_parameter"))
+        return
+
+    inline_message_id = getattr(call, "inline_message_id", None)
+    message = getattr(call, "message", None)
+    if inline_message_id:
+        target = {"inline_message_id": inline_message_id}
+    elif message:
+        target = {"chat_id": message.chat.id, "message_id": message.message_id}
+    else:
+        await bot.answer_callback_query(call.id, _t("error.invalid_parameter"))
+        return
+
+    _, source, card_bin = parts
+    # 先应答回调，避免网络查询期间 Telegram 一直显示加载状态。
+    await bot.answer_callback_query(call.id)
+    result_text = await query_bin_text(card_bin, source=source)
+    try:
+        await bot.edit_message_text(
+            result_text,
+            **target,
+            reply_markup=_build_source_keyboard(card_bin, source),
+        )
+    except ApiTelegramException as e:
+        # 重复点击且结果未变化时，Telegram 会拒绝相同内容的编辑。
+        if e.error_code != 400 or "message is not modified" not in e.description:
+            raise
 
 
 # ==================== 插件注册 ====================
@@ -254,6 +402,14 @@ async def register_handlers(bot, middleware, plugin_name):
         stop_propagation=True,  # 阻止后续处理器
         guest_supported=True,
         chat_types=["private", "group", "supergroup"],  # 过滤器
+    )
+
+    middleware.register_callback_handler(
+        callback=handle_bin_source_callback,
+        plugin_name=plugin_name,
+        priority=50,
+        stop_propagation=True,
+        data_startswith="bin_source:",
     )
 
     middleware.register_inline_handler(

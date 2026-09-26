@@ -18,11 +18,11 @@
   "label.prepaid_yes": "是否预付：是",
   "label.prepaid_no": "是否预付：否",
   "label.country_name": "发卡国家：{value}",
-  "label.luhn_yes": "Luhn 校验：通过",
-  "label.luhn_no": "Luhn 校验：未通过",
   "status.querying_bin": "正在查询BIN: {card_bin} ...",
   "inline.usage_title": "BIN 查询",
   "inline.usage_description": "用法：bin [Card_BIN]",
   "inline.result_title": "BIN：{card_bin}",
-  "inline.send_result_description": "发送查询结果"
+  "inline.send_result_description": "发送查询结果",
+  "error.handyapi_key_missing": "HandyAPI 未配置 API Key，请选择其他来源。",
+  "error.source_unreachable": "无法访问 {source}，请稍后重试或选择其他来源。"
 }
